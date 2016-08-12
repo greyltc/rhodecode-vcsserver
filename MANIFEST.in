@@ -1,0 +1,21 @@
+# top level files
+include test.ini
+include MANIFEST.in
+include README.rst
+include CHANGES.rst
+include LICENSE.txt
+
+include vcsserver/VERSION
+
+# all config files
+recursive-include configs *
+
+# non-python core stuff
+recursive-include rhodecode *.cfg
+recursive-include rhodecode *.json
+recursive-include rhodecode *.ini_tmpl
+recursive-include rhodecode *.sh
+
+# skip any tests files
+recursive-exclude tests *
+
