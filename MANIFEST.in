@@ -10,12 +10,6 @@ include vcsserver/VERSION
 # all config files
 recursive-include configs *
 
-# non-python core stuff
-recursive-include rhodecode *.cfg
-recursive-include rhodecode *.json
-recursive-include rhodecode *.ini_tmpl
-recursive-include rhodecode *.sh
-
 # skip any tests files
 recursive-exclude tests *
 
