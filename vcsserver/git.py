@@ -429,28 +429,15 @@ class GitRemote(object):
         return list(getattr(obj, a) for a in attrs)
 
     @reraise_safe_exceptions
-    def get_refs(self, wire, keys=None):
-        # FIXME(skreft): this method is affected by bug
-        # http://bugs.rhodecode.com/issues/298.
-        # Basically, it will overwrite previously computed references if
-        # there's another one with the same name and given the order of
-        # repo.get_refs() is not guaranteed, the output of this method is not
-        # stable either.
+    def get_refs(self, wire):
         repo = self._factory.repo(wire)
-        refs = repo.get_refs()
-        if keys is None:
-            return refs
 
-        _refs = {}
-        for ref, sha in refs.iteritems():
-            for k, type_ in keys:
-                if ref.startswith(k):
-                    _key = ref[len(k):]
-                    if type_ == 'T':
-                        sha = repo.get_object(sha).id
-                    _refs[_key] = [sha, type_]
-                    break
-        return _refs
+        repo.refs._peeled_refs
+        result = {}
+        for ref, sha in repo.refs.as_dict().items():
+            peeled_sha = repo.refs._peeled_refs.get(ref, sha)
+            result[ref] = peeled_sha
+        return result
 
     @reraise_safe_exceptions
     def get_refs_path(self, wire):
