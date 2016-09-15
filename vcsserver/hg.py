@@ -316,6 +316,7 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def check_url(self, url, config):
+        log.info("Checking URL for remote cloning/import: %s", url)
         _proto = None
         if '+' in url[:url.find('://')]:
             _proto = url[0:url.find('+')]
@@ -345,10 +346,12 @@ class HgRemote(object):
         req = urllib2.Request(cu, None, {})
 
         try:
+            log.debug("Trying to open URL %s", url)
             resp = o.open(req)
             if resp.code != 200:
                 raise exceptions.URLError('Return Code is not 200')
         except Exception as e:
+            log.warning("URL cannot be opened: %s", url, exc_info=True)
             # means it cannot be cloned
             raise exceptions.URLError("[%s] org_exc: %s" % (cleaned_uri, e))
 
@@ -358,12 +361,16 @@ class HgRemote(object):
                 pass
             else:
                 # check for pure hg repos
+                log.debug(
+                    "Verifying if URL is a Mercurial repository: %s", url)
                 httppeer(make_ui_from_config(config), url).lookup('tip')
         except Exception as e:
+            log.warning("URL is not a valid Mercurial repository: %s", url)
             raise exceptions.URLError(
                 "url [%s] does not look like an hg repo org_exc: %s"
                 % (cleaned_uri, e))
 
+        log.info("URL is a valid Mercurial repository: %s", url)
         return True
 
     @reraise_safe_exceptions
