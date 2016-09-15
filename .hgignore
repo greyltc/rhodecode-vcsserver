@@ -1,0 +1,36 @@
+syntax: glob
+*.orig
+*.pyc
+*.swp
+*.tox
+*.egg-info
+*.egg
+*.idea
+.DS_Store*
+
+
+syntax: regexp
+
+#.filename
+^\.settings$
+^\.project$
+^\.pydevproject$
+^\.coverage$
+^\.cache.*$
+^\.rhodecode$
+
+^_dev
+^._dev
+^build/
+^coverage\.xml$
+^data$
+^dev.ini$
+^acceptance_tests/dev.*\.ini$
+^dist/
+^fabfile.py
+^htmlcov
+^junit\.xml$
+^node_modules/
+^pylint.log$
+^build$
+^result$

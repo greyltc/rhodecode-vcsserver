@@ -1,0 +1,15 @@
+# top level files
+include test.ini
+include MANIFEST.in
+include README.rst
+include CHANGES.rst
+include LICENSE.txt
+
+include vcsserver/VERSION
+
+# all config files
+recursive-include configs *
+
+# skip any tests files
+recursive-exclude tests *
+
