@@ -16,11 +16,19 @@ let
   pkgs = pkgs_.overridePackages (self: super: {
     # Override subversion derivation to
     #  - activate python bindings
-    subversion = super.subversion.override {
-       httpSupport = true;
-       pythonBindings = true;
-       python = self.python27Packages.python;
-    };
+    subversion = let
+      subversionWithPython = super.subversion.override {
+        httpSupport = true;
+        pythonBindings = true;
+        python = self.python27Packages.python;
+      };
+    in pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
+      patches = oldAttrs.patches ++
+        pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          # johbo: "import svn.client" fails on darwin currently.
+          ./pkgs/subversion-1.9.4-darwin.patch
+        ];
+    });
   });
 
   inherit (pkgs.lib) fix extends;
