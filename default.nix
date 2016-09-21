@@ -23,7 +23,7 @@ let
         python = self.python27Packages.python;
       };
     in pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      patches = oldAttrs.patches ++
+      patches = (oldAttrs.patches or []) ++
         pkgs.lib.optionals pkgs.stdenv.isDarwin [
           # johbo: "import svn.client" fails on darwin currently.
           ./pkgs/subversion-1.9.4-darwin.patch
