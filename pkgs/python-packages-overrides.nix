@@ -13,7 +13,8 @@ in
 self: super: {
 
   subvertpy = super.subvertpy.override (attrs: {
-    SVN_PREFIX = "${pkgs.subversion}";
+    # TODO: johbo: Remove the "or" once we drop 16.03 support
+    SVN_PREFIX = "${pkgs.subversion.dev or pkgs.subversion}";
     propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
       pkgs.aprutil
       pkgs.subversion
