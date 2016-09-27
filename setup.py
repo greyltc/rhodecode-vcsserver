@@ -74,6 +74,7 @@ setup(
     tests_require=[
         'mock',
         'pytest',
+        'pytest-sugar',
         'WebTest',
     ],
     install_requires=[

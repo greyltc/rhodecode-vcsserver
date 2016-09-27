@@ -300,7 +300,7 @@
   };
   rhodecode-vcsserver = super.buildPythonPackage {
     name = "rhodecode-vcsserver-4.5.0";
-    buildInputs = with self; [mock pytest WebTest];
+    buildInputs = with self; [mock pytest pytest-sugar WebTest];
     doCheck = true;
     propagatedBuildInputs = with self; [configobj dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid Pyro4 simplejson subprocess32 waitress WebOb];
     src = ./.;
@@ -467,5 +467,30 @@
 
 ### Test requirements
 
-  
+  pytest-sugar = super.buildPythonPackage {
+    name = "pytest-sugar-0.7.1";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [pytest termcolor];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/03/97/05d988b4fa870e7373e8ee4582408543b9ca2bd35c3c67b569369c6f9c49/pytest-sugar-0.7.1.tar.gz";
+      md5 = "7400f7c11f3d572b2c2a3b60352d35fe";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
+  termcolor = super.buildPythonPackage {
+    name = "termcolor-1.1.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/8a/48/a76be51647d0eb9f10e2a4511bf3ffb8cc1e6b14e9e4fab46173aa79f981/termcolor-1.1.0.tar.gz";
+      md5 = "043e89644f8909d462fbbfa511c768df";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
 }
