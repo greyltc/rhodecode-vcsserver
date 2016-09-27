@@ -431,11 +431,9 @@ class GitRemote(object):
     @reraise_safe_exceptions
     def get_refs(self, wire):
         repo = self._factory.repo(wire)
-
-        repo.refs._peeled_refs
         result = {}
         for ref, sha in repo.refs.as_dict().items():
-            peeled_sha = repo.refs._peeled_refs.get(ref, sha)
+            peeled_sha = repo.get_peeled(ref)
             result[ref] = peeled_sha
         return result
 
