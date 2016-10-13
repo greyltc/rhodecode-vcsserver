@@ -119,7 +119,7 @@ let
         cp -v vcsserver/VERSION $out/nix-support/rccontrol/version
         echo "DONE: Meta information for rccontrol written"
 
-        ln -s ${self.pyramid}/bin/* $out/bin  #*/
+        ln -s ${self.pyramid}/bin/* $out/bin/
         ln -s ${self.gunicorn}/bin/gunicorn $out/bin/
 
         # Symlink version control utilities
@@ -131,7 +131,7 @@ let
         ln -s ${self.mercurial}/bin/hg $out/bin
         ln -s ${pkgs.subversion}/bin/svn* $out/bin
 
-        for file in $out/bin/*; do  #*/
+        for file in $out/bin/*; do
           wrapProgram $file \
             --prefix PYTHONPATH : $PYTHONPATH \
             --set PYTHONHASHSEED random
