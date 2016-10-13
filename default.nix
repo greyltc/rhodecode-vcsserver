@@ -133,8 +133,8 @@ let
 
         for file in $out/bin/*; do
           wrapProgram $file \
-            --prefix PATH : $PATH \
-            --prefix PYTHONPATH : $PYTHONPATH \
+            --set PATH $PATH \
+            --set PYTHONPATH $PYTHONPATH \
             --set PYTHONHASHSEED random
         done
       '';
