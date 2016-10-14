@@ -31,6 +31,7 @@ from pyramid.wsgi import wsgiapp
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
 from vcsserver.echo_stub.echo_app import EchoApp
+from vcsserver.exceptions import HTTPRepoLocked
 from vcsserver.server import VcsServer
 
 try:
@@ -197,6 +198,9 @@ class HTTPApplication(object):
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
         self.config.add_view(self.git_stream(), route_name='stream_git')
+        self.config.add_view(
+            self.handle_vcs_exception, context=Exception,
+            custom_predicates=[self.is_vcs_exception])
 
     def wsgi_app(self):
         return self.config.make_wsgi_app()
@@ -316,6 +320,23 @@ class HTTPApplication(object):
                     repo_path, repo_name, config)
                 return app(environ, start_response)
             return _git_stream
+
+    def is_vcs_exception(self, context, request):
+        """
+        View predicate that returns true if the context object is a VCS
+        exception.
+        """
+        return hasattr(context, '_vcs_kind')
+
+    def handle_vcs_exception(self, exception, request):
+        if exception._vcs_kind == 'repo_locked':
+            # Get custom repo-locked status code if present.
+            status_code = request.headers.get('X-RC-Locked-Status-Code')
+            return HTTPRepoLocked(
+                title=exception.message, status_code=status_code)
+
+        # Re-raise exception if we can not handle it.
+        raise exception
 
 
 class ResponseFilter(object):
