@@ -503,5 +503,6 @@ class VcsServerCommand(object):
 def main(argv=sys.argv, quiet=False):
     if MercurialFactory:
         hgpatches.patch_largefiles_capabilities()
+        hgpatches.patch_subrepo_type_mapping()
     command = VcsServerCommand(argv, quiet=quiet)
     return command.run()
