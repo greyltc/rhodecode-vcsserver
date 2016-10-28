@@ -683,6 +683,13 @@ class HgRemote(object):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'merge', 'internal:dump')
+
+        # In case of sub repositories are used mercurial prompts the user in
+        # case of merge conflicts or different sub repository sources. By
+        # setting the interactive flag to `False` mercurial doesn't prompt the
+        # used but instead uses a default value.
+        repo.ui.setconfig('ui', 'interactive', False)
+
         commands.merge(baseui, repo, rev=revision)
 
     @reraise_safe_exceptions
