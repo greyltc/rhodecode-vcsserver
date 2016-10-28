@@ -56,6 +56,8 @@ UnhandledException = functools.partial(_make_exception, 'unhandled')
 
 URLError = functools.partial(_make_exception, 'url_error')
 
+SubrepoMergeException = functools.partial(_make_exception, 'subrepo_merge_error')
+
 
 class HTTPRepoLocked(HTTPLocked):
     """
