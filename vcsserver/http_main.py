@@ -354,5 +354,6 @@ class ResponseFilter(object):
 def main(global_config, **settings):
     if MercurialFactory:
         hgpatches.patch_largefiles_capabilities()
+        hgpatches.patch_subrepo_type_mapping()
     app = HTTPApplication(settings=settings)
     return app.wsgi_app()
