@@ -35,6 +35,7 @@ from mercurial import discovery
 from mercurial import unionrepo
 from mercurial import localrepo
 from mercurial import merge as hg_merge
+from mercurial import subrepo
 
 from mercurial.commands import clone, nullid, pull
 from mercurial.context import memctx, memfilectx
