@@ -521,6 +521,9 @@ class GitRemote(object):
     def discover_git_version(self):
         stdout, _ = self.run_git_command(
             {}, ['--version'], _bare=True, _safe=True)
+        prefix = 'git version'
+        if stdout.startswith(prefix):
+            stdout = stdout[len(prefix):]
         return stdout
 
     @reraise_safe_exceptions
