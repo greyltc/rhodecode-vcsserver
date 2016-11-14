@@ -32,6 +32,7 @@ import svn.fs
 import svn.repos
 
 from vcsserver import svn_diff
+from vcsserver import exceptions
 from vcsserver.base import RepoFactory
 
 
@@ -46,6 +47,30 @@ svn_compatible_versions = set([
     'pre-1.6-compatible',
     'pre-1.8-compatible',
 ])
+
+
+def reraise_safe_exceptions(func):
+    """Decorator for converting svn exceptions to something neutral."""
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            if not hasattr(e, '_vcs_kind'):
+                log.exception("Unhandled exception in hg remote call")
+                raise_from_original(exceptions.UnhandledException)
+            raise
+    return wrapper
+
+
+def raise_from_original(new_type):
+    """
+    Raise a new exception type with original args and traceback.
+    """
+    _, original, traceback = sys.exc_info()
+    try:
+        raise new_type(*original.args), None, traceback
+    finally:
+        del traceback
 
 
 class SubversionFactory(RepoFactory):
@@ -87,6 +112,15 @@ class SvnRemote(object):
         # TODO: Remove once we do not use internal Mercurial objects anymore
         # for subversion
         self._hg_factory = hg_factory
+
+    @reraise_safe_exceptions
+    def discover_svn_version(self):
+        try:
+            import svn.core
+            svn_ver = svn.core.SVN_VERSION
+        except ImportError:
+            svn_ver = None
+        return svn_ver
 
     def check_url(self, url, config_items):
         # this can throw exception if not installed, but we detect this

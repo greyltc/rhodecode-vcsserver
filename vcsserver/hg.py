@@ -142,6 +142,11 @@ class HgRemote(object):
         }
 
     @reraise_safe_exceptions
+    def discover_hg_version(self):
+        from mercurial import util
+        return util.version()
+
+    @reraise_safe_exceptions
     def archive_repo(self, archive_path, mtime, file_info, kind):
         if kind == "tgz":
             archiver = archival.tarit(archive_path, mtime, "gz")
