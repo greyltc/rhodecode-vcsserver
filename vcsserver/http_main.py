@@ -182,6 +182,7 @@ class HTTPApplication(object):
             name='msgpack',
             factory=self._msgpack_renderer_factory)
 
+        self.config.add_route('service', '/_service')
         self.config.add_route('status', '/status')
         self.config.add_route('hg_proxy', '/proxy/hg')
         self.config.add_route('git_proxy', '/proxy/git')
@@ -191,6 +192,9 @@ class HTTPApplication(object):
 
         self.config.add_view(
             self.status_view, route_name='status', renderer='json')
+        self.config.add_view(
+            self.service_view, route_name='service', renderer='msgpack')
+
         self.config.add_view(self.hg_proxy(), route_name='hg_proxy')
         self.config.add_view(self.git_proxy(), route_name='git_proxy')
         self.config.add_view(
@@ -248,6 +252,19 @@ class HTTPApplication(object):
 
     def status_view(self, request):
         return {'status': 'OK'}
+
+    def service_view(self, request):
+        import vcsserver
+        payload = msgpack.unpackb(request.body, use_list=True)
+        resp = {
+            'id': payload.get('id'),
+            'result': dict(
+                version=vcsserver.__version__,
+                config={},
+                payload=payload,
+            )
+        }
+        return resp
 
     def _msgpack_renderer_factory(self, info):
         def _render(value, system):
