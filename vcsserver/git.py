@@ -524,7 +524,7 @@ class GitRemote(object):
         prefix = 'git version'
         if stdout.startswith(prefix):
             stdout = stdout[len(prefix):]
-        return stdout
+        return stdout.strip()
 
     @reraise_safe_exceptions
     def run_git_command(self, wire, cmd, **opts):
