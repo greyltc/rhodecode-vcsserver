@@ -197,13 +197,15 @@ class SvnRemote(object):
         for path, change in editor.changes.iteritems():
             # TODO: Decide what to do with directory nodes. Subversion can add
             # empty directories.
+
             if change.item_kind == svn.core.svn_node_dir:
                 continue
-            if change.action == svn.repos.CHANGE_ACTION_ADD:
+            if change.action in [svn.repos.CHANGE_ACTION_ADD]:
                 added.append(path)
-            elif change.action == svn.repos.CHANGE_ACTION_MODIFY:
+            elif change.action in [svn.repos.CHANGE_ACTION_MODIFY,
+                                   svn.repos.CHANGE_ACTION_REPLACE]:
                 changed.append(path)
-            elif change.action == svn.repos.CHANGE_ACTION_DELETE:
+            elif change.action in [svn.repos.CHANGE_ACTION_DELETE]:
                 removed.append(path)
             else:
                 raise NotImplementedError(
