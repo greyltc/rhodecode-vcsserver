@@ -16,8 +16,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
 import mock
+import pytest
 
 from vcsserver import main
+from vcsserver.base import obfuscate_qs
 
 
 @mock.patch('vcsserver.main.VcsServerCommand', mock.Mock())
@@ -34,3 +36,13 @@ def test_applies_largefiles_patch(patch_largefiles_capabilities):
     mock.Mock(side_effect=Exception("Must not be called")))
 def test_applies_largefiles_patch_only_if_mercurial_is_available():
     main.main([])
+
+
+@pytest.mark.parametrize('given, expected', [
+    ('foo=bar', 'foo=bar'),
+    ('auth_token=secret', 'auth_token=*****'),
+    ('auth_token=secret&api_key=secret2', 'auth_token=*****&api_key=*****'),
+    ('auth_token=secret&api_key=secret2&param=value', 'auth_token=*****&api_key=*****&param=value'),
+])
+def test_obfuscate_qs(given, expected):
+    assert expected == obfuscate_qs(given)
