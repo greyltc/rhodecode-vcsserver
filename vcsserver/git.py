@@ -37,7 +37,7 @@ from vcsserver import exceptions, settings, subprocessio
 from vcsserver.utils import safe_str
 from vcsserver.base import RepoFactory
 from vcsserver.hgcompat import (
-    hg_url, httpbasicauthhandler, httpdigestauthhandler)
+    hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
 
 
 DIR_STAT = stat.S_IFDIR
@@ -152,7 +152,7 @@ class GitRemote(object):
 
     def _build_opener(self, url):
         handlers = []
-        url_obj = hg_url(url)
+        url_obj = url_parser(url)
         _, authinfo = url_obj.authinfo()
 
         if authinfo:
@@ -167,10 +167,11 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def check_url(self, url, config):
-        url_obj = hg_url(url)
+        url_obj = url_parser(url)
         test_uri, _ = url_obj.authinfo()
         url_obj.passwd = '*****'
         cleaned_uri = str(url_obj)
+        log.info("Checking URL for remote cloning/import: %s", cleaned_uri)
 
         if not test_uri.endswith('info/refs'):
             test_uri = test_uri.rstrip('/') + '/info/refs'
@@ -184,12 +185,14 @@ class GitRemote(object):
         req = urllib2.Request(cu, None, {})
 
         try:
+            log.debug("Trying to open URL %s", cleaned_uri)
             resp = o.open(req)
             if resp.code != 200:
-                raise Exception('Return Code is not 200')
+                raise exceptions.URLError('Return Code is not 200')
         except Exception as e:
+            log.warning("URL cannot be opened: %s", cleaned_uri, exc_info=True)
             # means it cannot be cloned
-            raise urllib2.URLError("[%s] org_exc: %s" % (cleaned_uri, e))
+            raise exceptions.URLError("[%s] org_exc: %s" % (cleaned_uri, e))
 
         # now detect if it's proper git repo
         gitdata = resp.read()
@@ -199,7 +202,7 @@ class GitRemote(object):
             # old style git can return some other format !
             pass
         else:
-            raise urllib2.URLError(
+            raise exceptions.URLError(
                 "url [%s] does not look like an git" % (cleaned_uri,))
 
         return True
@@ -327,7 +330,7 @@ class GitRemote(object):
         if url != 'default' and '://' not in url:
             client = LocalGitClient(url)
         else:
-            url_obj = hg_url(url)
+            url_obj = url_parser(url)
             o = self._build_opener(url)
             url, _ = url_obj.authinfo()
             client = HttpGitClient(base_url=url, opener=o)
