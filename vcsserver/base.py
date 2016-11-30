@@ -16,7 +16,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
 import logging
-
+import urlparse
 
 log = logging.getLogger(__name__)
 
@@ -69,3 +69,13 @@ class RepoFactory(object):
                 'INIT %s@%s repo object based on wire %s. Context: %s',
                 self.__class__.__name__, wire['path'], wire, context)
             return createfunc()
+
+
+def obfuscate_qs(query_string):
+    parsed = []
+    for k, v in urlparse.parse_qsl(query_string):
+        if k in ['auth_token', 'api_key']:
+            v = "*****"
+        parsed.append((k, v))
+
+    return '&'.join('{}={}'.format(k,v) for k,v in parsed)

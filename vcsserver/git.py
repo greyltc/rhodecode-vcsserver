@@ -35,7 +35,7 @@ from dulwich.server import update_server_info
 
 from vcsserver import exceptions, settings, subprocessio
 from vcsserver.utils import safe_str
-from vcsserver.base import RepoFactory
+from vcsserver.base import RepoFactory, obfuscate_qs
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
 
@@ -170,6 +170,7 @@ class GitRemote(object):
         url_obj = url_parser(url)
         test_uri, _ = url_obj.authinfo()
         url_obj.passwd = '*****'
+        url_obj.query = obfuscate_qs(url_obj.query)
         cleaned_uri = str(url_obj)
         log.info("Checking URL for remote cloning/import: %s", cleaned_uri)
 
