@@ -16,12 +16,19 @@ let
   pkgs = pkgs_.overridePackages (self: super: {
     # Override subversion derivation to
     #  - activate python bindings
-    #  - set version to 1.8
-    subversion = super.subversion18.override {
-       httpSupport = true;
-       pythonBindings = true;
-       python = self.python27Packages.python;
-    };
+    subversion = let
+      subversionWithPython = super.subversion.override {
+        httpSupport = true;
+        pythonBindings = true;
+        python = self.python27Packages.python;
+      };
+    in pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
+      patches = (oldAttrs.patches or []) ++
+        pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          # johbo: "import svn.client" fails on darwin currently.
+          ./pkgs/subversion-1.9.4-darwin.patch
+        ];
+    });
   });
 
   inherit (pkgs.lib) fix extends;
@@ -85,21 +92,6 @@ let
       passthru = {
         pythonPackages = self;
       };
-
-      # Somewhat snappier setup of the development environment
-      # TODO: move into shell.nix
-      # TODO: think of supporting a stable path again, so that multiple shells
-      #       can share it.
-      shellHook = ''
-        # Set locale
-        export LC_ALL="en_US.UTF-8"
-
-        tmp_path=$(mktemp -d)
-        export PATH="$tmp_path/bin:$PATH"
-        export PYTHONPATH="$tmp_path/${self.python.sitePackages}:$PYTHONPATH"
-        mkdir -p $tmp_path/${self.python.sitePackages}
-        python setup.py develop --prefix $tmp_path --allow-hosts ""
-      '';
 
       # Add VCSServer bin directory to path so that tests can find 'vcsserver'.
       preCheck = ''

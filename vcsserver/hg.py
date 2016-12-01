@@ -28,13 +28,13 @@ from mercurial import commands
 from mercurial import unionrepo
 
 from vcsserver import exceptions
-from vcsserver.base import RepoFactory
+from vcsserver.base import RepoFactory, obfuscate_qs
 from vcsserver.hgcompat import (
-    archival, bin, clone, config as hgconfig, diffopts, hex, hg_url,
-    httpbasicauthhandler, httpdigestauthhandler, httppeer, localrepository,
-    match, memctx, exchange, memfilectx, nullrev, patch, peer, revrange, ui,
-    Abort, LookupError, RepoError, RepoLookupError, InterventionRequired,
-    RequirementError)
+    archival, bin, clone, config as hgconfig, diffopts, hex,
+    hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
+    httppeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
+    patch, peer, revrange, ui, Abort, LookupError, RepoError, RepoLookupError,
+    InterventionRequired, RequirementError)
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +140,11 @@ class HgRemote(object):
             "status": self.ctx_status,
             "_file_paths": self.ctx_list,
         }
+
+    @reraise_safe_exceptions
+    def discover_hg_version(self):
+        from mercurial import util
+        return util.version()
 
     @reraise_safe_exceptions
     def archive_repo(self, archive_path, mtime, file_info, kind):
@@ -316,16 +321,18 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def check_url(self, url, config):
-        log.info("Checking URL for remote cloning/import: %s", url)
         _proto = None
         if '+' in url[:url.find('://')]:
             _proto = url[0:url.find('+')]
             url = url[url.find('+') + 1:]
         handlers = []
-        url_obj = hg_url(url)
+        url_obj = url_parser(url)
         test_uri, authinfo = url_obj.authinfo()
         url_obj.passwd = '*****'
+        url_obj.query = obfuscate_qs(url_obj.query)
+
         cleaned_uri = str(url_obj)
+        log.info("Checking URL for remote cloning/import: %s", cleaned_uri)
 
         if authinfo:
             # create a password manager
@@ -346,12 +353,12 @@ class HgRemote(object):
         req = urllib2.Request(cu, None, {})
 
         try:
-            log.debug("Trying to open URL %s", url)
+            log.debug("Trying to open URL %s", cleaned_uri)
             resp = o.open(req)
             if resp.code != 200:
                 raise exceptions.URLError('Return Code is not 200')
         except Exception as e:
-            log.warning("URL cannot be opened: %s", url, exc_info=True)
+            log.warning("URL cannot be opened: %s", cleaned_uri, exc_info=True)
             # means it cannot be cloned
             raise exceptions.URLError("[%s] org_exc: %s" % (cleaned_uri, e))
 
@@ -362,15 +369,17 @@ class HgRemote(object):
             else:
                 # check for pure hg repos
                 log.debug(
-                    "Verifying if URL is a Mercurial repository: %s", url)
+                    "Verifying if URL is a Mercurial repository: %s",
+                    cleaned_uri)
                 httppeer(make_ui_from_config(config), url).lookup('tip')
         except Exception as e:
-            log.warning("URL is not a valid Mercurial repository: %s", url)
+            log.warning("URL is not a valid Mercurial repository: %s",
+                        cleaned_uri)
             raise exceptions.URLError(
                 "url [%s] does not look like an hg repo org_exc: %s"
                 % (cleaned_uri, e))
 
-        log.info("URL is a valid Mercurial repository: %s", url)
+        log.info("URL is a valid Mercurial repository: %s", cleaned_uri)
         return True
 
     @reraise_safe_exceptions
@@ -683,6 +692,13 @@ class HgRemote(object):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'merge', 'internal:dump')
+
+        # In case of sub repositories are used mercurial prompts the user in
+        # case of merge conflicts or different sub repository sources. By
+        # setting the interactive flag to `False` mercurial doesn't prompt the
+        # used but instead uses a default value.
+        repo.ui.setconfig('ui', 'interactive', False)
+
         commands.merge(baseui, repo, rev=revision)
 
     @reraise_safe_exceptions

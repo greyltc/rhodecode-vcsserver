@@ -25,6 +25,7 @@ different error conditions.
 """
 
 import functools
+from pyramid.httpexceptions import HTTPLocked
 
 
 def _make_exception(kind, *args):
@@ -54,3 +55,16 @@ RequirementException = functools.partial(_make_exception, 'requirement')
 UnhandledException = functools.partial(_make_exception, 'unhandled')
 
 URLError = functools.partial(_make_exception, 'url_error')
+
+SubrepoMergeException = functools.partial(_make_exception, 'subrepo_merge_error')
+
+
+class HTTPRepoLocked(HTTPLocked):
+    """
+    Subclass of HTTPLocked response that allows to set the title and status
+    code via constructor arguments.
+    """
+    def __init__(self, title, status_code=None, **kwargs):
+        self.code = status_code or HTTPLocked.code
+        self.title = title
+        super(HTTPRepoLocked, self).__init__(**kwargs)

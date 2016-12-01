@@ -31,6 +31,7 @@ from pyramid.wsgi import wsgiapp
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
 from vcsserver.echo_stub.echo_app import EchoApp
+from vcsserver.exceptions import HTTPRepoLocked
 from vcsserver.server import VcsServer
 
 try:
@@ -181,6 +182,7 @@ class HTTPApplication(object):
             name='msgpack',
             factory=self._msgpack_renderer_factory)
 
+        self.config.add_route('service', '/_service')
         self.config.add_route('status', '/status')
         self.config.add_route('hg_proxy', '/proxy/hg')
         self.config.add_route('git_proxy', '/proxy/git')
@@ -190,6 +192,9 @@ class HTTPApplication(object):
 
         self.config.add_view(
             self.status_view, route_name='status', renderer='json')
+        self.config.add_view(
+            self.service_view, route_name='service', renderer='msgpack')
+
         self.config.add_view(self.hg_proxy(), route_name='hg_proxy')
         self.config.add_view(self.git_proxy(), route_name='git_proxy')
         self.config.add_view(
@@ -197,6 +202,9 @@ class HTTPApplication(object):
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
         self.config.add_view(self.git_stream(), route_name='stream_git')
+        self.config.add_view(
+            self.handle_vcs_exception, context=Exception,
+            custom_predicates=[self.is_vcs_exception])
 
     def wsgi_app(self):
         return self.config.make_wsgi_app()
@@ -244,6 +252,19 @@ class HTTPApplication(object):
 
     def status_view(self, request):
         return {'status': 'OK'}
+
+    def service_view(self, request):
+        import vcsserver
+        payload = msgpack.unpackb(request.body, use_list=True)
+        resp = {
+            'id': payload.get('id'),
+            'result': dict(
+                version=vcsserver.__version__,
+                config={},
+                payload=payload,
+            )
+        }
+        return resp
 
     def _msgpack_renderer_factory(self, info):
         def _render(value, system):
@@ -317,6 +338,23 @@ class HTTPApplication(object):
                 return app(environ, start_response)
             return _git_stream
 
+    def is_vcs_exception(self, context, request):
+        """
+        View predicate that returns true if the context object is a VCS
+        exception.
+        """
+        return hasattr(context, '_vcs_kind')
+
+    def handle_vcs_exception(self, exception, request):
+        if exception._vcs_kind == 'repo_locked':
+            # Get custom repo-locked status code if present.
+            status_code = request.headers.get('X-RC-Locked-Status-Code')
+            return HTTPRepoLocked(
+                title=exception.message, status_code=status_code)
+
+        # Re-raise exception if we can not handle it.
+        raise exception
+
 
 class ResponseFilter(object):
 
@@ -333,5 +371,6 @@ class ResponseFilter(object):
 def main(global_config, **settings):
     if MercurialFactory:
         hgpatches.patch_largefiles_capabilities()
+        hgpatches.patch_subrepo_type_mapping()
     app = HTTPApplication(settings=settings)
     return app.wsgi_app()
