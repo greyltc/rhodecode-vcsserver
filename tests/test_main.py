@@ -39,10 +39,19 @@ def test_applies_largefiles_patch_only_if_mercurial_is_available():
 
 
 @pytest.mark.parametrize('given, expected', [
+    ('bad', 'bad'),
+    ('query&foo=bar', 'query&foo=bar'),
+    ('equery&auth_token=bar', 'equery&auth_token=*****'),
+    ('a;b;c;query&foo=bar&auth_token=secret',
+     'a&b&c&query&foo=bar&auth_token=*****'),
+    ('', ''),
+    (None, None),
     ('foo=bar', 'foo=bar'),
     ('auth_token=secret', 'auth_token=*****'),
-    ('auth_token=secret&api_key=secret2', 'auth_token=*****&api_key=*****'),
-    ('auth_token=secret&api_key=secret2&param=value', 'auth_token=*****&api_key=*****&param=value'),
+    ('auth_token=secret&api_key=secret2',
+     'auth_token=*****&api_key=*****'),
+    ('auth_token=secret&api_key=secret2&param=value',
+     'auth_token=*****&api_key=*****&param=value'),
 ])
 def test_obfuscate_qs(given, expected):
     assert expected == obfuscate_qs(given)
