@@ -72,10 +72,14 @@ class RepoFactory(object):
 
 
 def obfuscate_qs(query_string):
+    if query_string is None:
+        return None
+
     parsed = []
-    for k, v in urlparse.parse_qsl(query_string):
+    for k, v in urlparse.parse_qsl(query_string, keep_blank_values=True):
         if k in ['auth_token', 'api_key']:
             v = "*****"
         parsed.append((k, v))
 
-    return '&'.join('{}={}'.format(k,v) for k,v in parsed)
+    return '&'.join('{}{}'.format(
+        k, '={}'.format(v) if v else '') for k, v in parsed)
