@@ -14,6 +14,16 @@ let pkgs_ = pkgs; in
 
 let
   pkgs = pkgs_.overridePackages (self: super: {
+    # bump GIT version
+    git = pkgs.lib.overrideDerivation pkgs_.git (oldAttrs: {
+      name = "git-2.9.3";
+      src = pkgs.fetchurl {
+        url = "https://www.kernel.org/pub/software/scm/git/git-2.9.3.tar.xz";
+        sha256 = "0qzs681a64k3shh5p0rg41l1z16fbk5sj0xga45k34hp1hsp654z";
+      };
+
+    });
+
     # Override subversion derivation to
     #  - activate python bindings
     subversion = let
@@ -22,13 +32,17 @@ let
         pythonBindings = true;
         python = self.python27Packages.python;
       };
-    in pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
+
+    in
+
+    pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
       patches = (oldAttrs.patches or []) ++
         pkgs.lib.optionals pkgs.stdenv.isDarwin [
           # johbo: "import svn.client" fails on darwin currently.
           ./pkgs/subversion-1.9.4-darwin.patch
         ];
     });
+
   });
 
   inherit (pkgs.lib) fix extends;
