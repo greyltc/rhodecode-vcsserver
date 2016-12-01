@@ -58,3 +58,77 @@ def _dynamic_capabilities_wrapper(lfproto, extensions):
         return calc_capabilities(repo, proto)
 
     return _dynamic_capabilities
+
+
+def patch_subrepo_type_mapping():
+    from collections import defaultdict
+    from hgcompat import subrepo
+    from exceptions import SubrepoMergeException
+
+    class NoOpSubrepo(subrepo.abstractsubrepo):
+
+        def __init__(self, ctx, path, *args, **kwargs):
+            """Initialize abstractsubrepo part
+
+            ``ctx`` is the context referring this subrepository in the
+            parent repository.
+
+            ``path`` is the path to this subrepository as seen from
+            innermost repository.
+            """
+            self.ui = ctx.repo().ui
+            self._ctx = ctx
+            self._path = path
+
+        def storeclean(self, path):
+            """
+            returns true if the repository has not changed since it was last
+            cloned from or pushed to a given repository.
+            """
+            return True
+
+        def dirty(self, ignoreupdate=False):
+            """returns true if the dirstate of the subrepo is dirty or does not
+            match current stored state. If ignoreupdate is true, only check
+            whether the subrepo has uncommitted changes in its dirstate.
+            """
+            return False
+
+        def basestate(self):
+            """current working directory base state, disregarding .hgsubstate
+            state and working directory modifications"""
+            substate = subrepo.state(self._ctx, self.ui)
+            file_system_path, rev, repotype = substate.get(self._path)
+            return rev
+
+        def remove(self):
+            """remove the subrepo
+
+            (should verify the dirstate is not dirty first)
+            """
+            pass
+
+        def get(self, state, overwrite=False):
+            """run whatever commands are needed to put the subrepo into
+            this state
+            """
+            pass
+
+        def merge(self, state):
+            """merge currently-saved state with the new state."""
+            raise SubrepoMergeException()
+
+        def push(self, opts):
+            """perform whatever action is analogous to 'hg push'
+
+            This may be a no-op on some systems.
+            """
+            pass
+
+    # Patch subrepo type mapping to always return our NoOpSubrepo class
+    # whenever a subrepo class is looked up.
+    subrepo.types = {
+        'hg': NoOpSubrepo,
+        'git': NoOpSubrepo,
+        'svn': NoOpSubrepo
+    }
