@@ -169,7 +169,7 @@ class GitRemote(object):
     def check_url(self, url, config):
         url_obj = url_parser(url)
         test_uri, _ = url_obj.authinfo()
-        url_obj.passwd = '*****'
+        url_obj.passwd = '*****' if url_obj.passwd else url_obj.passwd
         url_obj.query = obfuscate_qs(url_obj.query)
         cleaned_uri = str(url_obj)
         log.info("Checking URL for remote cloning/import: %s", cleaned_uri)
