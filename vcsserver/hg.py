@@ -328,7 +328,7 @@ class HgRemote(object):
         handlers = []
         url_obj = url_parser(url)
         test_uri, authinfo = url_obj.authinfo()
-        url_obj.passwd = '*****'
+        url_obj.passwd = '*****' if url_obj.passwd else url_obj.passwd
         url_obj.query = obfuscate_qs(url_obj.query)
 
         cleaned_uri = str(url_obj)
@@ -444,8 +444,9 @@ class HgRemote(object):
         result = []
         for i, annotate_data in enumerate(fctx.annotate()):
             ln_no = i + 1
-            sha = hex(annotate_data[0].node())
-            result.append((ln_no, sha, annotate_data[1]))
+            node_info, content = annotate_data
+            sha = hex(node_info[0].node())
+            result.append((ln_no, sha, content))
         return result
 
     @reraise_safe_exceptions
