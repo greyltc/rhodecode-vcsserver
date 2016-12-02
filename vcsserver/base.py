@@ -54,9 +54,6 @@ class RepoFactory(object):
     def _repo(self, wire, createfunc):
         context = wire.get('context', None)
         cache = wire.get('cache', True)
-        log.debug(
-            'GET %s@%s with cache:%s. Context: %s',
-            self.__class__.__name__, wire['path'], cache, context)
 
         if context and cache:
             cache_key = (context, wire['path'])
