@@ -76,12 +76,14 @@ def filter_ignorable_lines(hunks, fromlines, tolines, context,
         elif tag == 'replace' and (ignore_case or ignore_space_changes):
             if len(fromlines) != len(tolines):
                 return False
-            def f(str):
+
+            def f(input_str):
                 if ignore_case:
-                    str = str.lower()
+                    input_str = input_str.lower()
                 if ignore_space_changes:
-                    str = ' '.join(str.split())
-                return str
+                    input_str = ' '.join(input_str.split())
+                return input_str
+
             for i in range(len(fromlines)):
                 if f(fromlines[i]) != f(tolines[i]):
                     return False
