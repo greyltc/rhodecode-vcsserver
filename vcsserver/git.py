@@ -346,10 +346,11 @@ class GitRemote(object):
         try:
             remote_refs = client.fetch(
                 path=url, target=repo, determine_wants=determine_wants)
-        except NotGitRepository:
+        except NotGitRepository as e:
             log.warning(
                 'Trying to fetch from "%s" failed, not a Git repository.', url)
-            raise exceptions.AbortException()
+            # Exception can contain unicode which we convert
+            raise exceptions.AbortException(repr(e))
 
         # mikhail: client.fetch() returns all the remote refs, but fetches only
         # refs filtered by `determine_wants` function. We need to filter result
