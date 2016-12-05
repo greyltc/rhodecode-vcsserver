@@ -607,9 +607,10 @@ class HgRemote(object):
         date = (tag_time, tag_timezone)
         try:
             repo.tag(name, node, message, local, user, date)
-        except Abort:
+        except Abort as e:
             log.exception("Tag operation aborted")
-            raise exceptions.AbortException()
+            # Exception can contain unicode which we convert
+            raise exceptions.AbortException(repr(e))
 
     @reraise_safe_exceptions
     def tags(self, wire):
