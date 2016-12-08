@@ -46,7 +46,6 @@ let
   });
 
   inherit (pkgs.lib) fix extends;
-
   basePythonPackages = with builtins; if isAttrs pythonPackages
     then pythonPackages
     else getAttr pythonPackages pkgs;
@@ -61,9 +60,8 @@ let
     let
       ext = last (splitString "." path);
     in
-      !elem (basename path) [
-        ".git" ".hg" "__pycache__" ".eggs" "node_modules"
-        "build" "data" "tmp"] &&
+      !elem (basename path) [".hg" ".git" "__pycache__" ".eggs"
+        "node_modules" "build" "data" "tmp"] &&
       !elem ext ["egg-info" "pyc"] &&
       !startsWith "result" path;
 
@@ -71,8 +69,7 @@ let
 
   pythonGeneratedPackages = self: basePythonPackages.override (a: {
     inherit self;
-  })
-  // (scopedImport {
+  }) // (scopedImport {
     self = self;
     super = basePythonPackages;
     inherit pkgs;
@@ -80,18 +77,15 @@ let
   } ./pkgs/python-packages.nix);
 
   pythonOverrides = import ./pkgs/python-packages-overrides.nix {
-    inherit
-      basePythonPackages
-      pkgs;
+    inherit basePythonPackages pkgs;
   };
 
   version = builtins.readFile ./vcsserver/VERSION;
 
   pythonLocalOverrides = self: super: {
     rhodecode-vcsserver = super.rhodecode-vcsserver.override (attrs: {
-      inherit
-        doCheck
-        version;
+      inherit doCheck version;
+
       name = "rhodecode-vcsserver-${version}";
       releaseName = "RhodeCodeVCSServer-${version}";
       src = rhodecode-vcsserver-src;
@@ -110,6 +104,13 @@ let
       # Add VCSServer bin directory to path so that tests can find 'vcsserver'.
       preCheck = ''
         export PATH="$out/bin:$PATH"
+      '';
+
+      # put custom attrs here
+      checkPhase = ''
+        runHook preCheck
+        PYTHONHASHSEED=random py.test -p no:sugar -vv --cov-config=.coveragerc --cov=vcsserver --cov-report=term-missing vcsserver
+        runHook postCheck
       '';
 
       postInstall = ''
