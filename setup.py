@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # RhodeCode VCSServer provides access to different vcs backends via network.
 # Copyright (C) 2014-2016 RodeCode GmbH
 #
@@ -15,18 +16,57 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
+# Import early to make sure things are patched up properly
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-from codecs import open
-from os import path
-import pkgutil
+
+import os
 import sys
+import pkgutil
+import platform
+
+from pip.download import PipSession
+from pip.req import parse_requirements
+
+from codecs import open
 
 
-here = path.abspath(path.dirname(__file__))
+if sys.version_info < (2, 7):
+    raise Exception('VCSServer requires Python 2.7 or later')
 
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+here = os.path.abspath(os.path.dirname(__file__))
+
+# defines current platform
+__platform__ = platform.system()
+__license__ = 'GPL V3'
+__author__ = 'RhodeCode GmbH'
+__url__ = 'https://code.rhodecode.com'
+is_windows = __platform__ in ('Windows',)
+
+
+def _get_requirements(req_filename, exclude=None, extras=None):
+    extras = extras or []
+    exclude = exclude or []
+
+    try:
+        parsed = parse_requirements(
+            os.path.join(here, req_filename), session=PipSession())
+    except TypeError:
+        # try pip < 6.0.0, that doesn't support session
+        parsed = parse_requirements(os.path.join(here, req_filename))
+
+    requirements = []
+    for ir in parsed:
+        if ir.req and ir.name not in exclude:
+            requirements.append(str(ir.req))
+    return requirements + extras
+
+
+# requirements extract
+setup_requirements = ['pytest-runner']
+install_requirements = _get_requirements(
+    'requirements.txt', exclude=['setuptools'])
+test_requirements = _get_requirements(
+    'requirements_test.txt', extras=['configobj'])
 
 
 def get_version():
@@ -34,66 +74,55 @@ def get_version():
     return version.strip()
 
 
-class PyTest(TestCommand):
-    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+# additional files that goes into package itself
+package_data = {
+    '': ['*.txt', '*.rst'],
+    'configs': ['*.ini'],
+    'vcsserver': ['VERSION'],
+}
 
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = []
+description = 'Version Control System Server'
+keywords = ' '.join([
+    'CLI', 'RhodeCode', 'RhodeCode Enterprise', 'RhodeCode Tools'])
 
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
+# README/DESCRIPTION generation
+readme_file = 'README.rst'
+changelog_file = 'CHANGES.rst'
+try:
+    long_description = open(readme_file).read() + '\n\n' + \
+        open(changelog_file).read()
+except IOError as err:
+    sys.stderr.write(
+        "[WARNING] Cannot find file specified as long_description (%s)\n "
+        "or changelog (%s) skipping that file" % (readme_file, changelog_file))
+    long_description = description
 
 
 setup(
     name='rhodecode-vcsserver',
     version=get_version(),
-    description='Version Control System Server',
+    description=description,
     long_description=long_description,
-    url='http://www.rhodecode.com',
-    author='RhodeCode GmbH',
+    keywords=keywords,
+    license=__license__,
+    author=__author__,
     author_email='marcin@rhodecode.com',
-    cmdclass={'test': PyTest},
-    license='GPLv3',
+    url=__url__,
+    setup_requires=setup_requirements,
+    install_requires=install_requirements,
+    tests_require=test_requirements,
+    zip_safe=False,
+    packages=find_packages(exclude=["docs", "tests*"]),
+    package_data=package_data,
+    include_package_data=True,
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 6 - Mature',
         'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
         'Topic :: Software Development :: Version Control',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 2.7',
     ],
-    packages=find_packages(),
-    tests_require=[
-        'mock',
-        'pytest',
-        'pytest-sugar',
-        'WebTest',
-    ],
-    install_requires=[
-        'configobj',
-        'dulwich',
-        'hgsubversion',
-        'infrae.cache',
-        'mercurial',
-        'msgpack-python',
-        'pyramid',
-        'Pyro4',
-        'simplejson',
-        'subprocess32',
-        'waitress',
-        'WebOb',
-    ],
-    package_data={
-        'vcsserver': ['VERSION'],
-    },
     entry_points={
         'console_scripts': [
             'vcsserver=vcsserver.main:main',
