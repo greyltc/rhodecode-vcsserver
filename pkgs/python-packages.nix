@@ -132,6 +132,32 @@
       license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
+  cov-core = super.buildPythonPackage {
+    name = "cov-core-1.15.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [coverage];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/4b/87/13e75a47b4ba1be06f29f6d807ca99638bedc6b57fa491cd3de891ca2923/cov-core-1.15.0.tar.gz";
+      md5 = "f519d4cb4c4e52856afb14af52919fe6";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  coverage = super.buildPythonPackage {
+    name = "coverage-3.7.1";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/09/4f/89b06c7fdc09687bca507dc411c342556ef9c5a3b26756137a4878ff19bf/coverage-3.7.1.tar.gz";
+      md5 = "c47b36ceb17eaff3ecfab3bcd347d0df";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
   decorator = super.buildPythonPackage {
     name = "decorator-4.0.10";
     buildInputs = with self; [];
@@ -171,14 +197,40 @@
       license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
-  greenlet = super.buildPythonPackage {
-    name = "greenlet-0.4.7";
+  gevent = super.buildPythonPackage {
+    name = "gevent-1.1.2";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [greenlet];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/43/8f/cb3224a0e6ab663547f45c10d0651cfd52633fde4283bf68d627084df8cc/gevent-1.1.2.tar.gz";
+      md5 = "bb32a2f852a4997138014d5007215c6e";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  gprof2dot = super.buildPythonPackage {
+    name = "gprof2dot-2016.10.13";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/7a/9f/a1a0d9bdf3203ae1502c5a8434fe89d323599d78a106985bc327351a69d4/greenlet-0.4.7.zip";
-      md5 = "c2333a8ff30fa75c5d5ec0e67b461086";
+      url = "https://pypi.python.org/packages/a0/e0/73c71baed306f0402a00a94ffc7b2be94ad1296dfcb8b46912655b93154c/gprof2dot-2016.10.13.tar.gz";
+      md5 = "0125401f15fd2afe1df686a76c64a4fd";
+    };
+    meta = {
+      license = [ { fullName = "LGPL"; } ];
+    };
+  };
+  greenlet = super.buildPythonPackage {
+    name = "greenlet-0.4.10";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/67/62/ca2a95648666eaa2ffeb6a9b3964f21d419ae27f82f2e66b53da5b943fc4/greenlet-0.4.10.zip";
+      md5 = "bed0c4b3b896702131f4d5c72f87c41d";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -289,13 +341,13 @@
     };
   };
   msgpack-python = super.buildPythonPackage {
-    name = "msgpack-python-0.4.6";
+    name = "msgpack-python-0.4.8";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/15/ce/ff2840885789ef8035f66cd506ea05bdb228340307d5e71a7b1e3f82224c/msgpack-python-0.4.6.tar.gz";
-      md5 = "8b317669314cf1bc881716cccdaccb30";
+      url = "https://pypi.python.org/packages/21/27/8a1d82041c7a2a51fcc73675875a5f9ea06c2663e02fcfeb708be1d081a0/msgpack-python-0.4.8.tar.gz";
+      md5 = "dcd854fb41ee7584ebbf35e049e6be98";
     };
     meta = {
       license = [ pkgs.lib.licenses.asl20 ];
@@ -367,13 +419,13 @@
     };
   };
   py = super.buildPythonPackage {
-    name = "py-1.4.29";
+    name = "py-1.4.31";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/2a/bc/a1a4a332ac10069b8e5e25136a35e08a03f01fd6ab03d819889d79a1fd65/py-1.4.29.tar.gz";
-      md5 = "c28e0accba523a29b35a48bb703fb96c";
+      url = "https://pypi.python.org/packages/f4/9a/8dfda23f36600dd701c6722316ba8a3ab4b990261f83e7d3ffc6dfedf7ef/py-1.4.31.tar.gz";
+      md5 = "5d2c63c56dc3f2115ec35c066ecd582b";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -432,16 +484,94 @@
     };
   };
   pytest = super.buildPythonPackage {
-    name = "pytest-2.8.5";
+    name = "pytest-3.0.5";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [py];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/b1/3d/d7ea9b0c51e0cacded856e49859f0a13452747491e842c236bbab3714afe/pytest-2.8.5.zip";
-      md5 = "8493b06f700862f1294298d6c1b715a9";
+      url = "https://pypi.python.org/packages/a8/87/b7ca49efe52d2b4169f2bfc49aa5e384173c4619ea8e635f123a0dac5b75/pytest-3.0.5.tar.gz";
+      md5 = "cefd527b59332688bf5db4a10aa8a7cb";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  pytest-catchlog = super.buildPythonPackage {
+    name = "pytest-catchlog-1.2.2";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [py pytest];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/f2/2b/2faccdb1a978fab9dd0bf31cca9f6847fbe9184a0bdcc3011ac41dd44191/pytest-catchlog-1.2.2.zip";
+      md5 = "09d890c54c7456c818102b7ff8c182c8";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  pytest-cov = super.buildPythonPackage {
+    name = "pytest-cov-2.4.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [pytest coverage];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/00/c0/2bfd1fcdb9d407b8ac8185b1cb5ff458105c6b207a9a7f0e13032de9828f/pytest-cov-2.4.0.tar.gz";
+      md5 = "2fda09677d232acc99ec1b3c5831e33f";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal pkgs.lib.licenses.mit ];
+    };
+  };
+  pytest-profiling = super.buildPythonPackage {
+    name = "pytest-profiling-1.2.2";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [six pytest gprof2dot];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/73/e8/804681323bac0bc45c520ec34185ba8469008942266d0074699b204835c1/pytest-profiling-1.2.2.tar.gz";
+      md5 = "0a16d7dda2d23b91e9730fa4558cf728";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  pytest-runner = super.buildPythonPackage {
+    name = "pytest-runner-2.9";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/11/d4/c335ddf94463e451109e3494e909765c3e5205787b772e3b25ee8601b86a/pytest-runner-2.9.tar.gz";
+      md5 = "2212a2e34404b0960b2fdc2c469247b2";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  pytest-sugar = super.buildPythonPackage {
+    name = "pytest-sugar-0.7.1";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [pytest termcolor];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/03/97/05d988b4fa870e7373e8ee4582408543b9ca2bd35c3c67b569369c6f9c49/pytest-sugar-0.7.1.tar.gz";
+      md5 = "7400f7c11f3d572b2c2a3b60352d35fe";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
+  pytest-timeout = super.buildPythonPackage {
+    name = "pytest-timeout-1.2.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [pytest];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/cc/b7/b2a61365ea6b6d2e8881360ae7ed8dad0327ad2df89f2f0be4a02304deb2/pytest-timeout-1.2.0.tar.gz";
+      md5 = "83607d91aa163562c7ee835da57d061d";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit { fullName = "DFSG approved"; } ];
     };
   };
   repoze.lru = super.buildPythonPackage {
@@ -459,22 +589,22 @@
   };
   rhodecode-vcsserver = super.buildPythonPackage {
     name = "rhodecode-vcsserver-4.6.0";
-    buildInputs = with self; [mock pytest pytest-sugar WebTest];
+    buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [configobj dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid Pyro4 simplejson subprocess32 waitress WebOb];
+    propagatedBuildInputs = with self; [Beaker configobj dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb gevent greenlet gunicorn waitress Pyro4 serpent pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
     src = ./.;
     meta = {
-      license = [ pkgs.lib.licenses.gpl3 { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
+      license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
     };
   };
   serpent = super.buildPythonPackage {
-    name = "serpent-1.12";
+    name = "serpent-1.15";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/3b/19/1e0e83b47c09edaef8398655088036e7e67386b5c48770218ebb339fbbd5/serpent-1.12.tar.gz";
-      md5 = "05869ac7b062828b34f8f927f0457b65";
+      url = "https://pypi.python.org/packages/7b/38/b2b27673a882ff2ea5871bb3e3e6b496ebbaafd1612e51990ffb158b9254/serpent-1.15.tar.gz";
+      md5 = "e27b1aad5c218e16442f52abb7c7053a";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -551,11 +681,24 @@
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://github.com/jelmer/subvertpy/archive/subvertpy-0.9.3.tar.gz";
-      md5 = "7b745a47128050ea5a73efcd913ec1cf";
+      url = "https://code.rhodecode.com/upstream/subvertpy/archive/subvertpy-0.9.3.tar.gz?md5=4e49da2fe07608239cc9a80a7bb8f33c";
+      md5 = "4e49da2fe07608239cc9a80a7bb8f33c";
     };
     meta = {
       license = [ pkgs.lib.licenses.lgpl21Plus ];
+    };
+  };
+  termcolor = super.buildPythonPackage {
+    name = "termcolor-1.1.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/8a/48/a76be51647d0eb9f10e2a4511bf3ffb8cc1e6b14e9e4fab46173aa79f981/termcolor-1.1.0.tar.gz";
+      md5 = "043e89644f8909d462fbbfa511c768df";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
     };
   };
   traitlets = super.buildPythonPackage {
@@ -598,13 +741,13 @@
     };
   };
   waitress = super.buildPythonPackage {
-    name = "waitress-0.8.9";
+    name = "waitress-1.0.1";
     buildInputs = with self; [];
     doCheck = false;
-    propagatedBuildInputs = with self; [setuptools];
+    propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/ee/65/fc9dee74a909a1187ca51e4f15ad9c4d35476e4ab5813f73421505c48053/waitress-0.8.9.tar.gz";
-      md5 = "da3f2e62b3676be5dd630703a68e2a04";
+      url = "https://pypi.python.org/packages/78/7d/84d11b96c3f60164dec3bef4a859a03aeae0231aa93f57fbe0d05fa4ff36/waitress-1.0.1.tar.gz";
+      md5 = "dda92358a7569669086155923a46e57c";
     };
     meta = {
       license = [ pkgs.lib.licenses.zpt21 ];
@@ -637,13 +780,13 @@
     };
   };
   zope.deprecation = super.buildPythonPackage {
-    name = "zope.deprecation-4.1.1";
+    name = "zope.deprecation-4.1.2";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [setuptools];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/c5/c9/e760f131fcde817da6c186a3f4952b8f206b7eeb269bb6f0836c715c5f20/zope.deprecation-4.1.1.tar.gz";
-      md5 = "ce261b9384066f7e13b63525778430cb";
+      url = "https://pypi.python.org/packages/c1/d3/3919492d5e57d8dd01b36f30b34fc8404a30577392b1eb817c303499ad20/zope.deprecation-4.1.2.tar.gz";
+      md5 = "e9a663ded58f4f9f7881beb56cae2782";
     };
     meta = {
       license = [ pkgs.lib.licenses.zpt21 ];
@@ -665,30 +808,5 @@
 
 ### Test requirements
 
-  pytest-sugar = super.buildPythonPackage {
-    name = "pytest-sugar-0.7.1";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [pytest termcolor];
-    src = fetchurl {
-      url = "https://pypi.python.org/packages/03/97/05d988b4fa870e7373e8ee4582408543b9ca2bd35c3c67b569369c6f9c49/pytest-sugar-0.7.1.tar.gz";
-      md5 = "7400f7c11f3d572b2c2a3b60352d35fe";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.bsdOriginal ];
-    };
-  };
-  termcolor = super.buildPythonPackage {
-    name = "termcolor-1.1.0";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [];
-    src = fetchurl {
-      url = "https://pypi.python.org/packages/8a/48/a76be51647d0eb9f10e2a4511bf3ffb8cc1e6b14e9e4fab46173aa79f981/termcolor-1.1.0.tar.gz";
-      md5 = "043e89644f8909d462fbbfa511c768df";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
+  
 }
