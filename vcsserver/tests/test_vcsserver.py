@@ -21,7 +21,7 @@ import time
 
 import pytest
 
-from fixture import TestINI
+from fixture import ContextINI
 
 
 @pytest.mark.parametrize("arguments, expected_texts", [
@@ -66,7 +66,7 @@ def test_vcsserver_with_config(vcsserver_port):
         {'DEFAULT': {'port': vcsserver_port}},
     ]
 
-    with TestINI('test.ini', ini_def) as new_test_ini_path:
+    with ContextINI('test.ini', ini_def) as new_test_ini_path:
         output = call_vcs_server_with_arguments(
             ['--config=' + new_test_ini_path])
 
@@ -85,7 +85,7 @@ def test_vcsserver_with_config_cli_overwrite(vcsserver_port):
         {'DEFAULT': {'threadpool_size': '111'}},
         {'DEFAULT': {'timeout': '0'}},
     ]
-    with TestINI('test.ini', ini_def) as new_test_ini_path:
+    with ContextINI('test.ini', ini_def) as new_test_ini_path:
         output = call_vcs_server_with_arguments([
             '--config=' + new_test_ini_path,
             '--host=128.0.0.1',

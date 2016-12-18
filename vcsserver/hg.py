@@ -389,14 +389,14 @@ class HgRemote(object):
         repo = self._factory.repo(wire)
 
         if file_filter:
-            filter = match(file_filter[0], '', [file_filter[1]])
+            match_filter = match(file_filter[0], '', [file_filter[1]])
         else:
-            filter = file_filter
+            match_filter = file_filter
         opts = diffopts(git=opt_git, ignorews=opt_ignorews, context=context)
 
         try:
             return "".join(patch.diff(
-                repo, node1=rev1, node2=rev2, match=filter, opts=opts))
+                repo, node1=rev1, node2=rev2, match=match_filter, opts=opts))
         except RepoLookupError:
             raise exceptions.LookupException()
 

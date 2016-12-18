@@ -22,7 +22,7 @@ import tempfile
 import configobj
 
 
-class TestINI(object):
+class ContextINI(object):
     """
     Allows to create a new test.ini file as a copy of existing one with edited
     data. If existing file is not present, it creates a new one. Example usage::
