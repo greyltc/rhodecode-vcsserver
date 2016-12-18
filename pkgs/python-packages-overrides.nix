@@ -40,16 +40,6 @@ self: super: {
     '';
   });
 
-  Pyro4 = super.Pyro4.override (attrs: {
-    # TODO: Was not able to generate this version, needs further
-    # investigation.
-    name = "Pyro4-4.35";
-    src = pkgs.fetchurl {
-      url = "https://pypi.python.org/packages/source/P/Pyro4/Pyro4-4.35.src.tar.gz";
-      md5 = "cbe6cb855f086a0f092ca075005855f3";
-    };
-  });
-
   # Avoid that setuptools is replaced, this leads to trouble
   # with buildPythonPackage.
   setuptools = basePythonPackages.setuptools;
