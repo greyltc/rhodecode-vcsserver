@@ -20,6 +20,7 @@ import locale
 import logging
 import uuid
 import wsgiref.util
+import traceback
 from itertools import chain
 
 import msgpack
@@ -227,6 +228,8 @@ class HTTPApplication(object):
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
+            tb_info = traceback.format_exc()
+
             type_ = e.__class__.__name__
             if type_ not in self.ALLOWED_EXCEPTIONS:
                 type_ = None
@@ -235,6 +238,7 @@ class HTTPApplication(object):
                 'id': payload.get('id'),
                 'error': {
                     'message': e.message,
+                    'traceback': tb_info,
                     'type': type_
                 }
             }
