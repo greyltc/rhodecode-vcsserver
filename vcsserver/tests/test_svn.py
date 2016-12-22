@@ -40,7 +40,7 @@ INVALID_CERTIFICATE_STDERR = '\n'.join([
 @pytest.mark.parametrize('stderr,expected_reason', [
     (INVALID_CERTIFICATE_STDERR, 'INVALID_CERTIFICATE'),
     ('svnrdump: E123456', 'UNKNOWN'),
-])
+], ids=['invalid-cert-stderr', 'svnrdump-err-123456'])
 @pytest.mark.xfail(sys.platform == "cygwin",
                    reason="SVN not packaged for Cygwin")
 def test_import_remote_repository_certificate_error(stderr, expected_reason):
