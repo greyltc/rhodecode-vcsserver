@@ -375,11 +375,18 @@ class SvnRemote(object):
 
     def diff(self, wire, rev1, rev2, path1=None, path2=None,
              ignore_whitespace=False, context=3):
+
         wire.update(cache=False)
         repo = self._factory.repo(wire)
         diff_creator = SvnDiffer(
             repo, rev1, path1, rev2, path2, ignore_whitespace, context)
-        return diff_creator.generate_diff()
+        try:
+            return diff_creator.generate_diff()
+        except svn.core.SubversionException as e:
+            log.exception(
+                "Error during diff operation operation. "
+                "Path might not exist %s, %s" % (path1, path2))
+            return ""
 
 
 class SvnDiffer(object):
@@ -450,23 +457,30 @@ class SvnDiffer(object):
                 buf, change, path, self.tgt_path, path, self.src_path)
 
     def _generate_file_diff(self, buf):
-            change = None
-            if self.src_kind == svn.core.svn_node_none:
-                change = "add"
-            elif self.tgt_kind == svn.core.svn_node_none:
-                change = "delete"
-            tgt_base, tgt_path = vcspath.split(self.tgt_path)
-            src_base, src_path = vcspath.split(self.src_path)
-            self._generate_node_diff(
-                buf, change, tgt_path, tgt_base, src_path, src_base)
+        change = None
+        if self.src_kind == svn.core.svn_node_none:
+            change = "add"
+        elif self.tgt_kind == svn.core.svn_node_none:
+            change = "delete"
+        tgt_base, tgt_path = vcspath.split(self.tgt_path)
+        src_base, src_path = vcspath.split(self.src_path)
+        self._generate_node_diff(
+            buf, change, tgt_path, tgt_base, src_path, src_base)
 
     def _generate_node_diff(
             self, buf, change, tgt_path, tgt_base, src_path, src_base):
+
+        if self.src_rev == self.tgt_rev and tgt_base == src_base:
+            # makes consistent behaviour with git/hg to return empty diff if
+            # we compare same revisions
+            return
+
         tgt_full_path = vcspath.join(tgt_base, tgt_path)
         src_full_path = vcspath.join(src_base, src_path)
 
         self.binary_content = False
         mime_type = self._get_mime_type(tgt_full_path)
+
         if mime_type and not mime_type.startswith('text'):
             self.binary_content = True
             buf.write("=" * 67 + '\n')
@@ -480,11 +494,21 @@ class SvnDiffer(object):
         if change == 'add':
             # TODO: johbo: SVN is missing a zero here compared to git
             buf.write("new file mode 10644\n")
+
+            #TODO(marcink): intro to binary detection of svn patches
+            # if self.binary_content:
+            #     buf.write('GIT binary patch\n')
+
             buf.write("--- /dev/null\t(revision 0)\n")
             src_lines = []
         else:
             if change == 'delete':
                 buf.write("deleted file mode 10644\n")
+
+            #TODO(marcink): intro to binary detection of svn patches
+            # if self.binary_content:
+            #     buf.write('GIT binary patch\n')
+
             buf.write("--- a/%s\t(revision %s)\n" % (
                 src_path, self.src_rev))
             src_lines = self._svn_readlines(self.src_root, src_full_path)
