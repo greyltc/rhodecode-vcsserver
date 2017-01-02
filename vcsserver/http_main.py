@@ -155,7 +155,7 @@ class HTTPApplication(object):
 
     def __init__(self, settings=None):
         self.config = Configurator(settings=settings)
-        locale = settings.get('', 'en_US.UTF-8')
+        locale = settings.get('locale', '') or 'en_US.UTF-8'
         vcs = VCS(locale=locale, cache_config=settings)
         self._remotes = {
             'hg': vcs._hg_remote,
