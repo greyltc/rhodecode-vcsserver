@@ -207,6 +207,10 @@ class HTTPApplication(object):
             self.handle_vcs_exception, context=Exception,
             custom_predicates=[self.is_vcs_exception])
 
+        self.config.add_view(
+            self.general_error_handler, context=Exception)
+
+
     def wsgi_app(self):
         return self.config.make_wsgi_app()
 
@@ -357,6 +361,12 @@ class HTTPApplication(object):
                 title=exception.message, status_code=status_code)
 
         # Re-raise exception if we can not handle it.
+        raise exception
+
+    def general_error_handler(self, exception, request):
+        log.exception(
+            'error occurred handling this request for path: %s',
+            request.path)
         raise exception
 
 
