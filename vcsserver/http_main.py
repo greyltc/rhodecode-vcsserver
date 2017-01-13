@@ -203,6 +203,11 @@ class HTTPApplication(object):
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
         self.config.add_view(self.git_stream(), route_name='stream_git')
+
+        def notfound(request):
+            return {'status': '404 NOT FOUND'}
+        self.config.add_notfound_view(notfound, renderer='json')
+
         self.config.add_view(
             self.handle_vcs_exception, context=Exception,
             custom_predicates=[self.is_vcs_exception])
