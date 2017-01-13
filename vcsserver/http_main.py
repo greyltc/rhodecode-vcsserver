@@ -199,7 +199,8 @@ class HTTPApplication(object):
         self.config.add_view(self.hg_proxy(), route_name='hg_proxy')
         self.config.add_view(self.git_proxy(), route_name='git_proxy')
         self.config.add_view(
-            self.vcs_view, route_name='vcs', renderer='msgpack')
+            self.vcs_view, route_name='vcs', renderer='msgpack',
+            custom_predicates=[self.is_vcs_view])
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
         self.config.add_view(self.git_stream(), route_name='stream_git')
@@ -214,7 +215,6 @@ class HTTPApplication(object):
 
         self.config.add_view(
             self.general_error_handler, context=Exception)
-
 
     def wsgi_app(self):
         return self.config.make_wsgi_app()
@@ -350,6 +350,14 @@ class HTTPApplication(object):
                     repo_path, repo_name, config)
                 return app(environ, start_response)
             return _git_stream
+
+    def is_vcs_view(self, context, request):
+        """
+        View predicate that returns true if given backend is supported by
+        defined remotes.
+        """
+        backend = request.matchdict.get('backend')
+        return backend in self._remotes
 
     def is_vcs_exception(self, context, request):
         """
