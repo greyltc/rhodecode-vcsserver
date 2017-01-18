@@ -216,6 +216,10 @@ class HTTPApplication(object):
         self.config.add_view(
             self.general_error_handler, context=Exception)
 
+        self.config.add_tween(
+            'vcsserver.tweens.RequestWrapperTween',
+        )
+
     def wsgi_app(self):
         return self.config.make_wsgi_app()
 
@@ -234,6 +238,7 @@ class HTTPApplication(object):
                 pass
             args.insert(0, wire)
 
+        log.debug('method called:%s with kwargs:%s', method, kwargs)
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
