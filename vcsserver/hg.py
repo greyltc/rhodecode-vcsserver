@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2016 RodeCode GmbH
+# Copyright (C) 2014-2017 RodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -389,14 +389,14 @@ class HgRemote(object):
         repo = self._factory.repo(wire)
 
         if file_filter:
-            filter = match(file_filter[0], '', [file_filter[1]])
+            match_filter = match(file_filter[0], '', [file_filter[1]])
         else:
-            filter = file_filter
+            match_filter = file_filter
         opts = diffopts(git=opt_git, ignorews=opt_ignorews, context=context)
 
         try:
             return "".join(patch.diff(
-                repo, node1=rev1, node2=rev2, match=filter, opts=opts))
+                repo, node1=rev1, node2=rev2, match=match_filter, opts=opts))
         except RepoLookupError:
             raise exceptions.LookupException()
 

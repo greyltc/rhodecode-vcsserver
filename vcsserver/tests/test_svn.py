@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2016 RodeCode GmbH
+# Copyright (C) 2014-2017 RodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ INVALID_CERTIFICATE_STDERR = '\n'.join([
 @pytest.mark.parametrize('stderr,expected_reason', [
     (INVALID_CERTIFICATE_STDERR, 'INVALID_CERTIFICATE'),
     ('svnrdump: E123456', 'UNKNOWN'),
-])
+], ids=['invalid-cert-stderr', 'svnrdump-err-123456'])
 @pytest.mark.xfail(sys.platform == "cygwin",
                    reason="SVN not packaged for Cygwin")
 def test_import_remote_repository_certificate_error(stderr, expected_reason):
