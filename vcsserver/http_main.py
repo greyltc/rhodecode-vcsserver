@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2016 RodeCode GmbH
+# Copyright (C) 2014-2017 RodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ import locale
 import logging
 import uuid
 import wsgiref.util
+import traceback
 from itertools import chain
 
 import msgpack
@@ -154,7 +155,7 @@ class HTTPApplication(object):
 
     def __init__(self, settings=None):
         self.config = Configurator(settings=settings)
-        locale = settings.get('', 'en_US.UTF-8')
+        locale = settings.get('locale', '') or 'en_US.UTF-8'
         vcs = VCS(locale=locale, cache_config=settings)
         self._remotes = {
             'hg': vcs._hg_remote,
@@ -198,13 +199,26 @@ class HTTPApplication(object):
         self.config.add_view(self.hg_proxy(), route_name='hg_proxy')
         self.config.add_view(self.git_proxy(), route_name='git_proxy')
         self.config.add_view(
-            self.vcs_view, route_name='vcs', renderer='msgpack')
+            self.vcs_view, route_name='vcs', renderer='msgpack',
+            custom_predicates=[self.is_vcs_view])
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
         self.config.add_view(self.git_stream(), route_name='stream_git')
+
+        def notfound(request):
+            return {'status': '404 NOT FOUND'}
+        self.config.add_notfound_view(notfound, renderer='json')
+
         self.config.add_view(
             self.handle_vcs_exception, context=Exception,
             custom_predicates=[self.is_vcs_exception])
+
+        self.config.add_view(
+            self.general_error_handler, context=Exception)
+
+        self.config.add_tween(
+            'vcsserver.tweens.RequestWrapperTween',
+        )
 
     def wsgi_app(self):
         return self.config.make_wsgi_app()
@@ -224,9 +238,12 @@ class HTTPApplication(object):
                 pass
             args.insert(0, wire)
 
+        log.debug('method called:%s with kwargs:%s', method, kwargs)
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
+            tb_info = traceback.format_exc()
+
             type_ = e.__class__.__name__
             if type_ not in self.ALLOWED_EXCEPTIONS:
                 type_ = None
@@ -235,6 +252,7 @@ class HTTPApplication(object):
                 'id': payload.get('id'),
                 'error': {
                     'message': e.message,
+                    'traceback': tb_info,
                     'type': type_
                 }
             }
@@ -338,6 +356,14 @@ class HTTPApplication(object):
                 return app(environ, start_response)
             return _git_stream
 
+    def is_vcs_view(self, context, request):
+        """
+        View predicate that returns true if given backend is supported by
+        defined remotes.
+        """
+        backend = request.matchdict.get('backend')
+        return backend in self._remotes
+
     def is_vcs_exception(self, context, request):
         """
         View predicate that returns true if the context object is a VCS
@@ -353,6 +379,12 @@ class HTTPApplication(object):
                 title=exception.message, status_code=status_code)
 
         # Re-raise exception if we can not handle it.
+        raise exception
+
+    def general_error_handler(self, exception, request):
+        log.exception(
+            'error occurred handling this request for path: %s',
+            request.path)
         raise exception
 
 
