@@ -8,8 +8,8 @@ hgsubversion==1.8.6
 infrae.cache==1.0.1
 mercurial==4.0.2
 msgpack-python==0.4.8
-pyramid==1.6.1
 pyramid-jinja2==2.5
+pyramid==1.7.4
 pyramid-mako==1.0.2
 repoze.lru==0.6
 simplejson==3.7.2
