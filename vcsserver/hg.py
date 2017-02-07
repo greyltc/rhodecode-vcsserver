@@ -674,12 +674,10 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def ancestor(self, wire, revision1, revision2):
         repo = self._factory.repo(wire)
-        baseui = self._factory._create_config(wire['config'])
-        output = io.BytesIO()
-        baseui.write = output.write
-        commands.debugancestor(baseui, repo, revision1, revision2)
-
-        return output.getvalue()
+        changelog = repo.changelog
+        lookup = repo.lookup
+        a = changelog.ancestor(lookup(revision1), lookup(revision2))
+        return hex(a)
 
     @reraise_safe_exceptions
     def push(self, wire, revisions, dest_path, hooks=True,
