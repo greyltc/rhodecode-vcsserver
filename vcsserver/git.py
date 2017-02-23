@@ -59,9 +59,12 @@ def reraise_safe_exceptions(func):
         except (HangupException, UnexpectedCommandError) as e:
             raise exceptions.VcsException(e.message)
         except Exception as e:
-            if not hasattr(e, '_vcs_kind'):
-                log.exception("Unhandled exception in git remote call")
-                raise_from_original(exceptions.UnhandledException)
+            # NOTE(marcink): becuase of how dulwich handles some exceptions
+            # (KeyError on empty repos), we cannot track this and catch all
+            # exceptions, it's an exceptions from other handlers
+            #if not hasattr(e, '_vcs_kind'):
+                #log.exception("Unhandled exception in git remote call")
+                #raise_from_original(exceptions.UnhandledException)
             raise
     return wrapper
 
