@@ -35,7 +35,7 @@ from dulwich.server import update_server_info
 
 from vcsserver import exceptions, settings, subprocessio
 from vcsserver.utils import safe_str
-from vcsserver.base import RepoFactory, obfuscate_qs
+from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
 
@@ -58,6 +58,11 @@ def reraise_safe_exceptions(func):
             raise exceptions.LookupException(e.message)
         except (HangupException, UnexpectedCommandError) as e:
             raise exceptions.VcsException(e.message)
+        except Exception as e:
+            if not hasattr(e, '_vcs_kind'):
+                log.exception("Unhandled exception in git remote call")
+                raise_from_original(exceptions.UnhandledException)
+            raise
     return wrapper
 
 

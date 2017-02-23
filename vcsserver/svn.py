@@ -33,7 +33,7 @@ import svn.repos
 
 from vcsserver import svn_diff
 from vcsserver import exceptions
-from vcsserver.base import RepoFactory
+from vcsserver.base import RepoFactory, raise_from_original
 
 
 log = logging.getLogger(__name__)
@@ -60,17 +60,6 @@ def reraise_safe_exceptions(func):
                 raise_from_original(exceptions.UnhandledException)
             raise
     return wrapper
-
-
-def raise_from_original(new_type):
-    """
-    Raise a new exception type with original args and traceback.
-    """
-    _, original, traceback = sys.exc_info()
-    try:
-        raise new_type(*original.args), None, traceback
-    finally:
-        del traceback
 
 
 class SubversionFactory(RepoFactory):

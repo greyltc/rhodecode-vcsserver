@@ -17,12 +17,14 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
+import io
+import sys
+import json
+import logging
 import collections
 import importlib
-import io
-import json
 import subprocess
-import sys
+
 from httplib import HTTPConnection
 
 
@@ -32,6 +34,8 @@ import Pyro4
 import simplejson as json
 
 from vcsserver import exceptions
+
+log = logging.getLogger(__name__)
 
 
 class HooksHttpClient(object):
@@ -105,6 +109,11 @@ class GitMessageWriter(RemoteMessageWriter):
 
 def _handle_exception(result):
     exception_class = result.get('exception')
+    exception_traceback = result.get('exception_traceback')
+
+    if exception_traceback:
+        log.error('Got traceback from remote call:%s', exception_traceback)
+
     if exception_class == 'HTTPLockedRC':
         raise exceptions.RepositoryLockedException(*result['exception_args'])
     elif exception_class == 'RepositoryError':
