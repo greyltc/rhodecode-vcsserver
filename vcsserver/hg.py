@@ -18,7 +18,6 @@
 import io
 import logging
 import stat
-import sys
 import urllib
 import urllib2
 
@@ -28,7 +27,7 @@ from mercurial import commands
 from mercurial import unionrepo
 
 from vcsserver import exceptions
-from vcsserver.base import RepoFactory, obfuscate_qs
+from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
@@ -89,17 +88,6 @@ def reraise_safe_exceptions(func):
                 raise_from_original(exceptions.UnhandledException)
             raise
     return wrapper
-
-
-def raise_from_original(new_type):
-    """
-    Raise a new exception type with original args and traceback.
-    """
-    _, original, traceback = sys.exc_info()
-    try:
-        raise new_type(*original.args), None, traceback
-    finally:
-        del traceback
 
 
 class MercurialFactory(RepoFactory):

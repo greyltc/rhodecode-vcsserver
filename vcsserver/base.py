@@ -15,6 +15,8 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
+import sys
+import traceback
 import logging
 import urlparse
 
@@ -80,3 +82,17 @@ def obfuscate_qs(query_string):
 
     return '&'.join('{}{}'.format(
         k, '={}'.format(v) if v else '') for k, v in parsed)
+
+
+def raise_from_original(new_type):
+    """
+    Raise a new exception type with original args and traceback.
+    """
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+
+    traceback.format_exception(exc_type, exc_value, exc_traceback)
+
+    try:
+        raise new_type(*exc_value.args), None, exc_traceback
+    finally:
+        del exc_traceback
