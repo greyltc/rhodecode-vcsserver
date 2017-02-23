@@ -153,8 +153,10 @@ class HTTPApplication(object):
     remote_wsgi = remote_wsgi
     _use_echo_app = False
 
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, global_config=None):
         self.config = Configurator(settings=settings)
+        self.global_config = global_config
+
         locale = settings.get('locale', '') or 'en_US.UTF-8'
         vcs = VCS(locale=locale, cache_config=settings)
         self._remotes = {
@@ -273,12 +275,26 @@ class HTTPApplication(object):
 
     def service_view(self, request):
         import vcsserver
+        import ConfigParser as configparser
+
         payload = msgpack.unpackb(request.body, use_list=True)
+
+        try:
+            path = self.global_config['__file__']
+            config = configparser.ConfigParser()
+            config.read(path)
+            parsed_ini = config
+            if parsed_ini.has_section('server:main'):
+                parsed_ini = dict(parsed_ini.items('server:main'))
+        except Exception:
+            log.exception('Failed to read .ini file for display')
+            parsed_ini = {}
+
         resp = {
             'id': payload.get('id'),
             'result': dict(
                 version=vcsserver.__version__,
-                config={},
+                config=parsed_ini,
                 payload=payload,
             )
         }
@@ -404,5 +420,5 @@ def main(global_config, **settings):
     if MercurialFactory:
         hgpatches.patch_largefiles_capabilities()
         hgpatches.patch_subrepo_type_mapping()
-    app = HTTPApplication(settings=settings)
+    app = HTTPApplication(settings=settings, global_config=global_config)
     return app.wsgi_app()
