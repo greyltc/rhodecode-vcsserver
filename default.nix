@@ -89,6 +89,7 @@ let
       name = "rhodecode-vcsserver-${version}";
       releaseName = "RhodeCodeVCSServer-${version}";
       src = rhodecode-vcsserver-src;
+      dontStrip = true; # prevent strip, we don't need it.
 
       propagatedBuildInputs = attrs.propagatedBuildInputs ++ ([
         pkgs.git
