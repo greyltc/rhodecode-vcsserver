@@ -315,13 +315,13 @@
     };
   };
   mercurial = super.buildPythonPackage {
-    name = "mercurial-4.1";
+    name = "mercurial-4.1.1";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/d4/fb/2068126deba02802ba556da217b891b3480056b51f83591c9178b3d64d80/mercurial-4.1.tar.gz";
-      md5 = "59c7072a70c8b41dbde801f935c47aea";
+      url = "https://pypi.python.org/packages/53/62/73cabfea5e36a5c8be371d540d8376f208f523dfe125d45f30e77965a206/mercurial-4.1.1.tar.gz";
+      md5 = "7ed649e02aab5d5e532b4fe1617a2a26";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 pkgs.lib.licenses.gpl2Plus ];
