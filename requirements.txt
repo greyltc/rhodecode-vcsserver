@@ -1,4 +1,4 @@
-# core
+## core
 setuptools==30.1.0
 
 Beaker==1.7.0
@@ -6,7 +6,7 @@ configobj==5.0.6
 dulwich==0.13.0
 hgsubversion==1.8.6
 infrae.cache==1.0.1
-mercurial==4.1.0
+mercurial==4.1.1
 msgpack-python==0.4.8
 pyramid-jinja2==2.5
 pyramid==1.7.4
