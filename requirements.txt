@@ -3,6 +3,7 @@ setuptools==30.1.0
 
 Beaker==1.7.0
 configobj==5.0.6
+decorator==4.0.11
 dulwich==0.13.0
 hgsubversion==1.8.6
 infrae.cache==1.0.1
