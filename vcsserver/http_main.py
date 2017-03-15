@@ -211,12 +211,7 @@ class HTTPApplication(object):
             return {'status': '404 NOT FOUND'}
         self.config.add_notfound_view(notfound, renderer='json')
 
-        self.config.add_view(
-            self.handle_vcs_exception, context=Exception,
-            custom_predicates=[self.is_vcs_exception])
-
-        self.config.add_view(
-            self.general_error_handler, context=Exception)
+        self.config.add_view(self.handle_vcs_exception, context=Exception)
 
         self.config.add_tween(
             'vcsserver.tweens.RequestWrapperTween',
@@ -380,27 +375,17 @@ class HTTPApplication(object):
         backend = request.matchdict.get('backend')
         return backend in self._remotes
 
-    def is_vcs_exception(self, context, request):
-        """
-        View predicate that returns true if the context object is a VCS
-        exception.
-        """
-        return hasattr(context, '_vcs_kind')
-
     def handle_vcs_exception(self, exception, request):
-        if exception._vcs_kind == 'repo_locked':
+        _vcs_kind = getattr(exception, '_vcs_kind', '')
+        if _vcs_kind == 'repo_locked':
             # Get custom repo-locked status code if present.
             status_code = request.headers.get('X-RC-Locked-Status-Code')
             return HTTPRepoLocked(
                 title=exception.message, status_code=status_code)
 
         # Re-raise exception if we can not handle it.
-        raise exception
-
-    def general_error_handler(self, exception, request):
         log.exception(
-            'error occurred handling this request for path: %s',
-            request.path)
+            'error occurred handling this request for path: %s', request.path)
         raise exception
 
 
