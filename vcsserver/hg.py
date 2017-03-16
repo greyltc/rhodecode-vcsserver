@@ -25,6 +25,7 @@ from hgext import largefiles, rebase
 from hgext.strip import strip as hgext_strip
 from mercurial import commands
 from mercurial import unionrepo
+from mercurial import verify
 
 from vcsserver import exceptions
 from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
@@ -584,6 +585,21 @@ class HgRemote(object):
         ctx = repo[revision]
         hgext_strip(
             repo.baseui, repo, ctx.node(), update=update, backup=backup)
+
+    @reraise_safe_exceptions
+    def verify(self, wire,):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        baseui.setconfig('ui', 'quiet', 'false')
+        output = io.BytesIO()
+
+        def write(data, **unused_kwargs):
+            output.write(data)
+        baseui.write = write
+
+        repo.ui = baseui
+        verify.verify(repo)
+        return output.getvalue()
 
     @reraise_safe_exceptions
     def tag(self, wire, name, revision, message, local, user,
