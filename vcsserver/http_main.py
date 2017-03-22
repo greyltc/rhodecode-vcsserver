@@ -30,6 +30,7 @@ from pyramid.config import Configurator
 from pyramid.wsgi import wsgiapp
 
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
+from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
 from vcsserver.echo_stub.echo_app import EchoApp
 from vcsserver.exceptions import HTTPRepoLocked
@@ -40,11 +41,13 @@ try:
 except ImportError:
     GitFactory = None
     GitRemote = None
+
 try:
     from vcsserver.hg import MercurialFactory, HgRemote
 except ImportError:
     MercurialFactory = None
     HgRemote = None
+
 try:
     from vcsserver.svn import SubversionFactory, SvnRemote
 except ImportError:
@@ -362,9 +365,31 @@ class HTTPApplication(object):
                 config = msgpack.unpackb(packed_config)
 
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
-                app = scm_app.create_git_wsgi_app(
-                    repo_path, repo_name, config)
+                content_type = environ.get('CONTENT_TYPE', '')
+
+                path = environ['PATH_INFO']
+                is_lfs_request = GIT_LFS_CONTENT_TYPE in content_type
+                log.debug(
+                    'LFS: Detecting if request `%s` is LFS server path based '
+                    'on content type:`%s`, is_lfs:%s',
+                    path, content_type, is_lfs_request)
+
+                if not is_lfs_request:
+                    # fallback detection by path
+                    if GIT_LFS_PROTO_PAT.match(path):
+                        is_lfs_request = True
+                    log.debug(
+                        'LFS: fallback detection by path of: `%s`, is_lfs:%s',
+                        path, is_lfs_request)
+
+                if is_lfs_request:
+                    app = scm_app.create_git_lfs_wsgi_app(
+                        repo_path, repo_name, config)
+                else:
+                    app = scm_app.create_git_wsgi_app(
+                        repo_path, repo_name, config)
                 return app(environ, start_response)
+
             return _git_stream
 
     def is_vcs_view(self, context, request):
