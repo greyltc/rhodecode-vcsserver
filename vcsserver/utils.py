@@ -16,8 +16,23 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
 
+def safe_int(val, default=None):
+    """
+    Returns int() of val if val is not convertable to int use default
+    instead
 
-# TODO: johbo: That's a copy from rhodecode
+    :param val:
+    :param default:
+    """
+
+    try:
+        val = int(val)
+    except (ValueError, TypeError):
+        val = default
+
+    return val
+
+
 def safe_str(unicode_, to_encoding=['utf8']):
     """
     safe str function. Does few trick to turn unicode_ into string

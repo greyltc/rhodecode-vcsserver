@@ -15,8 +15,8 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-import logging
 import os
+import logging
 
 import mercurial
 import mercurial.error
@@ -25,7 +25,7 @@ import mercurial.hgweb.hgweb_mod
 import mercurial.hgweb.protocol
 import webob.exc
 
-from vcsserver import pygrack, exceptions, settings
+from vcsserver import pygrack, exceptions, settings, git_lfs
 
 
 log = logging.getLogger(__name__)
@@ -132,6 +132,9 @@ def create_hg_wsgi_app(repo_path, repo_name, config):
 
 
 class GitHandler(object):
+    """
+    Handler for Git operations like push/pull etc
+    """
     def __init__(self, repo_location, repo_name, git_path, update_server_info,
                  extras):
         if not os.path.isdir(repo_location):
@@ -172,3 +175,35 @@ def create_git_wsgi_app(repo_path, repo_name, config):
         repo_path, repo_name, git_path, update_server_info, config)
 
     return app
+
+
+class GitLFSHandler(object):
+    """
+    Handler for Git LFS operations
+    """
+
+    def __init__(self, repo_location, repo_name, git_path, update_server_info,
+                 extras):
+        if not os.path.isdir(repo_location):
+            raise OSError(repo_location)
+        self.content_path = repo_location
+        self.repo_name = repo_name
+        self.repo_location = repo_location
+        self.extras = extras
+        self.git_path = git_path
+        self.update_server_info = update_server_info
+
+    def get_app(self, git_lfs_enabled, git_lfs_store_path):
+        app = git_lfs.create_app(git_lfs_enabled, git_lfs_store_path)
+        return app
+
+
+def create_git_lfs_wsgi_app(repo_path, repo_name, config):
+    git_path = settings.GIT_EXECUTABLE
+    update_server_info = config.pop('git_update_server_info')
+    git_lfs_enabled = config.pop('git_lfs_enabled')
+    git_lfs_store_path = config.pop('git_lfs_store_path')
+    app = GitLFSHandler(
+        repo_path, repo_name, git_path, update_server_info, config)
+
+    return app.get_app(git_lfs_enabled, git_lfs_store_path)
