@@ -377,6 +377,10 @@ class SvnRemote(object):
                 "Path might not exist %s, %s" % (path1, path2))
             return ""
 
+    @reraise_safe_exceptions
+    def is_large_file(self, wire, path):
+        return False
+
 
 class SvnDiffer(object):
     """

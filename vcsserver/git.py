@@ -38,7 +38,7 @@ from vcsserver.utils import safe_str
 from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
-
+from vcsserver.git_lfs.lib import LFSOidStore
 
 DIR_STAT = stat.S_IFDIR
 FILE_MODE = stat.S_IFMT
@@ -105,6 +105,11 @@ class GitRemote(object):
             "_commit": self.revision,
         }
 
+    def _wire_to_config(self, wire):
+        if 'config' in wire:
+            return dict([(x[0] + '_' + x[1], x[2]) for x in wire['config']])
+        return {}
+
     def _assign_ref(self, wire, ref, commit_id):
         repo = self._factory.repo(wire)
         repo[ref] = commit_id
@@ -140,6 +145,56 @@ class GitRemote(object):
         repo = self._factory.repo(wire)
         blob = repo[sha]
         return blob.raw_length()
+
+    def _parse_lfs_pointer(self, raw_content):
+
+        spec_string = 'version https://git-lfs.github.com/spec'
+        if raw_content and raw_content.startswith(spec_string):
+            pattern = re.compile(r"""
+            (?:\n)?
+            ^version[ ]https://git-lfs\.github\.com/spec/(?P<spec_ver>v\d+)\n
+            ^oid[ ] sha256:(?P<oid_hash>[0-9a-f]{64})\n
+            ^size[ ](?P<oid_size>[0-9]+)\n
+            (?:\n)?
+            """, re.VERBOSE | re.MULTILINE)
+            match = pattern.match(raw_content)
+            if match:
+                return match.groupdict()
+
+        return {}
+
+    @reraise_safe_exceptions
+    def is_large_file(self, wire, sha):
+        repo = self._factory.repo(wire)
+        blob = repo[sha]
+        return self._parse_lfs_pointer(blob.as_raw_string())
+
+    @reraise_safe_exceptions
+    def in_largefiles_store(self, wire, oid):
+        repo = self._factory.repo(wire)
+        conf = self._wire_to_config(wire)
+
+        store_location = conf.get('vcs_git_lfs_store_location')
+        if store_location:
+            repo_name = repo.path
+            store = LFSOidStore(
+                oid=oid, repo=repo_name, store_location=store_location)
+            return store.has_oid()
+
+        return False
+
+    @reraise_safe_exceptions
+    def store_path(self, wire, oid):
+        repo = self._factory.repo(wire)
+        conf = self._wire_to_config(wire)
+
+        store_location = conf.get('vcs_git_lfs_store_location')
+        if store_location:
+            repo_name = repo.path
+            store = LFSOidStore(
+                oid=oid, repo=repo_name, store_location=store_location)
+            return store.oid_path
+        raise ValueError('Unable to fetch oid with path {}'.format(oid))
 
     @reraise_safe_exceptions
     def bulk_request(self, wire, rev, pre_load):
