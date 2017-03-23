@@ -106,8 +106,9 @@ class TestLFSApplication(object):
 
     def test_app_batch_api_download(self, git_lfs_app, http_auth):
         oid = '456'
-        oid_path = os.path.join(git_lfs_app._store, 'repo', oid)
-        os.makedirs(os.path.dirname(oid_path))
+        oid_path = os.path.join(git_lfs_app._store, oid)
+        if not os.path.isdir(os.path.dirname(oid_path)):
+            os.makedirs(os.path.dirname(oid_path))
         with open(oid_path, 'wb') as f:
             f.write('OID_CONTENT')
 
@@ -172,8 +173,9 @@ class TestLFSApplication(object):
 
     def test_app_verify_api_size_mismatch(self, git_lfs_app):
         oid = 'existing'
-        oid_path = os.path.join(git_lfs_app._store, 'repo', oid)
-        os.makedirs(os.path.dirname(oid_path))
+        oid_path = os.path.join(git_lfs_app._store, oid)
+        if not os.path.isdir(os.path.dirname(oid_path)):
+            os.makedirs(os.path.dirname(oid_path))
         with open(oid_path, 'wb') as f:
             f.write('OID_CONTENT')
 
@@ -187,8 +189,9 @@ class TestLFSApplication(object):
 
     def test_app_verify_api(self, git_lfs_app):
         oid = 'existing'
-        oid_path = os.path.join(git_lfs_app._store, 'repo', oid)
-        os.makedirs(os.path.dirname(oid_path))
+        oid_path = os.path.join(git_lfs_app._store, oid)
+        if not os.path.isdir(os.path.dirname(oid_path)):
+            os.makedirs(os.path.dirname(oid_path))
         with open(oid_path, 'wb') as f:
             f.write('OID_CONTENT')
 
@@ -210,8 +213,9 @@ class TestLFSApplication(object):
 
     def test_app_download_api(self, git_lfs_app):
         oid = 'existing'
-        oid_path = os.path.join(git_lfs_app._store, 'repo', oid)
-        os.makedirs(os.path.dirname(oid_path))
+        oid_path = os.path.join(git_lfs_app._store, oid)
+        if not os.path.isdir(os.path.dirname(oid_path)):
+            os.makedirs(os.path.dirname(oid_path))
         with open(oid_path, 'wb') as f:
             f.write('OID_CONTENT')
 
@@ -228,6 +232,6 @@ class TestLFSApplication(object):
         assert response.json == {u'upload': u'ok'}
 
         # verify that we actually wrote that OID
-        oid_path = os.path.join(git_lfs_app._store, 'repo', oid)
+        oid_path = os.path.join(git_lfs_app._store, oid)
         assert os.path.isfile(oid_path)
         assert 'CONTENT' == open(oid_path).read()

@@ -106,11 +106,10 @@ class OidHandler(object):
 
 class LFSOidStore(object):
 
-    def __init__(self, repo, oid, store_location=None):
-        self._store = store_location or self.get_default_store()
+    def __init__(self, oid, repo, store_location=None):
         self.oid = oid
         self.repo = repo
-        self.store_path = os.path.join(self._store, repo)
+        self.store_path = store_location or self.get_default_store()
         self.tmp_oid_path = os.path.join(self.store_path, oid + '.tmp')
         self.oid_path = os.path.join(self.store_path, oid)
         self.fd = None

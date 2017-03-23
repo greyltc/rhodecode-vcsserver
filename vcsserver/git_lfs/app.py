@@ -118,7 +118,7 @@ def lfs_objects_batch(request):
         obj_href = request.route_url('lfs_objects_oid', repo=repo, oid=oid)
         obj_verify_href = request.route_url('lfs_objects_verify', repo=repo)
         store = LFSOidStore(
-            repo, oid, store_location=request.registry.git_lfs_store_path)
+            oid, repo, store_location=request.registry.git_lfs_store_path)
         handler = OidHandler(
             store, repo, auth, oid, obj_size, obj_data,
             obj_href, obj_verify_href)
@@ -146,7 +146,7 @@ def lfs_objects_oid_upload(request):
     repo = request.matchdict.get('repo')
     oid = request.matchdict.get('oid')
     store = LFSOidStore(
-        repo, oid, store_location=request.registry.git_lfs_store_path)
+        oid, repo, store_location=request.registry.git_lfs_store_path)
     engine = store.get_engine(mode='wb')
     log.debug('LFS: starting chunked write of LFS oid: %s to storage', oid)
     with engine as f:
@@ -161,7 +161,7 @@ def lfs_objects_oid_download(request):
     oid = request.matchdict.get('oid')
 
     store = LFSOidStore(
-        repo, oid, store_location=request.registry.git_lfs_store_path)
+        oid, repo, store_location=request.registry.git_lfs_store_path)
     if not store.has_oid():
         log.debug('LFS: oid %s does not exists in store', oid)
         return write_response_error(
@@ -188,8 +188,8 @@ def lfs_objects_verify(request):
         return write_response_error(
             HTTPBadRequest, 'missing oid and size in request data')
 
-    store = LFSOidStore(repo, oid,
-                        store_location=request.registry.git_lfs_store_path)
+    store = LFSOidStore(
+        oid, repo, store_location=request.registry.git_lfs_store_path)
     if not store.has_oid():
         log.debug('LFS: oid %s does not exists in store', oid)
         return write_response_error(

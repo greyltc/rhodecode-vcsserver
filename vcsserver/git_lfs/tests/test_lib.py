@@ -24,7 +24,7 @@ from vcsserver.git_lfs.lib import OidHandler, LFSOidStore
 def lfs_store(tmpdir):
     repo = 'test'
     oid = '123456789'
-    store = LFSOidStore(repo=repo, oid=oid, store_location=str(tmpdir))
+    store = LFSOidStore(oid=oid, repo=repo, store_location=str(tmpdir))
     return store
 
 
@@ -66,8 +66,9 @@ class TestOidHandler(object):
 
     def test_download_oid(self, oid_handler):
         store = oid_handler.get_store()
+        if not os.path.isdir(os.path.dirname(store.oid_path)):
+            os.makedirs(os.path.dirname(store.oid_path))
 
-        os.makedirs(os.path.dirname(store.oid_path))
         with open(store.oid_path, 'wb') as f:
             f.write('CONTENT')
 
@@ -81,8 +82,9 @@ class TestOidHandler(object):
 
     def test_upload_oid_that_exists(self, oid_handler):
         store = oid_handler.get_store()
+        if not os.path.isdir(os.path.dirname(store.oid_path)):
+            os.makedirs(os.path.dirname(store.oid_path))
 
-        os.makedirs(os.path.dirname(store.oid_path))
         with open(store.oid_path, 'wb') as f:
             f.write('CONTENT')
 
