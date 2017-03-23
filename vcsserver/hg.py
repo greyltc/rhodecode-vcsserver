@@ -485,7 +485,7 @@ class HgRemote(object):
         return largefiles.lfutil.isstandin(path)
 
     @reraise_safe_exceptions
-    def in_store(self, wire, sha):
+    def in_largefiles_store(self, wire, sha):
         repo = self._factory.repo(wire)
         return largefiles.lfutil.instore(repo, sha)
 
