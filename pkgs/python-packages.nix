@@ -159,13 +159,13 @@
     };
   };
   decorator = super.buildPythonPackage {
-    name = "decorator-4.0.10";
+    name = "decorator-4.0.11";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/13/8a/4eed41e338e8dcc13ca41c94b142d4d20c0de684ee5065523fee406ce76f/decorator-4.0.10.tar.gz";
-      md5 = "434b57fdc3230c500716c5aff8896100";
+      url = "https://pypi.python.org/packages/cc/ac/5a16f1fc0506ff72fcc8fd4e858e3a1c231f224ab79bb7c4c9b2094cc570/decorator-4.0.11.tar.gz";
+      md5 = "73644c8f0bd4983d1b6a34b49adec0ae";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal { fullName = "new BSD License"; } ];
@@ -315,13 +315,13 @@
     };
   };
   mercurial = super.buildPythonPackage {
-    name = "mercurial-4.0.2";
+    name = "mercurial-4.1.2";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/85/1b/0296aacd697228974a473d2508f013532f987ed6b1bacfe5abd6d5be6332/mercurial-4.0.2.tar.gz";
-      md5 = "fa72a08e2723e4fa2a21c4e66437f3fa";
+      url = "https://pypi.python.org/packages/88/c1/f0501fd67f5e69346da41ee0bd7b2619ce4bbc9854bb645074c418b9941f/mercurial-4.1.2.tar.gz";
+      md5 = "934c99808bdc8385e074b902d59b0d93";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 pkgs.lib.licenses.gpl2Plus ];
@@ -445,13 +445,13 @@
     };
   };
   pyramid = super.buildPythonPackage {
-    name = "pyramid-1.6.1";
+    name = "pyramid-1.7.4";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [setuptools WebOb repoze.lru zope.interface zope.deprecation venusian translationstring PasteDeploy];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/30/b3/fcc4a2a4800cbf21989e00454b5828cf1f7fe35c63e0810b350e56d4c475/pyramid-1.6.1.tar.gz";
-      md5 = "b18688ff3cc33efdbb098a35b45dd122";
+      url = "https://pypi.python.org/packages/33/91/55f5c661f8923902cd1f68d75f2b937c45e7682857356cf18f0be5493899/pyramid-1.7.4.tar.gz";
+      md5 = "6ef1dfdcff9136d04490410757c4c446";
     };
     meta = {
       license = [ { fullName = "Repoze Public License"; } { fullName = "BSD-derived (http://www.repoze.org/LICENSE.txt)"; } ];
@@ -588,7 +588,7 @@
     };
   };
   rhodecode-vcsserver = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.6.1";
+    name = "rhodecode-vcsserver-4.7.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
     propagatedBuildInputs = with self; [Beaker configobj dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress Pyro4 serpent pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];

@@ -30,6 +30,7 @@ from pyramid.config import Configurator
 from pyramid.wsgi import wsgiapp
 
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
+from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
 from vcsserver.echo_stub.echo_app import EchoApp
 from vcsserver.exceptions import HTTPRepoLocked
@@ -40,11 +41,13 @@ try:
 except ImportError:
     GitFactory = None
     GitRemote = None
+
 try:
     from vcsserver.hg import MercurialFactory, HgRemote
 except ImportError:
     MercurialFactory = None
     HgRemote = None
+
 try:
     from vcsserver.svn import SubversionFactory, SvnRemote
 except ImportError:
@@ -153,8 +156,10 @@ class HTTPApplication(object):
     remote_wsgi = remote_wsgi
     _use_echo_app = False
 
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, global_config=None):
         self.config = Configurator(settings=settings)
+        self.global_config = global_config
+
         locale = settings.get('locale', '') or 'en_US.UTF-8'
         vcs = VCS(locale=locale, cache_config=settings)
         self._remotes = {
@@ -209,12 +214,7 @@ class HTTPApplication(object):
             return {'status': '404 NOT FOUND'}
         self.config.add_notfound_view(notfound, renderer='json')
 
-        self.config.add_view(
-            self.handle_vcs_exception, context=Exception,
-            custom_predicates=[self.is_vcs_exception])
-
-        self.config.add_view(
-            self.general_error_handler, context=Exception)
+        self.config.add_view(self.handle_vcs_exception, context=Exception)
 
         self.config.add_tween(
             'vcsserver.tweens.RequestWrapperTween',
@@ -273,12 +273,26 @@ class HTTPApplication(object):
 
     def service_view(self, request):
         import vcsserver
+        import ConfigParser as configparser
+
         payload = msgpack.unpackb(request.body, use_list=True)
+
+        try:
+            path = self.global_config['__file__']
+            config = configparser.ConfigParser()
+            config.read(path)
+            parsed_ini = config
+            if parsed_ini.has_section('server:main'):
+                parsed_ini = dict(parsed_ini.items('server:main'))
+        except Exception:
+            log.exception('Failed to read .ini file for display')
+            parsed_ini = {}
+
         resp = {
             'id': payload.get('id'),
             'result': dict(
                 version=vcsserver.__version__,
-                config={},
+                config=parsed_ini,
                 payload=payload,
             )
         }
@@ -351,9 +365,31 @@ class HTTPApplication(object):
                 config = msgpack.unpackb(packed_config)
 
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
-                app = scm_app.create_git_wsgi_app(
-                    repo_path, repo_name, config)
+                content_type = environ.get('CONTENT_TYPE', '')
+
+                path = environ['PATH_INFO']
+                is_lfs_request = GIT_LFS_CONTENT_TYPE in content_type
+                log.debug(
+                    'LFS: Detecting if request `%s` is LFS server path based '
+                    'on content type:`%s`, is_lfs:%s',
+                    path, content_type, is_lfs_request)
+
+                if not is_lfs_request:
+                    # fallback detection by path
+                    if GIT_LFS_PROTO_PAT.match(path):
+                        is_lfs_request = True
+                    log.debug(
+                        'LFS: fallback detection by path of: `%s`, is_lfs:%s',
+                        path, is_lfs_request)
+
+                if is_lfs_request:
+                    app = scm_app.create_git_lfs_wsgi_app(
+                        repo_path, repo_name, config)
+                else:
+                    app = scm_app.create_git_wsgi_app(
+                        repo_path, repo_name, config)
                 return app(environ, start_response)
+
             return _git_stream
 
     def is_vcs_view(self, context, request):
@@ -364,27 +400,17 @@ class HTTPApplication(object):
         backend = request.matchdict.get('backend')
         return backend in self._remotes
 
-    def is_vcs_exception(self, context, request):
-        """
-        View predicate that returns true if the context object is a VCS
-        exception.
-        """
-        return hasattr(context, '_vcs_kind')
-
     def handle_vcs_exception(self, exception, request):
-        if exception._vcs_kind == 'repo_locked':
+        _vcs_kind = getattr(exception, '_vcs_kind', '')
+        if _vcs_kind == 'repo_locked':
             # Get custom repo-locked status code if present.
             status_code = request.headers.get('X-RC-Locked-Status-Code')
             return HTTPRepoLocked(
                 title=exception.message, status_code=status_code)
 
         # Re-raise exception if we can not handle it.
-        raise exception
-
-    def general_error_handler(self, exception, request):
         log.exception(
-            'error occurred handling this request for path: %s',
-            request.path)
+            'error occurred handling this request for path: %s', request.path)
         raise exception
 
 
@@ -404,5 +430,5 @@ def main(global_config, **settings):
     if MercurialFactory:
         hgpatches.patch_largefiles_capabilities()
         hgpatches.patch_subrepo_type_mapping()
-    app = HTTPApplication(settings=settings)
+    app = HTTPApplication(settings=settings, global_config=global_config)
     return app.wsgi_app()
