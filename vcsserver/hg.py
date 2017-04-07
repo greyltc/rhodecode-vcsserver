@@ -18,7 +18,6 @@
 import io
 import logging
 import stat
-import sys
 import urllib
 import urllib2
 
@@ -26,9 +25,10 @@ from hgext import largefiles, rebase
 from hgext.strip import strip as hgext_strip
 from mercurial import commands
 from mercurial import unionrepo
+from mercurial import verify
 
 from vcsserver import exceptions
-from vcsserver.base import RepoFactory, obfuscate_qs
+from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
@@ -89,17 +89,6 @@ def reraise_safe_exceptions(func):
                 raise_from_original(exceptions.UnhandledException)
             raise
     return wrapper
-
-
-def raise_from_original(new_type):
-    """
-    Raise a new exception type with original args and traceback.
-    """
-    _, original, traceback = sys.exc_info()
-    try:
-        raise new_type(*original.args), None, traceback
-    finally:
-        del traceback
 
 
 class MercurialFactory(RepoFactory):
@@ -496,7 +485,7 @@ class HgRemote(object):
         return largefiles.lfutil.isstandin(path)
 
     @reraise_safe_exceptions
-    def in_store(self, wire, sha):
+    def in_largefiles_store(self, wire, sha):
         repo = self._factory.repo(wire)
         return largefiles.lfutil.instore(repo, sha)
 
@@ -598,6 +587,21 @@ class HgRemote(object):
             repo.baseui, repo, ctx.node(), update=update, backup=backup)
 
     @reraise_safe_exceptions
+    def verify(self, wire,):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        baseui.setconfig('ui', 'quiet', 'false')
+        output = io.BytesIO()
+
+        def write(data, **unused_kwargs):
+            output.write(data)
+        baseui.write = write
+
+        repo.ui = baseui
+        verify.verify(repo)
+        return output.getvalue()
+
+    @reraise_safe_exceptions
     def tag(self, wire, name, revision, message, local, user,
             tag_time, tag_timezone):
         repo = self._factory.repo(wire)
@@ -674,12 +678,10 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def ancestor(self, wire, revision1, revision2):
         repo = self._factory.repo(wire)
-        baseui = self._factory._create_config(wire['config'])
-        output = io.BytesIO()
-        baseui.write = output.write
-        commands.debugancestor(baseui, repo, revision1, revision2)
-
-        return output.getvalue()
+        changelog = repo.changelog
+        lookup = repo.lookup
+        a = changelog.ancestor(lookup(revision1), lookup(revision2))
+        return hex(a)
 
     @reraise_safe_exceptions
     def push(self, wire, revisions, dest_path, hooks=True,

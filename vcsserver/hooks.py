@@ -17,12 +17,14 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
+import io
+import sys
+import json
+import logging
 import collections
 import importlib
-import io
-import json
 import subprocess
-import sys
+
 from httplib import HTTPConnection
 
 
@@ -32,6 +34,8 @@ import Pyro4
 import simplejson as json
 
 from vcsserver import exceptions
+
+log = logging.getLogger(__name__)
 
 
 class HooksHttpClient(object):
@@ -105,6 +109,11 @@ class GitMessageWriter(RemoteMessageWriter):
 
 def _handle_exception(result):
     exception_class = result.get('exception')
+    exception_traceback = result.get('exception_traceback')
+
+    if exception_traceback:
+        log.error('Got traceback from remote call:%s', exception_traceback)
+
     if exception_class == 'HTTPLockedRC':
         raise exceptions.RepositoryLockedException(*result['exception_args'])
     elif exception_class == 'RepositoryError':
@@ -152,26 +161,42 @@ def post_pull(ui, repo, **kwargs):
     return _call_hook('post_pull', _extras_from_ui(ui), HgMessageWriter(ui))
 
 
-def pre_push(ui, repo, **kwargs):
-    return _call_hook('pre_push', _extras_from_ui(ui), HgMessageWriter(ui))
+def pre_push(ui, repo, node=None, **kwargs):
+    extras = _extras_from_ui(ui)
+
+    rev_data = []
+    if node and kwargs.get('hooktype') == 'pretxnchangegroup':
+        branches = collections.defaultdict(list)
+        for commit_id, branch in _rev_range_hash(repo, node, with_branch=True):
+            branches[branch].append(commit_id)
+
+        for branch, commits in branches.iteritems():
+            old_rev = kwargs.get('node_last') or commits[0]
+            rev_data.append({
+                'old_rev': old_rev,
+                'new_rev': commits[-1],
+                'ref': '',
+                'type': 'branch',
+                'name': branch,
+            })
+
+    extras['commit_ids'] = rev_data
+    return _call_hook('pre_push', extras, HgMessageWriter(ui))
 
 
-# N.B.(skreft): the two functions below were taken and adapted from
-# rhodecode.lib.vcs.remote.handle_git_pre_receive
-# They are required to compute the commit_ids
-def _get_revs(repo, rev_opt):
-    revs = [rev for rev in mercurial.scmutil.revrange(repo, rev_opt)]
-    if len(revs) == 0:
-        return (mercurial.node.nullrev, mercurial.node.nullrev)
+def _rev_range_hash(repo, node, with_branch=False):
 
-    return max(revs), min(revs)
+    commits = []
+    for rev in xrange(repo[node], len(repo)):
+        ctx = repo[rev]
+        commit_id = mercurial.node.hex(ctx.node())
+        branch = ctx.branch()
+        if with_branch:
+            commits.append((commit_id, branch))
+        else:
+            commits.append(commit_id)
 
-
-def _rev_range_hash(repo, node):
-    stop, start = _get_revs(repo, [node + ':'])
-    revs = [mercurial.node.hex(repo[r].node()) for r in xrange(start, stop + 1)]
-
-    return revs
+    return commits
 
 
 def post_push(ui, repo, node, **kwargs):
@@ -257,7 +282,23 @@ def git_post_pull(extras):
     return HookResponse(status, stdout.getvalue())
 
 
-def git_pre_receive(unused_repo_path, unused_revs, env):
+def _parse_git_ref_lines(revision_lines):
+    rev_data = []
+    for revision_line in revision_lines or []:
+        old_rev, new_rev, ref = revision_line.strip().split(' ')
+        ref_data = ref.split('/', 2)
+        if ref_data[1] in ('tags', 'heads'):
+            rev_data.append({
+                'old_rev': old_rev,
+                'new_rev': new_rev,
+                'ref': ref,
+                'type': ref_data[1],
+                'name': ref_data[2],
+            })
+    return rev_data
+
+
+def git_pre_receive(unused_repo_path, revision_lines, env):
     """
     Pre push hook.
 
@@ -268,8 +309,10 @@ def git_pre_receive(unused_repo_path, unused_revs, env):
     :rtype: int
     """
     extras = json.loads(env['RC_SCM_DATA'])
+    rev_data = _parse_git_ref_lines(revision_lines)
     if 'push' not in extras['hooks']:
         return 0
+    extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, GitMessageWriter())
 
 
@@ -277,7 +320,7 @@ def _run_command(arguments):
     """
     Run the specified command and return the stdout.
 
-    :param arguments: sequence of program arugments (including the program name)
+    :param arguments: sequence of program arguments (including the program name)
     :type arguments: list[str]
     """
     # TODO(skreft): refactor this method and all the other similar ones.
@@ -308,18 +351,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
     if 'push' not in extras['hooks']:
         return 0
 
-    rev_data = []
-    for revision_line in revision_lines:
-        old_rev, new_rev, ref = revision_line.strip().split(' ')
-        ref_data = ref.split('/', 2)
-        if ref_data[1] in ('tags', 'heads'):
-            rev_data.append({
-                'old_rev': old_rev,
-                'new_rev': new_rev,
-                'ref': ref,
-                'type': ref_data[1],
-                'name': ref_data[2],
-            })
+    rev_data = _parse_git_ref_lines(revision_lines)
 
     git_revs = []
 
@@ -339,7 +371,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 except Exception:
                     cmd = ['git', 'symbolic-ref', 'HEAD',
                            'refs/heads/%s' % push_ref['name']]
-                    print "Setting default branch to %s" % push_ref['name']
+                    print("Setting default branch to %s" % push_ref['name'])
                     _run_command(cmd)
 
                 cmd = ['git', 'for-each-ref', '--format=%(refname)',
