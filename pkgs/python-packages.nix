@@ -302,13 +302,13 @@
     };
   };
   ipython-genutils = super.buildPythonPackage {
-    name = "ipython-genutils-0.1.0";
+    name = "ipython-genutils-0.2.0";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/71/b7/a64c71578521606edbbce15151358598f3dfb72a3431763edc2baf19e71f/ipython_genutils-0.1.0.tar.gz";
-      md5 = "9a8afbe0978adbcbfcb3b35b2d015a56";
+      url = "https://pypi.python.org/packages/e8/69/fbeffffc05236398ebfcfb512b6d2511c622871dca1746361006da310399/ipython_genutils-0.2.0.tar.gz";
+      md5 = "5a4f9781f78466da0ea1a648f3e1f79f";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -393,13 +393,13 @@
     };
   };
   prompt-toolkit = super.buildPythonPackage {
-    name = "prompt-toolkit-1.0.9";
+    name = "prompt-toolkit-1.0.14";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [six wcwidth];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/83/14/5ac258da6c530eca02852ee25c7a9ff3ca78287bb4c198d0d0055845d856/prompt_toolkit-1.0.9.tar.gz";
-      md5 = "a39f91a54308fb7446b1a421c11f227c";
+      url = "https://pypi.python.org/packages/55/56/8c39509b614bda53e638b7500f12577d663ac1b868aef53426fc6a26c3f5/prompt_toolkit-1.0.14.tar.gz";
+      md5 = "f24061ae133ed32c6b764e92bd48c496";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -702,13 +702,13 @@
     };
   };
   traitlets = super.buildPythonPackage {
-    name = "traitlets-4.3.1";
+    name = "traitlets-4.3.2";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [ipython-genutils six decorator enum34];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/b1/d6/5b5aa6d5c474691909b91493da1e8972e309c9f01ecfe4aeafd272eb3234/traitlets-4.3.1.tar.gz";
-      md5 = "dd0b1b6e5d31ce446d55a4b5e5083c98";
+      url = "https://pypi.python.org/packages/a5/98/7f5ef2fe9e9e071813aaf9cb91d1a732e0a68b6c44a32b38cb8e14c3f069/traitlets-4.3.2.tar.gz";
+      md5 = "3068663f2f38fd939a9eb3a500ccc154";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
