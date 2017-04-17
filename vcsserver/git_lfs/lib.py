@@ -79,7 +79,12 @@ class OidHandler(object):
         # verify if we have the OID before, if we do, reply with empty
         if store.has_oid():
             log.debug('LFS: store already has oid %s', store.oid)
-            if skip_existing:
+
+            # validate size
+            size_match = store.size_oid() == self.obj_size
+            if not size_match:
+                log.warning('LFS: size mismatch for oid:%s', self.oid)
+            elif skip_existing:
                 log.debug('LFS: skipping further action as oid is existing')
                 return response, has_errors
 
