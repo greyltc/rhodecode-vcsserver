@@ -18,6 +18,7 @@
 import os
 import pytest
 from webtest.app import TestApp as WebObTestApp
+import simplejson as json
 
 from vcsserver.git_lfs.app import create_app
 
@@ -43,18 +44,18 @@ class TestLFSApplication(object):
     def test_app_deprecated_endpoint(self, git_lfs_app):
         response = git_lfs_app.post('/repo/info/lfs/objects', status=501)
         assert response.status_code == 501
-        assert response.json == {u'message': u'LFS: v1 api not supported'}
+        assert json.loads(response.text) == {u'message': u'LFS: v1 api not supported'}
 
     def test_app_lock_verify_api_not_available(self, git_lfs_app):
         response = git_lfs_app.post('/repo/info/lfs/locks/verify', status=501)
         assert response.status_code == 501
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'GIT LFS locking api not supported'}
 
     def test_app_lock_api_not_available(self, git_lfs_app):
         response = git_lfs_app.post('/repo/info/lfs/locks', status=501)
         assert response.status_code == 501
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'GIT LFS locking api not supported'}
 
     def test_app_batch_api_missing_auth(self, git_lfs_app,):
@@ -65,14 +66,14 @@ class TestLFSApplication(object):
         response = git_lfs_app.post_json(
             '/repo/info/lfs/objects/batch', params={}, status=400,
             extra_environ=http_auth)
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'unsupported operation mode: `None`'}
 
     def test_app_batch_api_missing_objects(self, git_lfs_app, http_auth):
         response = git_lfs_app.post_json(
             '/repo/info/lfs/objects/batch', params={'operation': 'download'},
             status=400, extra_environ=http_auth)
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'missing objects data'}
 
     def test_app_batch_api_unsupported_data_in_objects(
@@ -82,7 +83,7 @@ class TestLFSApplication(object):
         response = git_lfs_app.post_json(
             '/repo/info/lfs/objects/batch', params=params, status=400,
             extra_environ=http_auth)
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'unsupported data in objects'}
 
     def test_app_batch_api_download_missing_object(
@@ -101,7 +102,7 @@ class TestLFSApplication(object):
              u'oid': u'123',
              u'size': u'1024'}
         ]
-        assert response.json == {
+        assert json.loads(response.text) == {
             'objects': expected_objects, 'transfer': 'basic'}
 
     def test_app_batch_api_download(self, git_lfs_app, http_auth):
@@ -128,7 +129,7 @@ class TestLFSApplication(object):
              u'oid': u'456',
              u'size': u'1024'}
         ]
-        assert response.json == {
+        assert json.loads(response.text) == {
             'objects': expected_objects, 'transfer': 'basic'}
 
     def test_app_batch_api_upload(self, git_lfs_app, http_auth):
@@ -150,7 +151,7 @@ class TestLFSApplication(object):
              u'oid': u'123',
              u'size': u'1024'}
         ]
-        assert response.json == {
+        assert json.loads(response.text) == {
             'objects': expected_objects, 'transfer': 'basic'}
 
     def test_app_verify_api_missing_data(self, git_lfs_app):
@@ -159,7 +160,7 @@ class TestLFSApplication(object):
             '/repo/info/lfs/verify', params=params,
             status=400)
 
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'missing oid and size in request data'}
 
     def test_app_verify_api_missing_obj(self, git_lfs_app):
@@ -168,7 +169,7 @@ class TestLFSApplication(object):
             '/repo/info/lfs/verify', params=params,
             status=404)
 
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'oid `missing` does not exists in store'}
 
     def test_app_verify_api_size_mismatch(self, git_lfs_app):
@@ -183,7 +184,7 @@ class TestLFSApplication(object):
         response = git_lfs_app.post_json(
             '/repo/info/lfs/verify', params=params, status=422)
 
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'requested file size mismatch '
                         u'store size:11 requested:1024'}
 
@@ -199,7 +200,7 @@ class TestLFSApplication(object):
         response = git_lfs_app.post_json(
             '/repo/info/lfs/verify', params=params)
 
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': {u'size': u'ok', u'in_store': u'ok'}}
 
     def test_app_download_api_oid_not_existing(self, git_lfs_app):
@@ -208,7 +209,7 @@ class TestLFSApplication(object):
         response = git_lfs_app.get(
             '/repo/info/lfs/objects/{oid}'.format(oid=oid), status=404)
 
-        assert response.json == {
+        assert json.loads(response.text) == {
             u'message': u'requested file with oid `missing` not found in store'}
 
     def test_app_download_api(self, git_lfs_app):
@@ -229,7 +230,7 @@ class TestLFSApplication(object):
         response = git_lfs_app.put(
             '/repo/info/lfs/objects/{oid}'.format(oid=oid), params='CONTENT')
 
-        assert response.json == {u'upload': u'ok'}
+        assert json.loads(response.text) == {u'upload': u'ok'}
 
         # verify that we actually wrote that OID
         oid_path = os.path.join(git_lfs_app._store, oid)
