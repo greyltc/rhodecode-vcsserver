@@ -38,7 +38,7 @@ GIT_LFS_PROTO_PAT = re.compile(r'^/(.+)/(info/lfs/(.+))')
 
 
 def write_response_error(http_exception, text=None):
-    content_type = 'application/json'
+    content_type = GIT_LFS_CONTENT_TYPE + '+json'
     _exception = http_exception(content_type=content_type)
     _exception.content_type = content_type
     if text:
@@ -85,10 +85,9 @@ def lfs_objects_batch(request):
         oid - String OID of the LFS object.
         size - Integer byte size of the LFS object. Must be at least zero.
     """
+    request.response.content_type = GIT_LFS_CONTENT_TYPE + '+json'
     auth = request.authorization
-
     repo = request.matchdict.get('repo')
-
     data = request.json
     operation = data.get('operation')
     if operation not in ('download', 'upload'):
@@ -143,6 +142,7 @@ def lfs_objects_batch(request):
 
 
 def lfs_objects_oid_upload(request):
+    request.response.content_type = GIT_LFS_CONTENT_TYPE + '+json'
     repo = request.matchdict.get('repo')
     oid = request.matchdict.get('oid')
     store = LFSOidStore(
@@ -178,6 +178,7 @@ def lfs_objects_oid_download(request):
 
 
 def lfs_objects_verify(request):
+    request.response.content_type = GIT_LFS_CONTENT_TYPE + '+json'
     repo = request.matchdict.get('repo')
 
     data = request.json
