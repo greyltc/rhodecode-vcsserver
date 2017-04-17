@@ -142,7 +142,8 @@ class TestLFSApplication(object):
             {u'authenticated': True,
              u'actions': {
                  u'upload': {
-                     u'header': {u'Authorization': u'Basic XXXXX'},
+                     u'header': {u'Authorization': u'Basic XXXXX',
+                                 u'Transfer-Encoding': u'chunked'},
                      u'href': u'http://localhost/repo/info/lfs/objects/123'},
                  u'verify': {
                      u'header': {u'Authorization': u'Basic XXXXX'},
