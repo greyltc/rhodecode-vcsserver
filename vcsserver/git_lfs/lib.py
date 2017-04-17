@@ -88,9 +88,10 @@ class OidHandler(object):
                 log.debug('LFS: skipping further action as oid is existing')
                 return response, has_errors
 
+        chunked = ("Transfer-Encoding", "chunked")
         upload_action = OrderedDict(
             href=self.obj_href,
-            header=OrderedDict([("Authorization", self.get_auth())])
+            header=OrderedDict([("Authorization", self.get_auth()), chunked])
         )
         if not has_errors:
             response = OrderedDict(upload=upload_action)
