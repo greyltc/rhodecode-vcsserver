@@ -95,7 +95,13 @@ class GitRepository(object):
 
         :param path:
         """
-        return path.split(self.repo_name, 1)[-1].strip('/')
+        path = path.split(self.repo_name, 1)[-1]
+        if path.startswith('.git'):
+            # for bare repos we still get the .git prefix inside, we skip it
+            # here, and remove from the service command
+            path = path[4:]
+
+        return path.strip('/')
 
     def inforefs(self, request, unused_environ):
         """
