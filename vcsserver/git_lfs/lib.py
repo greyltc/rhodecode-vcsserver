@@ -81,9 +81,12 @@ class OidHandler(object):
             log.debug('LFS: store already has oid %s', store.oid)
 
             # validate size
-            size_match = store.size_oid() == self.obj_size
+            store_size = store.size_oid()
+            size_match = store_size == self.obj_size
             if not size_match:
-                log.warning('LFS: size mismatch for oid:%s', self.oid)
+                log.warning(
+                    'LFS: size mismatch for oid:%s, in store:%s expected: %s',
+                    self.oid, store_size, self.obj_size)
             elif skip_existing:
                 log.debug('LFS: skipping further action as oid is existing')
                 return response, has_errors

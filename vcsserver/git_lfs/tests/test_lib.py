@@ -87,16 +87,34 @@ class TestOidHandler(object):
 
         with open(store.oid_path, 'wb') as f:
             f.write('CONTENT')
-
+        oid_handler.obj_size = 7
         response, has_errors = oid_handler.exec_operation('upload')
         assert has_errors is None
         assert response is None
+
+    def test_upload_oid_that_exists_but_has_wrong_size(self, oid_handler):
+        store = oid_handler.get_store()
+        if not os.path.isdir(os.path.dirname(store.oid_path)):
+            os.makedirs(os.path.dirname(store.oid_path))
+
+        with open(store.oid_path, 'wb') as f:
+            f.write('CONTENT')
+
+        oid_handler.obj_size = 10240
+        response, has_errors = oid_handler.exec_operation('upload')
+        assert has_errors is None
+        assert response['upload'] == {
+            'header': {'Authorization': 'basic xxxx',
+                       'Transfer-Encoding': 'chunked'},
+            'href': 'http://localhost/handle_oid',
+        }
 
     def test_upload_oid(self, oid_handler):
         response, has_errors = oid_handler.exec_operation('upload')
         assert has_errors is None
         assert response['upload'] == {
-            'header': {'Authorization': 'basic xxxx'},
+            'header': {'Authorization': 'basic xxxx',
+                       'Transfer-Encoding': 'chunked'},
             'href': 'http://localhost/handle_oid'
         }
 
