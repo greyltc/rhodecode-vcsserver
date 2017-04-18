@@ -149,8 +149,18 @@ def lfs_objects_oid_upload(request):
         oid, repo, store_location=request.registry.git_lfs_store_path)
     engine = store.get_engine(mode='wb')
     log.debug('LFS: starting chunked write of LFS oid: %s to storage', oid)
+
+    body = request.environ['wsgi.input']
+
     with engine as f:
-        for chunk in FileWrapper(request.body_file_seekable, blksize=64 * 1024):
+        blksize = 64 * 1024  # 64kb
+        while True:
+            # read in chunks as stream comes in from Gunicorn
+            # this is a specific Gunicorn support function.
+            # might work differently on waitress
+            chunk = body.read(blksize)
+            if not chunk:
+                break
             f.write(chunk)
 
     return {'upload': 'ok'}
