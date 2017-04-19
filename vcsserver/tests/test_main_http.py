@@ -18,24 +18,24 @@
 import mock
 import pytest
 
-from vcsserver import main
+from vcsserver import http_main
 from vcsserver.base import obfuscate_qs
 
 
-@mock.patch('vcsserver.main.VcsServerCommand', mock.Mock())
+@mock.patch('vcsserver.http_main.VCS', mock.Mock())
 @mock.patch('vcsserver.hgpatches.patch_largefiles_capabilities')
 def test_applies_largefiles_patch(patch_largefiles_capabilities):
-    main.main([])
+    http_main.main([])
     patch_largefiles_capabilities.assert_called_once_with()
 
 
-@mock.patch('vcsserver.main.VcsServerCommand', mock.Mock())
-@mock.patch('vcsserver.main.MercurialFactory', None)
+@mock.patch('vcsserver.http_main.VCS', mock.Mock())
+@mock.patch('vcsserver.http_main.MercurialFactory', None)
 @mock.patch(
     'vcsserver.hgpatches.patch_largefiles_capabilities',
     mock.Mock(side_effect=Exception("Must not be called")))
 def test_applies_largefiles_patch_only_if_mercurial_is_available():
-    main.main([])
+    http_main.main([])
 
 
 @pytest.mark.parametrize('given, expected', [

@@ -298,7 +298,7 @@ class HgRemote(object):
         ctx = repo[revision]
         status = repo[ctx.p1().node()].status(other=ctx.node())
         # object of status (odd, custom named tuple in mercurial) is not
-        # correctly serializable via Pyro, we make it a list, as the underling
+        # correctly serializable, we make it a list, as the underling
         # API expects this to be a list
         return list(status)
 
