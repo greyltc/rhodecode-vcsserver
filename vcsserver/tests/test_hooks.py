@@ -29,46 +29,6 @@ import simplejson as json
 from vcsserver import hooks
 
 
-class HooksStub(object):
-    """
-    Simulates a Proy4.Proxy object.
-
-    Will always return `result`, no matter which hook has been called on it.
-    """
-
-    def __init__(self, result):
-        self._result = result
-
-    def __call__(self, hooks_uri):
-        return self
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
-    def __getattr__(self, name):
-        return mock.Mock(return_value=self._result)
-
-
-@contextlib.contextmanager
-def mock_hook_response(
-        status=0, output='', exception=None, exception_args=None):
-    response = {
-        'status': status,
-        'output': output,
-    }
-    if exception:
-        response.update({
-            'exception': exception,
-            'exception_args': exception_args,
-        })
-
-    with mock.patch('Pyro4.Proxy', HooksStub(response)):
-        yield
-
-
 def get_hg_ui(extras=None):
     """Create a Config object with a valid RC_SCM_DATA entry."""
     extras = extras or {}
@@ -89,144 +49,12 @@ def get_hg_ui(extras=None):
     return hg_ui
 
 
-def test_call_hook_no_error(capsys):
-    extras = {
-        'hooks_uri': 'fake_hook_uri',
-    }
-    expected_output = 'My mock outptut'
-    writer = mock.Mock()
-
-    with mock_hook_response(status=1, output=expected_output):
-        hooks._call_hook('hook_name', extras, writer)
-
-    out, err = capsys.readouterr()
-
-    writer.write.assert_called_with(expected_output)
-    assert err == ''
-
-
-def test_call_hook_with_exception(capsys):
-    extras = {
-        'hooks_uri': 'fake_hook_uri',
-    }
-    expected_output = 'My mock outptut'
-    writer = mock.Mock()
-
-    with mock_hook_response(status=1, output=expected_output,
-                            exception='TypeError',
-                            exception_args=('Mock exception', )):
-        with pytest.raises(Exception) as excinfo:
-            hooks._call_hook('hook_name', extras, writer)
-
-    assert excinfo.type == Exception
-    assert 'Mock exception' in str(excinfo.value)
-
-    out, err = capsys.readouterr()
-
-    writer.write.assert_called_with(expected_output)
-    assert err == ''
-
-
-def test_call_hook_with_locked_exception(capsys):
-    extras = {
-        'hooks_uri': 'fake_hook_uri',
-    }
-    expected_output = 'My mock outptut'
-    writer = mock.Mock()
-
-    with mock_hook_response(status=1, output=expected_output,
-                            exception='HTTPLockedRC',
-                            exception_args=('message',)):
-        with pytest.raises(Exception) as excinfo:
-            hooks._call_hook('hook_name', extras, writer)
-
-    assert excinfo.value._vcs_kind == 'repo_locked'
-    assert 'message' == str(excinfo.value)
-
-    out, err = capsys.readouterr()
-
-    writer.write.assert_called_with(expected_output)
-    assert err == ''
-
-
-def test_call_hook_with_stdout():
-    extras = {
-        'hooks_uri': 'fake_hook_uri',
-    }
-    expected_output = 'My mock outptut'
-
-    stdout = io.BytesIO()
-    with mock_hook_response(status=1, output=expected_output):
-        hooks._call_hook('hook_name', extras, stdout)
-
-    assert stdout.getvalue() == expected_output
-
-
-def test_repo_size():
-    hg_ui = get_hg_ui()
-
-    with mock_hook_response(status=1):
-        assert hooks.repo_size(hg_ui, None) == 1
-
-
-def test_pre_pull():
-    hg_ui = get_hg_ui()
-
-    with mock_hook_response(status=1):
-        assert hooks.pre_pull(hg_ui, None) == 1
-
-
-def test_post_pull():
-    hg_ui = get_hg_ui()
-
-    with mock_hook_response(status=1):
-        assert hooks.post_pull(hg_ui, None) == 1
-
-
-def test_pre_push():
-    hg_ui = get_hg_ui()
-
-    with mock_hook_response(status=1):
-        assert hooks.pre_push(hg_ui, None) == 1
-
-
-def test_post_push():
-    hg_ui = get_hg_ui()
-
-    with mock_hook_response(status=1):
-        with mock.patch('vcsserver.hooks._rev_range_hash', return_value=[]):
-            assert hooks.post_push(hg_ui, None, None) == 1
-
-
-def test_git_pre_receive():
-    extras = {
-        'hooks': ['push'],
-        'hooks_uri': 'fake_hook_uri',
-    }
-    with mock_hook_response(status=1):
-        response = hooks.git_pre_receive(None, None,
-                                         {'RC_SCM_DATA': json.dumps(extras)})
-        assert response == 1
-
-
 def test_git_pre_receive_is_disabled():
     extras = {'hooks': ['pull']}
     response = hooks.git_pre_receive(None, None,
                                      {'RC_SCM_DATA': json.dumps(extras)})
 
     assert response == 0
-
-
-def test_git_post_receive_no_subprocess_call():
-    extras = {
-        'hooks': ['push'],
-        'hooks_uri': 'fake_hook_uri',
-    }
-    # Setting revision_lines to '' avoid all subprocess_calls
-    with mock_hook_response(status=1):
-        response = hooks.git_post_receive(None, '',
-                                          {'RC_SCM_DATA': json.dumps(extras)})
-        assert response == 1
 
 
 def test_git_post_receive_is_disabled():
@@ -279,106 +107,8 @@ def test_repo_size_exception_does_not_affect_git_post_receive():
     assert result == status
 
 
-@mock.patch('vcsserver.hooks._run_command')
-def test_git_post_receive_first_commit_sub_branch(cmd_mock):
-    def cmd_mock_returns(args):
-        if args == ['git', 'show', 'HEAD']:
-            raise
-        if args == ['git', 'for-each-ref', '--format=%(refname)',
-                    'refs/heads/*']:
-            return 'refs/heads/test-branch2/sub-branch'
-        if args == ['git', 'log', '--reverse', '--pretty=format:%H', '--',
-                    '9695eef57205c17566a3ae543be187759b310bb7', '--not',
-                    'refs/heads/test-branch2/sub-branch']:
-            return ''
-
-    cmd_mock.side_effect = cmd_mock_returns
-
-    extras = {
-        'hooks': ['push'],
-        'hooks_uri': 'fake_hook_uri'
-    }
-    rev_lines = ['0000000000000000000000000000000000000000 '
-                 '9695eef57205c17566a3ae543be187759b310bb7 '
-                 'refs/heads/feature/sub-branch\n']
-    with mock_hook_response(status=0):
-        response = hooks.git_post_receive(None, rev_lines,
-                                          {'RC_SCM_DATA': json.dumps(extras)})
-
-    calls = [
-        mock.call(['git', 'show', 'HEAD']),
-        mock.call(['git', 'symbolic-ref', 'HEAD',
-                   'refs/heads/feature/sub-branch']),
-    ]
-    cmd_mock.assert_has_calls(calls, any_order=True)
-    assert response == 0
-
-
-@mock.patch('vcsserver.hooks._run_command')
-def test_git_post_receive_first_commit_revs(cmd_mock):
-    extras = {
-        'hooks': ['push'],
-        'hooks_uri': 'fake_hook_uri'
-    }
-    rev_lines = [
-        '0000000000000000000000000000000000000000 '
-        '9695eef57205c17566a3ae543be187759b310bb7 refs/heads/master\n']
-    with mock_hook_response(status=0):
-        response = hooks.git_post_receive(
-            None, rev_lines, {'RC_SCM_DATA': json.dumps(extras)})
-
-    calls = [
-        mock.call(['git', 'show', 'HEAD']),
-        mock.call(['git', 'for-each-ref', '--format=%(refname)',
-                   'refs/heads/*']),
-        mock.call(['git', 'log', '--reverse', '--pretty=format:%H',
-                   '--', '9695eef57205c17566a3ae543be187759b310bb7', '--not',
-                   ''])
-    ]
-    cmd_mock.assert_has_calls(calls, any_order=True)
-
-    assert response == 0
-
-
-def test_git_pre_pull():
-    extras = {
-        'hooks': ['pull'],
-        'hooks_uri': 'fake_hook_uri',
-    }
-    with mock_hook_response(status=1, output='foo'):
-        assert hooks.git_pre_pull(extras) == hooks.HookResponse(1, 'foo')
-
-
-def test_git_pre_pull_exception_is_caught():
-    extras = {
-        'hooks': ['pull'],
-        'hooks_uri': 'fake_hook_uri',
-    }
-    with mock_hook_response(status=2, exception=Exception('foo')):
-        assert hooks.git_pre_pull(extras).status == 128
-
-
 def test_git_pre_pull_is_disabled():
     assert hooks.git_pre_pull({'hooks': ['push']}) == hooks.HookResponse(0, '')
-
-
-def test_git_post_pull():
-    extras = {
-        'hooks': ['pull'],
-        'hooks_uri': 'fake_hook_uri',
-    }
-    with mock_hook_response(status=1, output='foo'):
-        assert hooks.git_post_pull(extras) == hooks.HookResponse(1, 'foo')
-
-
-def test_git_post_pull_exception_is_caught():
-    extras = {
-        'hooks': ['pull'],
-        'hooks_uri': 'fake_hook_uri',
-    }
-    with mock_hook_response(status=2, exception='Exception',
-                            exception_args=('foo',)):
-        assert hooks.git_post_pull(extras).status == 128
 
 
 def test_git_post_pull_is_disabled():
@@ -387,14 +117,6 @@ def test_git_post_pull_is_disabled():
 
 
 class TestGetHooksClient(object):
-    def test_returns_pyro_client_when_protocol_matches(self):
-        hooks_uri = 'localhost:8000'
-        result = hooks._get_hooks_client({
-            'hooks_uri': hooks_uri,
-            'hooks_protocol': 'pyro4'
-        })
-        assert isinstance(result, hooks.HooksPyro4Client)
-        assert result.hooks_uri == hooks_uri
 
     def test_returns_http_client_when_protocol_matches(self):
         hooks_uri = 'localhost:8000'
@@ -403,14 +125,6 @@ class TestGetHooksClient(object):
             'hooks_protocol': 'http'
         })
         assert isinstance(result, hooks.HooksHttpClient)
-        assert result.hooks_uri == hooks_uri
-
-    def test_returns_pyro4_client_when_no_protocol_is_specified(self):
-        hooks_uri = 'localhost:8000'
-        result = hooks._get_hooks_client({
-            'hooks_uri': hooks_uri
-        })
-        assert isinstance(result, hooks.HooksPyro4Client)
         assert result.hooks_uri == hooks_uri
 
     def test_returns_dummy_client_when_hooks_uri_not_specified(self):
@@ -485,30 +199,6 @@ class TestHooksDummyClient(object):
         result = client('post_push', {})
         hooks_module.Hooks.assert_called_once_with()
         assert result == hooks_module.Hooks().__enter__().post_push()
-
-
-class TestHooksPyro4Client(object):
-    def test_init_sets_hooks_uri(self):
-        uri = 'localhost:3000'
-        client = hooks.HooksPyro4Client(uri)
-        assert client.hooks_uri == uri
-
-    def test_call_returns_hook_value(self):
-        hooks_uri = 'localhost:3000'
-        client = hooks.HooksPyro4Client(hooks_uri)
-        hooks_module = mock.Mock()
-        context_manager = mock.MagicMock()
-        context_manager.__enter__.return_value = hooks_module
-        pyro4_patcher = mock.patch.object(
-            hooks.Pyro4, 'Proxy', return_value=context_manager)
-        extras = {
-            'test': 'test'
-        }
-        with pyro4_patcher as pyro4_mock:
-            result = client('post_push', extras)
-        pyro4_mock.assert_called_once_with(hooks_uri)
-        hooks_module.post_push.assert_called_once_with(extras)
-        assert result == hooks_module.post_push.return_value
 
 
 @pytest.fixture

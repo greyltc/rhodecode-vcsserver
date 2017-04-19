@@ -15,16 +15,5 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-
-PYRO_PORT = 9900
-
-PYRO_GIT = 'git_remote'
-PYRO_HG = 'hg_remote'
-PYRO_SVN = 'svn_remote'
-PYRO_VCSSERVER = 'vcs_server'
-PYRO_GIT_REMOTE_WSGI = 'git_remote_wsgi'
-PYRO_HG_REMOTE_WSGI = 'hg_remote_wsgi'
-
 WIRE_ENCODING = 'UTF-8'
-
 GIT_EXECUTABLE = 'git'

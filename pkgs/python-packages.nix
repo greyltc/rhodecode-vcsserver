@@ -67,19 +67,6 @@
       license = [ pkgs.lib.licenses.mit ];
     };
   };
-  Pyro4 = super.buildPythonPackage {
-    name = "Pyro4-4.41";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [serpent];
-    src = fetchurl {
-      url = "https://pypi.python.org/packages/56/2b/89b566b4bf3e7f8ba790db2d1223852f8cb454c52cab7693dd41f608ca2a/Pyro4-4.41.tar.gz";
-      md5 = "ed69e9bfafa9c06c049a87cb0c4c2b6c";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
   WebOb = super.buildPythonPackage {
     name = "WebOb-1.3.1";
     buildInputs = with self; [];
@@ -591,23 +578,10 @@
     name = "rhodecode-vcsserver-4.8.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress Pyro4 serpent pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
+    propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
     src = ./.;
     meta = {
       license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
-    };
-  };
-  serpent = super.buildPythonPackage {
-    name = "serpent-1.15";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [];
-    src = fetchurl {
-      url = "https://pypi.python.org/packages/7b/38/b2b27673a882ff2ea5871bb3e3e6b496ebbaafd1612e51990ffb158b9254/serpent-1.15.tar.gz";
-      md5 = "e27b1aad5c218e16442f52abb7c7053a";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
     };
   };
   setuptools = super.buildPythonPackage {

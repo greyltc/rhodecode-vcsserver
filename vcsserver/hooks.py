@@ -30,7 +30,6 @@ from httplib import HTTPConnection
 
 import mercurial.scmutil
 import mercurial.node
-import Pyro4
 import simplejson as json
 
 from vcsserver import exceptions
@@ -65,15 +64,6 @@ class HooksDummyClient(object):
 
     def __call__(self, hook_name, extras):
         with self._hooks_module.Hooks() as hooks:
-            return getattr(hooks, hook_name)(extras)
-
-
-class HooksPyro4Client(object):
-    def __init__(self, hooks_uri):
-        self.hooks_uri = hooks_uri
-
-    def __call__(self, hook_name, extras):
-        with Pyro4.Proxy(self.hooks_uri) as hooks:
             return getattr(hooks, hook_name)(extras)
 
 
@@ -126,11 +116,7 @@ def _handle_exception(result):
 def _get_hooks_client(extras):
     if 'hooks_uri' in extras:
         protocol = extras.get('hooks_protocol')
-        return (
-            HooksHttpClient(extras['hooks_uri'])
-            if protocol == 'http'
-            else HooksPyro4Client(extras['hooks_uri'])
-        )
+        return HooksHttpClient(extras['hooks_uri'])
     else:
         return HooksDummyClient(extras['hooks_module'])
 
