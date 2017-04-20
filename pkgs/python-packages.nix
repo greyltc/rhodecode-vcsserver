@@ -236,6 +236,19 @@
       license = [ pkgs.lib.licenses.mit ];
     };
   };
+  hg-evolve = super.buildPythonPackage {
+    name = "hg-evolve-6.0.1";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/c4/31/0673a5657c201ebb46e63c4bba8668f96cf5d7a8a0f8a91892d022ccc32b/hg-evolve-6.0.1.tar.gz";
+      md5 = "9c1ce7ac24792abc0eedee09a3344d06";
+    };
+    meta = {
+      license = [ { fullName = "GPLv2+"; } ];
+    };
+  };
   hgsubversion = super.buildPythonPackage {
     name = "hgsubversion-1.8.6";
     buildInputs = with self; [];
@@ -578,7 +591,7 @@
     name = "rhodecode-vcsserver-4.8.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
+    propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
     src = ./.;
     meta = {
       license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
