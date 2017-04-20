@@ -287,6 +287,13 @@ class HgRemote(object):
         return [parent.rev() for parent in ctx.parents()]
 
     @reraise_safe_exceptions
+    def ctx_phase(self, wire, revision):
+        repo = self._factory.repo(wire)
+        ctx = repo[revision]
+        # public=0, draft=1, secret=3
+        return ctx.phase()
+
+    @reraise_safe_exceptions
     def ctx_substate(self, wire, revision):
         repo = self._factory.repo(wire)
         ctx = repo[revision]
