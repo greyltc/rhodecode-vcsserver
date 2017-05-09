@@ -23,6 +23,7 @@ import posixpath as vcspath
 import StringIO
 import subprocess
 import urllib
+import traceback
 
 import svn.client
 import svn.core
@@ -120,8 +121,9 @@ class SvnRemote(object):
         # throws exception
         try:
             svnrepo.svnremoterepo(baseui, url).svn.uuid
-        except:
-            log.debug("Invalid svn url: %s", url)
+        except Exception:
+            tb = traceback.format_exc()
+            log.debug("Invalid Subversion url: `%s`, tb: %s", url, tb)
             raise URLError(
                 '"%s" is not a valid Subversion source url.' % (url, ))
         return True
@@ -130,7 +132,8 @@ class SvnRemote(object):
         try:
             svn.repos.open(path)
         except svn.core.SubversionException:
-            log.debug("Invalid Subversion path %s", path)
+            tb = traceback.format_exc()
+            log.debug("Invalid Subversion path `%s`, tb: %s", path, tb)
             return False
         return True
 
