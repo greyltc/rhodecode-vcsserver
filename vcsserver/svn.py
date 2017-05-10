@@ -47,7 +47,16 @@ svn_compatible_versions = set([
     'pre-1.5-compatible',
     'pre-1.6-compatible',
     'pre-1.8-compatible',
+    'pre-1.9-compatible',
 ])
+
+svn_compatible_versions_map = {
+    'pre-1.4-compatible': '1.3',
+    'pre-1.5-compatible': '1.4',
+    'pre-1.6-compatible': '1.5',
+    'pre-1.8-compatible': '1.7',
+    'pre-1.9-compatible': '1.8',
+}
 
 
 def reraise_safe_exceptions(func):
@@ -68,14 +77,15 @@ class SubversionFactory(RepoFactory):
     def _create_repo(self, wire, create, compatible_version):
         path = svn.core.svn_path_canonicalize(wire['path'])
         if create:
-            fs_config = {}
+            fs_config = {'compatible-version': '1.9'}
             if compatible_version:
                 if compatible_version not in svn_compatible_versions:
                     raise Exception('Unknown SVN compatible version "{}"'
                                     .format(compatible_version))
-                log.debug('Create SVN repo with compatible version "%s"',
-                          compatible_version)
-                fs_config[compatible_version] = '1'
+                fs_config['compatible-version'] = \
+                    svn_compatible_versions_map[compatible_version]
+
+            log.debug('Create SVN repo with config "%s"', fs_config)
             repo = svn.repos.create(path, "", "", None, fs_config)
         else:
             repo = svn.repos.open(path)
@@ -86,7 +96,6 @@ class SubversionFactory(RepoFactory):
             return self._create_repo(wire, create, compatible_version)
 
         return self._repo(wire, create_new_repo)
-
 
 
 NODE_TYPE_MAPPING = {
