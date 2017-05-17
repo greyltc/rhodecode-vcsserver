@@ -69,7 +69,7 @@ class HooksDummyClient(object):
 
 class RemoteMessageWriter(object):
     """Writer base class."""
-    def write(message):
+    def write(self, message):
         raise NotImplementedError()
 
 
