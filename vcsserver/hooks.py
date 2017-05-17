@@ -313,12 +313,12 @@ def _run_command(arguments):
     # Probably this should be using subprocessio.
     process = subprocess.Popen(
         arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, _ = process.communicate()
+    stdout, stderr = process.communicate()
 
     if process.returncode != 0:
         raise Exception(
-            'Command %s exited with exit code %s' % (arguments,
-                                                     process.returncode))
+            'Command %s exited with exit code %s: stderr:%s' % (
+                arguments, process.returncode, stderr))
 
     return stdout
 
