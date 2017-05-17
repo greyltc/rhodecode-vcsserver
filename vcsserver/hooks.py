@@ -147,13 +147,25 @@ def post_pull(ui, repo, **kwargs):
     return _call_hook('post_pull', _extras_from_ui(ui), HgMessageWriter(ui))
 
 
+def _rev_range_hash(repo, node):
+
+    commits = []
+    for rev in xrange(repo[node], len(repo)):
+        ctx = repo[rev]
+        commit_id = mercurial.node.hex(ctx.node())
+        branch = ctx.branch()
+        commits.append((commit_id, branch))
+
+    return commits
+
+
 def pre_push(ui, repo, node=None, **kwargs):
     extras = _extras_from_ui(ui)
 
     rev_data = []
     if node and kwargs.get('hooktype') == 'pretxnchangegroup':
         branches = collections.defaultdict(list)
-        for commit_id, branch in _rev_range_hash(repo, node, with_branch=True):
+        for commit_id, branch in _rev_range_hash(repo, node):
             branches[branch].append(commit_id)
 
         for branch, commits in branches.iteritems():
@@ -170,26 +182,28 @@ def pre_push(ui, repo, node=None, **kwargs):
     return _call_hook('pre_push', extras, HgMessageWriter(ui))
 
 
-def _rev_range_hash(repo, node, with_branch=False):
-
-    commits = []
-    for rev in xrange(repo[node], len(repo)):
-        ctx = repo[rev]
-        commit_id = mercurial.node.hex(ctx.node())
-        branch = ctx.branch()
-        if with_branch:
-            commits.append((commit_id, branch))
-        else:
-            commits.append(commit_id)
-
-    return commits
-
-
 def post_push(ui, repo, node, **kwargs):
-    commit_ids = _rev_range_hash(repo, node)
-
     extras = _extras_from_ui(ui)
+
+    commit_ids = []
+    branches = []
+    bookmarks = []
+    tags = []
+
+    for commit_id, branch in _rev_range_hash(repo, node):
+        commit_ids.append(commit_id)
+        if branch not in branches:
+            branches.append(branch)
+
+    if hasattr(ui, '_rc_pushkey_branches'):
+        bookmarks = ui._rc_pushkey_branches
+
     extras['commit_ids'] = commit_ids
+    extras['new_refs'] = {
+        'branches': branches,
+        'bookmarks': bookmarks,
+        'tags': tags
+    }
 
     return _call_hook('post_push', extras, HgMessageWriter(ui))
 
@@ -351,10 +365,16 @@ def git_post_receive(unused_repo_path, revision_lines, env):
     # subcommand sets the PATH environment variable so that it point to the
     # correct version of the git executable.
     empty_commit_id = '0' * 40
+    branches = []
+    tags = []
     for push_ref in rev_data:
         type_ = push_ref['type']
+
         if type_ == 'heads':
             if push_ref['old_rev'] == empty_commit_id:
+                # starting new branch case
+                if push_ref['name'] not in branches:
+                    branches.append(push_ref['name'])
 
                 # Fix up head revision if needed
                 cmd = ['git', 'show', 'HEAD']
@@ -378,14 +398,24 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 # delete branch case
                 git_revs.append('delete_branch=>%s' % push_ref['name'])
             else:
+                if push_ref['name'] not in branches:
+                    branches.append(push_ref['name'])
+
                 cmd = ['git', 'log',
                        '{old_rev}..{new_rev}'.format(**push_ref),
                        '--reverse', '--pretty=format:%H']
                 git_revs.extend(_run_command(cmd).splitlines())
         elif type_ == 'tags':
+            if push_ref['name'] not in tags:
+                tags.append(push_ref['name'])
             git_revs.append('tag=>%s' % push_ref['name'])
 
     extras['commit_ids'] = git_revs
+    extras['new_refs'] = {
+        'branches': branches,
+        'bookmarks': [],
+        'tags': tags,
+    }
 
     if 'repo_size' in extras['hooks']:
         try:

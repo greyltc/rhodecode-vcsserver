@@ -70,7 +70,8 @@ def test_git_post_receive_calls_repo_size():
     with mock.patch.object(hooks, '_call_hook') as call_hook_mock:
         hooks.git_post_receive(
             None, '', {'RC_SCM_DATA': json.dumps(extras)})
-    extras.update({'commit_ids': []})
+    extras.update({'commit_ids': [],
+                   'new_refs': {'bookmarks': [], 'branches': [], 'tags': []}})
     expected_calls = [
         mock.call('repo_size', extras, mock.ANY),
         mock.call('post_push', extras, mock.ANY),
@@ -83,7 +84,8 @@ def test_git_post_receive_does_not_call_disabled_repo_size():
     with mock.patch.object(hooks, '_call_hook') as call_hook_mock:
         hooks.git_post_receive(
             None, '', {'RC_SCM_DATA': json.dumps(extras)})
-    extras.update({'commit_ids': []})
+    extras.update({'commit_ids': [],
+                   'new_refs': {'bookmarks': [], 'branches': [], 'tags': []}})
     expected_calls = [
         mock.call('post_push', extras, mock.ANY)
     ]
