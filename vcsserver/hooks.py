@@ -194,6 +194,12 @@ def post_push(ui, repo, node, **kwargs):
     return _call_hook('post_push', extras, HgMessageWriter(ui))
 
 
+def key_push(ui, repo, **kwargs):
+    if kwargs['new'] != '0' and kwargs['namespace'] == 'bookmarks':
+        # store new bookmarks in our UI object propagated later to post_push
+        ui._rc_pushkey_branches = repo[kwargs['key']].bookmarks()
+    return
+
 # backward compat
 log_pull_action = post_pull
 
