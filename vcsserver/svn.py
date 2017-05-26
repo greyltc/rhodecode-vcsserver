@@ -146,6 +146,18 @@ class SvnRemote(object):
             return False
         return True
 
+    @reraise_safe_exceptions
+    def verify(self, wire,):
+        repo_path = wire['path']
+        if not self.is_path_valid_repository(wire, repo_path):
+            raise Exception(
+                "Path %s is not a valid Subversion repository." % repo_path)
+
+        load = subprocess.Popen(
+            ['svnadmin', 'info', repo_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return ''.join(load.stdout)
+
     def lookup(self, wire, revision):
         if revision not in [-1, None, 'HEAD']:
             raise NotImplementedError
