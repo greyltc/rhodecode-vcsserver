@@ -15,7 +15,7 @@ pyramid==1.7.4
 pyramid-mako==1.0.2
 repoze.lru==0.6
 simplejson==3.7.2
-subprocess32==3.2.6
+subprocess32==3.2.7
 
 # Custom subvertpy that is not available on pypi.
 https://code.rhodecode.com/upstream/subvertpy/archive/subvertpy-0.9.3.tar.gz?md5=4e49da2fe07608239cc9a80a7bb8f33c#egg=subvertpy==0.9.3
