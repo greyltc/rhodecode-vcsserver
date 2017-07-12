@@ -81,13 +81,13 @@
     };
   };
   WebTest = super.buildPythonPackage {
-    name = "WebTest-1.4.3";
+    name = "WebTest-2.0.27";
     buildInputs = with self; [];
     doCheck = false;
-    propagatedBuildInputs = with self; [WebOb];
+    propagatedBuildInputs = with self; [six WebOb waitress beautifulsoup4];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/51/3d/84fd0f628df10b30c7db87895f56d0158e5411206b721ca903cb51bfd948/WebTest-1.4.3.zip";
-      md5 = "631ce728bed92c681a4020a36adbc353";
+      url = "https://pypi.python.org/packages/80/fa/ca3a759985c72e3a124cbca3e1f8a2e931a07ffd31fd45d8f7bf21cb95cf/WebTest-2.0.27.tar.gz";
+      md5 = "54e6515ac71c51b6fc90179483c749ad";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -101,6 +101,19 @@
     src = fetchurl {
       url = "https://pypi.python.org/packages/ec/9c/368086faa9c016efce5da3e0e13ba392c9db79e3ab740b763fe28620b18b/backports.shutil_get_terminal_size-1.0.0.tar.gz";
       md5 = "03267762480bd86b50580dc19dff3c66";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  beautifulsoup4 = super.buildPythonPackage {
+    name = "beautifulsoup4-4.6.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/fa/8d/1d14391fdaed5abada4e0f63543fef49b8331a34ca60c88bd521bcf7f782/beautifulsoup4-4.6.0.tar.gz";
+      md5 = "c17714d0f91a23b708a592cb3c697728";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -273,6 +286,19 @@
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 ];
+    };
+  };
+  hupper = super.buildPythonPackage {
+    name = "hupper-1.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://pypi.python.org/packages/2e/07/df892c564dc09bb3cf6f6deb976c26adf9117db75ba218cb4353dbc9d826/hupper-1.0.tar.gz";
+      md5 = "26e77da7d5ac5858f59af050d1a6eb5a";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
     };
   };
   infrae.cache = super.buildPythonPackage {
