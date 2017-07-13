@@ -21,7 +21,7 @@ class EchoApp(object):
         log.debug("Content-Length: %s", environ.get('CONTENT_LENGTH'))
         environ['wsgi.input'].read()
         status = '200 OK'
-        headers = []
+        headers = [('Content-Type', 'text/plain')]
         start_response(status, headers)
         return ["ECHO"]
 
