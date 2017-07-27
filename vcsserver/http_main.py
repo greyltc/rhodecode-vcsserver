@@ -334,6 +334,7 @@ class HTTPApplication(object):
         else:
             @wsgiapp
             def _hg_stream(environ, start_response):
+                log.debug('http-app: handling hg stream')
                 repo_path = environ['HTTP_X_RC_REPO_PATH']
                 repo_name = environ['HTTP_X_RC_REPO_NAME']
                 packed_config = base64.b64decode(
@@ -345,6 +346,8 @@ class HTTPApplication(object):
                 # Consitent path information for hgweb
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
                 environ['REPO_NAME'] = repo_name
+                log.debug('http-app: starting app handler '
+                          'with %s and process request', app)
                 return app(environ, ResponseFilter(start_response))
             return _hg_stream
 
@@ -358,6 +361,7 @@ class HTTPApplication(object):
         else:
             @wsgiapp
             def _git_stream(environ, start_response):
+                log.debug('http-app: handling git stream')
                 repo_path = environ['HTTP_X_RC_REPO_PATH']
                 repo_name = environ['HTTP_X_RC_REPO_NAME']
                 packed_config = base64.b64decode(
@@ -388,6 +392,9 @@ class HTTPApplication(object):
                 else:
                     app = scm_app.create_git_wsgi_app(
                         repo_path, repo_name, config)
+
+                log.debug('http-app: starting app handler '
+                          'with %s and process request', app)
                 return app(environ, start_response)
 
             return _git_stream
