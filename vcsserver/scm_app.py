@@ -17,6 +17,7 @@
 
 import os
 import logging
+import itertools
 
 import mercurial
 import mercurial.error
@@ -67,8 +68,27 @@ class HgWeb(mercurial.hgweb.hgweb_mod.hgweb):
         """Unused function so raise an exception if accidentally called."""
         raise NotImplementedError
 
-    def run_wsgi(self, req):
-        """Check the request has a valid command, failing fast otherwise."""
+    def __call__(self, environ, start_response):
+        """Run the WSGI application.
+
+        This may be called by multiple threads.
+        """
+        req = mercurial.hgweb.request.wsgirequest(environ, start_response)
+        gen = self.run_wsgi(req)
+
+        first_chunk = None
+
+        try:
+            data = gen.next()
+            def first_chunk(): yield data
+        except StopIteration:
+            pass
+
+        if first_chunk:
+            return itertools.chain(first_chunk(), gen)
+        return gen
+
+    def _runwsgi(self, req, repo):
         cmd = req.form.get('cmd', [''])[0]
         if not mercurial.hgweb.protocol.iscmd(cmd):
             req.respond(
@@ -78,7 +98,7 @@ class HgWeb(mercurial.hgweb.hgweb_mod.hgweb):
             )
             return ['']
 
-        return super(HgWeb, self).run_wsgi(req)
+        return super(HgWeb, self)._runwsgi(req, repo)
 
 
 def make_hg_ui_from_config(repo_config):
