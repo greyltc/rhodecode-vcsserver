@@ -269,7 +269,8 @@ class HTTPApplication(object):
         return resp
 
     def status_view(self, request):
-        return {'status': 'OK'}
+        import vcsserver
+        return {'status': 'OK', 'vcsserver_version': vcsserver.__version__}
 
     def service_view(self, request):
         import vcsserver
