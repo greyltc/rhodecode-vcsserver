@@ -725,11 +725,11 @@ class HgRemote(object):
         commands.merge(baseui, repo, rev=revision)
 
     @reraise_safe_exceptions
-    def commit(self, wire, message, username):
+    def commit(self, wire, message, username, close_branch=False):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'username', username)
-        commands.commit(baseui, repo, message=message)
+        commands.commit(baseui, repo, message=message, close_branch=close_branch)
 
     @reraise_safe_exceptions
     def rebase(self, wire, source=None, dest=None, abort=False):
