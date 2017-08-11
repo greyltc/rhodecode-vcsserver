@@ -36,11 +36,12 @@ let
     in
 
     pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      patches = (oldAttrs.patches or []) ++
-        pkgs.lib.optionals pkgs.stdenv.isDarwin [
-          # johbo: "import svn.client" fails on darwin currently.
-          ./pkgs/subversion-1.9.4-darwin.patch
-        ];
+      name = "subversion-1.9.7";
+      src = pkgs.fetchurl {
+        url = "https://www.apache.org/dist/subversion/subversion-1.9.7.tar.gz";
+        sha256 = "0g3cs2h008z8ymgkhbk54jp87bjh7y049rn42igj881yi2f20an7";
+      };
+
     });
 
   });
