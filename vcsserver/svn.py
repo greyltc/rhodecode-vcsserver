@@ -17,6 +17,7 @@
 
 from __future__ import absolute_import
 
+import os
 from urllib2 import URLError
 import logging
 import posixpath as vcspath
@@ -89,6 +90,8 @@ class SubversionFactory(RepoFactory):
             repo = svn.repos.create(path, "", "", None, fs_config)
         else:
             repo = svn.repos.open(path)
+
+        log.debug('Got SVN object: %s', repo)
         return repo
 
     def repo(self, wire, create=False, compatible_version=None):
@@ -138,6 +141,14 @@ class SvnRemote(object):
         return True
 
     def is_path_valid_repository(self, wire, path):
+
+        # NOTE(marcink):  short circuit the check for SVN repo
+        # the repos.open might be expensive to check, but we have one cheap
+        # pre condition that we can use, to check for 'format' file
+
+        if not os.path.isfile(os.path.join(path, 'format')):
+            return False
+
         try:
             svn.repos.open(path)
         except svn.core.SubversionException:
