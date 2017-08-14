@@ -21,9 +21,29 @@ class EchoApp(object):
         log.debug("Content-Length: %s", environ.get('CONTENT_LENGTH'))
         environ['wsgi.input'].read()
         status = '200 OK'
-        headers = []
+        headers = [('Content-Type', 'text/plain')]
         start_response(status, headers)
         return ["ECHO"]
+
+
+class EchoAppStream(object):
+
+    def __init__(self, repo_path, repo_name, config):
+        self._repo_path = repo_path
+        log.info("EchoApp initialized for %s", repo_path)
+
+    def __call__(self, environ, start_response):
+        log.debug("EchoApp called for %s", self._repo_path)
+        log.debug("Content-Length: %s", environ.get('CONTENT_LENGTH'))
+        environ['wsgi.input'].read()
+        status = '200 OK'
+        headers = [('Content-Type', 'text/plain')]
+        start_response(status, headers)
+
+        def generator():
+            for _ in xrange(1000000):
+                yield "ECHO"
+        return generator()
 
 
 def create_app():
