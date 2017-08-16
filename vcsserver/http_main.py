@@ -23,6 +23,7 @@ import wsgiref.util
 import traceback
 from itertools import chain
 
+import simplejson as json
 import msgpack
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -311,6 +312,25 @@ class HTTPApplication(object):
             return value
         return _render
 
+    def set_env_from_config(self, environ, config):
+        dict_conf = {}
+        try:
+            for elem in config:
+                if elem[0] == 'rhodecode':
+                    dict_conf = json.loads(elem[2])
+                    break
+        except Exception:
+            log.exception('Failed to fetch SCM CONFIG')
+            return
+
+        username = dict_conf.get('username')
+        if username:
+            environ['REMOTE_USER'] = username
+
+        ip = dict_conf.get('ip')
+        if ip:
+            environ['REMOTE_HOST'] = ip
+
     def hg_proxy(self):
         @wsgiapp
         def _hg_proxy(environ, start_response):
@@ -344,9 +364,11 @@ class HTTPApplication(object):
                 app = scm_app.create_hg_wsgi_app(
                     repo_path, repo_name, config)
 
-                # Consitent path information for hgweb
+                # Consistent path information for hgweb
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
                 environ['REPO_NAME'] = repo_name
+                self.set_env_from_config(environ, config)
+
                 log.debug('http-app: starting app handler '
                           'with %s and process request', app)
                 return app(environ, ResponseFilter(start_response))
@@ -370,6 +392,8 @@ class HTTPApplication(object):
                 config = msgpack.unpackb(packed_config)
 
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
+                self.set_env_from_config(environ, config)
+
                 content_type = environ.get('CONTENT_TYPE', '')
 
                 path = environ['PATH_INFO']
