@@ -628,6 +628,7 @@ class GitRemote(object):
 
             return ''.join(p), ''.join(p.error)
         except (EnvironmentError, OSError) as err:
+            cmd = ' '.join(cmd)  # human friendly CMD
             tb_err = ("Couldn't run git command (%s).\n"
                       "Original error was:%s\n" % (cmd, err))
             log.exception(tb_err)
