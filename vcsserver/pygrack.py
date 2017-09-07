@@ -229,7 +229,7 @@ class GitRepository(object):
     def _inject_messages_to_response(self, response, capabilities,
                                      start_messages, end_messages):
         """
-        Given a list reponse we inject the pre/post-pull messages.
+        Given a list response we inject the pre/post-pull messages.
 
         We only inject the messages if the client supports sideband, and the
         response has the format:
@@ -241,11 +241,16 @@ class GitRepository(object):
         if not self.SIDE_BAND_CAPS.intersection(capabilities):
             return response
 
-        if (not response[0].startswith('0008NAK\n') or
-                not response[-1].endswith('0000')):
+        if not start_messages and not end_messages:
             return response
 
-        if not start_messages and not end_messages:
+        # make a list out of response if it's an iterator
+        # so we can investigate it for message injection.
+        if hasattr(response, '__iter__'):
+            response = list(response)
+
+        if (not response[0].startswith('0008NAK\n') or
+                not response[-1].endswith('0000')):
             return response
 
         new_response = ['0008NAK\n']
@@ -303,6 +308,7 @@ class GitRepository(object):
                              git_command.encode('utf8'))
         resp.charset = None
 
+        pre_pull_messages = ''
         if git_command == 'git-upload-pack':
             status, pre_pull_messages = hooks.git_pre_pull(self.extras)
             if status != 0:
@@ -352,7 +358,6 @@ class GitRepository(object):
                 pass
 
         if git_command == 'git-upload-pack':
-            out = list(out)
             unused_status, post_pull_messages = hooks.git_post_pull(self.extras)
             resp.app_iter = self._inject_messages_to_response(
                 out, capabilities, pre_pull_messages, post_pull_messages)
