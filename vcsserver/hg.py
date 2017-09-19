@@ -33,8 +33,8 @@ from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
     httppeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
-    patch, peer, revrange, ui, Abort, LookupError, RepoError, RepoLookupError,
-    InterventionRequired, RequirementError)
+    patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
+    RepoLookupError, InterventionRequired, RequirementError)
 
 log = logging.getLogger(__name__)
 
@@ -629,7 +629,7 @@ class HgRemote(object):
 
         date = (tag_time, tag_timezone)
         try:
-            repo.tag(name, node, message, local, user, date)
+            hg_tag.tag(repo, name, node, message, local, user, date)
         except Abort as e:
             log.exception("Tag operation aborted")
             # Exception can contain unicode which we convert
