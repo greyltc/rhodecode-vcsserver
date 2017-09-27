@@ -127,6 +127,9 @@ class HgRemote(object):
             "message": self.ctx_description,
             "parents": self.ctx_parents,
             "status": self.ctx_status,
+            "obsolete": self.ctx_obsolete,
+            "phase": self.ctx_phase,
+            "hidden": self.ctx_hidden,
             "_file_paths": self.ctx_list,
         }
 
