@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
 import io
+import os
 import sys
 import json
 import logging
@@ -124,6 +125,7 @@ def _get_hooks_client(extras):
 def _call_hook(hook_name, extras, writer):
     hooks = _get_hooks_client(extras)
     result = hooks(hook_name, extras)
+    log.debug('Hooks got result: %s', result)
     writer.write(result['output'])
     _handle_exception(result)
 
@@ -131,20 +133,12 @@ def _call_hook(hook_name, extras, writer):
 
 
 def _extras_from_ui(ui):
-    extras = json.loads(ui.config('rhodecode', 'RC_SCM_DATA'))
+    hook_data = ui.config('rhodecode', 'RC_SCM_DATA')
+    if not hook_data:
+        # maybe it's inside environ ?
+        hook_data = os.environ.get('RC_SCM_DATA')
+    extras = json.loads(hook_data)
     return extras
-
-
-def repo_size(ui, repo, **kwargs):
-    return _call_hook('repo_size', _extras_from_ui(ui), HgMessageWriter(ui))
-
-
-def pre_pull(ui, repo, **kwargs):
-    return _call_hook('pre_pull', _extras_from_ui(ui), HgMessageWriter(ui))
-
-
-def post_pull(ui, repo, **kwargs):
-    return _call_hook('post_pull', _extras_from_ui(ui), HgMessageWriter(ui))
 
 
 def _rev_range_hash(repo, node):
@@ -157,6 +151,33 @@ def _rev_range_hash(repo, node):
         commits.append((commit_id, branch))
 
     return commits
+
+
+def repo_size(ui, repo, **kwargs):
+    extras = _extras_from_ui(ui)
+    return _call_hook('repo_size', extras, HgMessageWriter(ui))
+
+
+def pre_pull(ui, repo, **kwargs):
+    extras = _extras_from_ui(ui)
+    return _call_hook('pre_pull', extras, HgMessageWriter(ui))
+
+
+def pre_pull_ssh(ui, repo, **kwargs):
+    if _extras_from_ui(ui).get('SSH'):
+        return pre_pull(ui, repo, **kwargs)
+    return 0
+
+
+def post_pull(ui, repo, **kwargs):
+    extras = _extras_from_ui(ui)
+    return _call_hook('post_pull', extras, HgMessageWriter(ui))
+
+
+def post_pull_ssh(ui, repo, **kwargs):
+    if _extras_from_ui(ui).get('SSH'):
+        return post_pull(ui, repo, **kwargs)
+    return 0
 
 
 def pre_push(ui, repo, node=None, **kwargs):
@@ -180,6 +201,27 @@ def pre_push(ui, repo, node=None, **kwargs):
 
     extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, HgMessageWriter(ui))
+
+
+def pre_push_ssh(ui, repo, node=None, **kwargs):
+    if _extras_from_ui(ui).get('SSH'):
+        return pre_push(ui, repo, node, **kwargs)
+
+    return 0
+
+
+def pre_push_ssh_auth(ui, repo, node=None, **kwargs):
+    extras = _extras_from_ui(ui)
+    if extras.get('SSH'):
+        permission = extras['SSH_PERMISSIONS']
+
+        if 'repository.write' == permission or 'repository.admin' == permission:
+            return 0
+
+        # non-zero ret code
+        return 1
+
+    return 0
 
 
 def post_push(ui, repo, node, **kwargs):
@@ -208,11 +250,18 @@ def post_push(ui, repo, node, **kwargs):
     return _call_hook('post_push', extras, HgMessageWriter(ui))
 
 
+def post_push_ssh(ui, repo, node, **kwargs):
+    if _extras_from_ui(ui).get('SSH'):
+        return post_push(ui, repo, node, **kwargs)
+    return 0
+
+
 def key_push(ui, repo, **kwargs):
     if kwargs['new'] != '0' and kwargs['namespace'] == 'bookmarks':
         # store new bookmarks in our UI object propagated later to post_push
         ui._rc_pushkey_branches = repo[kwargs['key']].bookmarks()
     return
+
 
 # backward compat
 log_pull_action = post_pull
