@@ -33,8 +33,8 @@ from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
     httppeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
-    patch, peer, revrange, ui, Abort, LookupError, RepoError, RepoLookupError,
-    InterventionRequired, RequirementError)
+    patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
+    RepoLookupError, InterventionRequired, RequirementError)
 
 log = logging.getLogger(__name__)
 
@@ -127,6 +127,9 @@ class HgRemote(object):
             "message": self.ctx_description,
             "parents": self.ctx_parents,
             "status": self.ctx_status,
+            "obsolete": self.ctx_obsolete,
+            "phase": self.ctx_phase,
+            "hidden": self.ctx_hidden,
             "_file_paths": self.ctx_list,
         }
 
@@ -629,7 +632,7 @@ class HgRemote(object):
 
         date = (tag_time, tag_timezone)
         try:
-            repo.tag(name, node, message, local, user, date)
+            hg_tag.tag(repo, name, node, message, local, user, date)
         except Abort as e:
             log.exception("Tag operation aborted")
             # Exception can contain unicode which we convert
@@ -725,11 +728,11 @@ class HgRemote(object):
         commands.merge(baseui, repo, rev=revision)
 
     @reraise_safe_exceptions
-    def commit(self, wire, message, username):
+    def commit(self, wire, message, username, close_branch=False):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'username', username)
-        commands.commit(baseui, repo, message=message)
+        commands.commit(baseui, repo, message=message, close_branch=close_branch)
 
     @reraise_safe_exceptions
     def rebase(self, wire, source=None, dest=None, abort=False):

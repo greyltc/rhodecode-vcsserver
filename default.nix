@@ -16,11 +16,18 @@ let
   pkgs = pkgs_.overridePackages (self: super: {
     # bump GIT version
     git = pkgs.lib.overrideDerivation pkgs_.git (oldAttrs: {
-      name = "git-2.9.5";
+      name = "git-2.13.5";
       src = pkgs.fetchurl {
-        url = "https://www.kernel.org/pub/software/scm/git/git-2.9.5.tar.xz";
-        sha256 = "00ir7qmgfszwrhxjzxwixk7wp35gxvvw467gr30bagwsrdza7gm4";
+        url = "https://www.kernel.org/pub/software/scm/git/git-2.13.5.tar.xz";
+        sha256 = "18fi18103n7grshm4ffb0fwsnvbl48sbqy5gqx528vf8maff5j91";
       };
+
+      patches = [
+        ./pkgs/git_patches/docbook2texi.patch
+        ./pkgs/git_patches/symlinks-in-bin.patch
+        ./pkgs/git_patches/git-sh-i18n.patch
+        ./pkgs/git_patches/ssh-path.patch
+      ];
 
     });
 
