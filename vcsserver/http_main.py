@@ -23,6 +23,7 @@ import wsgiref.util
 import traceback
 from itertools import chain
 
+import simplejson as json
 import msgpack
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -269,7 +270,8 @@ class HTTPApplication(object):
         return resp
 
     def status_view(self, request):
-        return {'status': 'OK'}
+        import vcsserver
+        return {'status': 'OK', 'vcsserver_version': vcsserver.__version__}
 
     def service_view(self, request):
         import vcsserver
@@ -310,6 +312,25 @@ class HTTPApplication(object):
             return value
         return _render
 
+    def set_env_from_config(self, environ, config):
+        dict_conf = {}
+        try:
+            for elem in config:
+                if elem[0] == 'rhodecode':
+                    dict_conf = json.loads(elem[2])
+                    break
+        except Exception:
+            log.exception('Failed to fetch SCM CONFIG')
+            return
+
+        username = dict_conf.get('username')
+        if username:
+            environ['REMOTE_USER'] = username
+
+        ip = dict_conf.get('ip')
+        if ip:
+            environ['REMOTE_HOST'] = ip
+
     def hg_proxy(self):
         @wsgiapp
         def _hg_proxy(environ, start_response):
@@ -334,6 +355,7 @@ class HTTPApplication(object):
         else:
             @wsgiapp
             def _hg_stream(environ, start_response):
+                log.debug('http-app: handling hg stream')
                 repo_path = environ['HTTP_X_RC_REPO_PATH']
                 repo_name = environ['HTTP_X_RC_REPO_NAME']
                 packed_config = base64.b64decode(
@@ -342,9 +364,13 @@ class HTTPApplication(object):
                 app = scm_app.create_hg_wsgi_app(
                     repo_path, repo_name, config)
 
-                # Consitent path information for hgweb
+                # Consistent path information for hgweb
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
                 environ['REPO_NAME'] = repo_name
+                self.set_env_from_config(environ, config)
+
+                log.debug('http-app: starting app handler '
+                          'with %s and process request', app)
                 return app(environ, ResponseFilter(start_response))
             return _hg_stream
 
@@ -358,6 +384,7 @@ class HTTPApplication(object):
         else:
             @wsgiapp
             def _git_stream(environ, start_response):
+                log.debug('http-app: handling git stream')
                 repo_path = environ['HTTP_X_RC_REPO_PATH']
                 repo_name = environ['HTTP_X_RC_REPO_NAME']
                 packed_config = base64.b64decode(
@@ -365,6 +392,8 @@ class HTTPApplication(object):
                 config = msgpack.unpackb(packed_config)
 
                 environ['PATH_INFO'] = environ['HTTP_X_RC_PATH_INFO']
+                self.set_env_from_config(environ, config)
+
                 content_type = environ.get('CONTENT_TYPE', '')
 
                 path = environ['PATH_INFO']
@@ -388,6 +417,9 @@ class HTTPApplication(object):
                 else:
                     app = scm_app.create_git_wsgi_app(
                         repo_path, repo_name, config)
+
+                log.debug('http-app: starting app handler '
+                          'with %s and process request', app)
                 return app(environ, start_response)
 
             return _git_stream
