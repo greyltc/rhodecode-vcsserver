@@ -10,7 +10,7 @@ hg-evolve==7.0.0
 infrae.cache==1.0.1
 mercurial==4.4.0
 msgpack-python==0.4.8
-pyramid-jinja2==2.5
+pyramid-jinja2==2.7
 pyramid==1.9.1
 pyramid-mako==1.0.2
 repoze.lru==0.6
