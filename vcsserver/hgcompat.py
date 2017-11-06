@@ -20,10 +20,10 @@ Mercurial libs compatibility
 """
 
 import mercurial
-import mercurial.demandimport
+from mercurial import demandimport
 # patch demandimport, due to bug in mercurial when it always triggers
 # demandimport.enable()
-mercurial.demandimport.enable = lambda *args, **kwargs: 1
+demandimport.enable = lambda *args, **kwargs: 1
 
 from mercurial import ui
 from mercurial import patch
