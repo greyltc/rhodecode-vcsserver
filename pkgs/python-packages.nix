@@ -16,13 +16,13 @@
     };
   };
   Jinja2 = super.buildPythonPackage {
-    name = "Jinja2-2.8";
+    name = "Jinja2-2.9.6";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [MarkupSafe];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/f2/2f/0b98b06a345a761bec91a079ccae392d282690c2d8272e708f4d10829e22/Jinja2-2.8.tar.gz";
-      md5 = "edb51693fe22c53cee5403775c71a99e";
+      url = "https://pypi.python.org/packages/90/61/f820ff0076a2599dd39406dcb858ecb239438c02ce706c8e91131ab9c7f1/Jinja2-2.9.6.tar.gz";
+      md5 = "6411537324b4dba0956aaa8109f3c77b";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -42,13 +42,13 @@
     };
   };
   MarkupSafe = super.buildPythonPackage {
-    name = "MarkupSafe-0.23";
+    name = "MarkupSafe-1.0";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/c0/41/bae1254e0396c0cc8cf1751cb7d9afc90a602353695af5952530482c963f/MarkupSafe-0.23.tar.gz";
-      md5 = "f5ab3deee4c37cd6a922fb81e730da6e";
+      url = "https://pypi.python.org/packages/4d/de/32d741db316d8fdb7680822dd37001ef7a448255de9699ab4bfcbdf4172b/MarkupSafe-1.0.tar.gz";
+      md5 = "2fcedc9284d50e577b5192e8e3578355";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -432,13 +432,13 @@
     };
   };
   plaster = super.buildPythonPackage {
-    name = "plaster-0.5";
+    name = "plaster-1.0";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [setuptools];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/99/b3/d7ca1fe31d2b56dba68a238721fda6820770f9c2a3de17a582d4b5b2edcc/plaster-0.5.tar.gz";
-      md5 = "c59345a67a860cfcaa1bd6a81451399d";
+      url = "https://pypi.python.org/packages/37/e1/56d04382d718d32751017d32f351214384e529b794084eee20bb52405563/plaster-1.0.tar.gz";
+      md5 = "80e6beb4760c16fea31754babcc0576e";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -653,7 +653,7 @@
     };
   };
   rhodecode-vcsserver = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.10.0";
+    name = "rhodecode-vcsserver-4.11.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
     propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
@@ -663,13 +663,13 @@
     };
   };
   scandir = super.buildPythonPackage {
-    name = "scandir-1.5";
+    name = "scandir-1.6";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/bd/f4/3143e0289faf0883228017dbc6387a66d0b468df646645e29e1eb89ea10e/scandir-1.5.tar.gz";
-      md5 = "a2713043de681bba6b084be42e7a8a44";
+      url = "https://pypi.python.org/packages/77/3f/916f524f50ee65e3f465a280d2851bd63685250fddb3020c212b3977664d/scandir-1.6.tar.gz";
+      md5 = "0180ddb97c96cbb2d4f25d2ae11c64ac";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal { fullName = "New BSD License"; } ];
