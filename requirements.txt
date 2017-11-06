@@ -17,8 +17,7 @@ repoze.lru==0.6
 simplejson==3.11.1
 subprocess32==3.2.7
 
-# Custom subvertpy that is not available on pypi.
-https://code.rhodecode.com/upstream/subvertpy/archive/subvertpy-0.9.3.tar.gz?md5=4e49da2fe07608239cc9a80a7bb8f33c#egg=subvertpy==0.9.3
+subvertpy==0.10.1
 
 six==1.9.0
 translationstring==1.3
