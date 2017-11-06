@@ -354,13 +354,13 @@
     };
   };
   mercurial = super.buildPythonPackage {
-    name = "mercurial-4.2.3";
+    name = "mercurial-4.4";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://www.mercurial-scm.org/release/mercurial-4.2.3.tar.gz";
-      md5 = "a24a8fab7c2ad2c65e945b1b35d94e3b";
+      url = "https://pypi.python.org/packages/ad/a2/26cd147e44acdcaceada23e93ffec49e4f6adfc57db647f3d071db411961/mercurial-4.4.tar.gz";
+      md5 = "c1d9fad1b7ed7077b0d4ae82e71154db";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 pkgs.lib.licenses.gpl2Plus ];
