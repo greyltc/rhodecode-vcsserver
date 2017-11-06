@@ -263,13 +263,13 @@
     };
   };
   hg-evolve = super.buildPythonPackage {
-    name = "hg-evolve-6.6.0";
+    name = "hg-evolve-7.0.0";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/c5/04/3557c97eaa320b5a6769edade64a299cd2710f5f3b818f64991ab6c8c08f/hg-evolve-6.6.0.tar.gz";
-      md5 = "06b9a9c8e8137bbf0c4fbf940c009725";
+      url = "https://pypi.python.org/packages/69/8a/003d4fd5b5d137054b3d768b6ebf4a2f76149b3557bb322689bf3db3e15b/hg-evolve-7.0.0.tar.gz";
+      md5 = "2f427fa2cdb30984df26c1258831316f";
     };
     meta = {
       license = [ { fullName = "GPLv2+"; } ];
