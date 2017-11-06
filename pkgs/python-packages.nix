@@ -741,16 +741,16 @@
     };
   };
   subvertpy = super.buildPythonPackage {
-    name = "subvertpy-0.9.3";
+    name = "subvertpy-0.10.1";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://code.rhodecode.com/upstream/subvertpy/archive/subvertpy-0.9.3.tar.gz?md5=4e49da2fe07608239cc9a80a7bb8f33c";
-      md5 = "4e49da2fe07608239cc9a80a7bb8f33c";
+      url = "https://pypi.python.org/packages/9d/76/99fa82affce75f5ac0f7dbe513796c3f37311ace0c68e1b063683b4f9b99/subvertpy-0.10.1.tar.gz";
+      md5 = "a70e03579902d480f5e9f8c570f6536b";
     };
     meta = {
-      license = [ pkgs.lib.licenses.lgpl21Plus ];
+      license = [ pkgs.lib.licenses.lgpl21Plus pkgs.lib.licenses.gpl2Plus ];
     };
   };
   termcolor = super.buildPythonPackage {
