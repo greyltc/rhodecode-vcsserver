@@ -83,6 +83,11 @@ def test_dynamic_capabilities_uses_largefiles_if_enabled(
     assert LARGEFILES_CAPABILITY in caps
 
 
+def test_hgsubversion_import():
+    from hgsubversion import svnrepo
+    assert svnrepo
+
+
 @pytest.fixture
 def patched_capabilities(request):
     """
