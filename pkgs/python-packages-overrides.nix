@@ -24,6 +24,13 @@ self: super: {
     '';
   });
 
+  hgsubversion = super.hgsubversion.override (attrs: {
+    propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
+      pkgs.sqlite
+      basePythonPackages.sqlite3
+    ];
+  });
+
   mercurial = super.mercurial.override (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
       self.python.modules.curses
