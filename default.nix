@@ -137,6 +137,7 @@ let
         # We ensure that always the correct version is available as a symlink.
         # So that users calling them via the profile path will always use the
         # correct version.
+        ln -s ${self.python}/bin/python $out/bin
         ln -s ${pkgs.git}/bin/git $out/bin
         ln -s ${self.mercurial}/bin/hg $out/bin
         ln -s ${pkgs.subversion}/bin/svn* $out/bin

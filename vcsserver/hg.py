@@ -453,10 +453,9 @@ class HgRemote(object):
         fctx = ctx.filectx(path)
 
         result = []
-        for i, annotate_data in enumerate(fctx.annotate()):
+        for i, (a_line, content) in enumerate(fctx.annotate()):
             ln_no = i + 1
-            node_info, content = annotate_data
-            sha = hex(node_info[0].node())
+            sha = hex(a_line.fctx.node())
             result.append((ln_no, sha, content))
         return result
 
