@@ -406,13 +406,13 @@
     };
   };
   pexpect = super.buildPythonPackage {
-    name = "pexpect-4.2.1";
+    name = "pexpect-4.3.0";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [ptyprocess];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/e8/13/d0b0599099d6cd23663043a2a0bb7c61e58c6ba359b2656e6fb000ef5b98/pexpect-4.2.1.tar.gz";
-      md5 = "3694410001a99dff83f0b500a1ca1c95";
+      url = "https://pypi.python.org/packages/f8/44/5466c30e49762bb92e442bbdf4472d6904608d211258eb3198a11f0309a4/pexpect-4.3.0.tar.gz";
+      md5 = "047a486dcd26134b74f2e67046bb61a0";
     };
     meta = {
       license = [ pkgs.lib.licenses.isc { fullName = "ISC License (ISCL)"; } ];
@@ -445,13 +445,13 @@
     };
   };
   plaster-pastedeploy = super.buildPythonPackage {
-    name = "plaster-pastedeploy-0.4.1";
+    name = "plaster-pastedeploy-0.4.2";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [PasteDeploy plaster];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/9d/6e/f8be01ed41c94e6c54ac97cf2eb142a702aae0c8cce31c846f785e525b40/plaster_pastedeploy-0.4.1.tar.gz";
-      md5 = "f48d5344b922e56c4978eebf1cd2e0d3";
+      url = "https://pypi.python.org/packages/2c/62/0daf9c0be958e785023e583e51baac15863699e956bfb3d448898d80edd8/plaster_pastedeploy-0.4.2.tar.gz";
+      md5 = "58fd7852002909378e818c9d5b71e90a";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
