@@ -263,13 +263,13 @@
     };
   };
   hg-evolve = super.buildPythonPackage {
-    name = "hg-evolve-7.0.0";
+    name = "hg-evolve-7.0.1";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/69/8a/003d4fd5b5d137054b3d768b6ebf4a2f76149b3557bb322689bf3db3e15b/hg-evolve-7.0.0.tar.gz";
-      md5 = "2f427fa2cdb30984df26c1258831316f";
+      url = "https://pypi.python.org/packages/92/5c/4c216be1a08f326a12076b645f4892a2b0865810db1f4a0c9648f1f4c113/hg-evolve-7.0.1.tar.gz";
+      md5 = "2dfa926846ea873a8406bababb06b277";
     };
     meta = {
       license = [ { fullName = "GPLv2+"; } ];
@@ -354,13 +354,13 @@
     };
   };
   mercurial = super.buildPythonPackage {
-    name = "mercurial-4.4.1";
+    name = "mercurial-4.4.2";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/c0/59/38f76fad1d95bb64f03ae5cdb994f039da21a2739032ff4db3e284c498d1/mercurial-4.4.1.tar.gz";
-      md5 = "37974a416d1d9525e1375c92025b16d9";
+      url = "https://pypi.python.org/packages/d0/83/92a5fa662ba277128db305e39e7ea5a638f2f1cbbc6dc5fbf4c14aefae22/mercurial-4.4.2.tar.gz";
+      md5 = "95769125cf7e9dbc341a983253acefcd";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 pkgs.lib.licenses.gpl2Plus ];
