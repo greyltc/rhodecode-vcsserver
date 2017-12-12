@@ -45,7 +45,7 @@ class StreamFeeder(Thread):
             self.bytes = bytes(source)
         else:  # can be either file pointer or file-like
             if type(source) in (int, long):  # file pointer it is
-                ## converting file descriptor (int) stdin into file-like
+                # converting file descriptor (int) stdin into file-like
                 try:
                     source = os.fdopen(source, 'rb', 16384)
                 except Exception:
@@ -118,7 +118,7 @@ class InputStreamChunker(Thread):
         t = self.target
         cs = self.chunk_size
         ccm = self.chunk_count_max
-        kr = self.keep_reading
+        keep_reading = self.keep_reading
         da = self.data_added
         go = self.go
 
@@ -129,15 +129,13 @@ class InputStreamChunker(Thread):
 
         while b and go.is_set():
             if len(t) > ccm:
-                kr.clear()
-                kr.wait(2)
-                # # this only works on 2.7.x and up
-                # if not kr.wait(10):
-                #     raise Exception("Timed out while waiting for input to be read.")
-                # instead we'll use this
-                if len(t) > ccm + 3:
-                    raise IOError(
-                        "Timed out while waiting for input from subprocess.")
+                keep_reading.clear()
+                keep_reading.wait(2)
+
+                if not keep_reading.wait(10):
+                    raise Exception(
+                        "Timed out while waiting for input to be read.")
+
             t.append(b)
             da.set()
             b = s.read(cs)
