@@ -159,7 +159,8 @@ class BufferedGenerator(object):
     """
 
     def __init__(self, source, buffer_size=65536, chunk_size=4096,
-                 starting_values=[], bottomless=False):
+                 starting_values=None, bottomless=False):
+        starting_values = starting_values or []
 
         if bottomless:
             maxlen = int(buffer_size / chunk_size)
@@ -190,9 +191,9 @@ class BufferedGenerator(object):
         elif self.worker.EOF.is_set():
             raise StopIteration
 
-    def throw(self, type, value=None, traceback=None):
+    def throw(self, exc_type, value=None, traceback=None):
         if not self.worker.EOF.is_set():
-            raise type(value)
+            raise exc_type(value)
 
     def start(self):
         self.worker.start()
@@ -354,7 +355,7 @@ class SubprocessIOChunker(object):
     _closed = False
 
     def __init__(self, cmd, inputstream=None, buffer_size=65536,
-                 chunk_size=4096, starting_values=[], fail_on_stderr=True,
+                 chunk_size=4096, starting_values=None, fail_on_stderr=True,
                  fail_on_return_code=True, **kwargs):
         """
         Initializes SubprocessIOChunker
@@ -370,6 +371,7 @@ class SubprocessIOChunker(object):
                                     exception if the return code is not 0.
         """
 
+        starting_values = starting_values or []
         if inputstream:
             input_streamer = StreamFeeder(inputstream)
             input_streamer.start()
@@ -434,6 +436,7 @@ class SubprocessIOChunker(object):
         # are doing some magic in between closing stdout and terminating the
         # process and, as a result,  we are not getting return code on "slow"
         # systems.
+        result = None
         stop_iteration = None
         try:
             result = self.output.next()
