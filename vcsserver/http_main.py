@@ -58,6 +58,11 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
+def _is_request_chunked(environ):
+    stream = environ.get('HTTP_TRANSFER_ENCODING', '') == 'chunked'
+    return stream
+
+
 class VCS(object):
     def __init__(self, locale=None, cache_config=None):
         self.locale = locale
@@ -331,6 +336,10 @@ class HTTPApplication(object):
         if ip:
             environ['REMOTE_HOST'] = ip
 
+        if _is_request_chunked(environ):
+            # set the compatibility flag for webob
+            environ['wsgi.input_terminated'] = True
+
     def hg_proxy(self):
         @wsgiapp
         def _hg_proxy(environ, start_response):
@@ -420,6 +429,7 @@ class HTTPApplication(object):
 
                 log.debug('http-app: starting app handler '
                           'with %s and process request', app)
+
                 return app(environ, start_response)
 
             return _git_stream
