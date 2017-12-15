@@ -21,8 +21,7 @@ syntax: regexp
 ^\.cache.*$
 ^\.rhodecode$
 
-^_dev
-^._dev
+^.dev
 ^build/
 ^coverage\.xml$
 ^data$
