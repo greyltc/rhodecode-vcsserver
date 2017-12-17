@@ -136,7 +136,10 @@ def _extras_from_ui(ui):
     hook_data = ui.config('rhodecode', 'RC_SCM_DATA')
     if not hook_data:
         # maybe it's inside environ ?
-        hook_data = os.environ.get('RC_SCM_DATA')
+        env_hook_data = os.environ.get('RC_SCM_DATA')
+        if env_hook_data:
+            hook_data = env_hook_data
+
     extras = json.loads(hook_data)
     return extras
 
