@@ -140,7 +140,9 @@ def _extras_from_ui(ui):
         if env_hook_data:
             hook_data = env_hook_data
 
-    extras = json.loads(hook_data)
+    extras = {}
+    if hook_data:
+        extras = json.loads(hook_data)
     return extras
 
 
@@ -167,7 +169,8 @@ def pre_pull(ui, repo, **kwargs):
 
 
 def pre_pull_ssh(ui, repo, **kwargs):
-    if _extras_from_ui(ui).get('SSH'):
+    extras = _extras_from_ui(ui)
+    if extras and extras.get('SSH'):
         return pre_pull(ui, repo, **kwargs)
     return 0
 
@@ -178,7 +181,8 @@ def post_pull(ui, repo, **kwargs):
 
 
 def post_pull_ssh(ui, repo, **kwargs):
-    if _extras_from_ui(ui).get('SSH'):
+    extras = _extras_from_ui(ui)
+    if extras and extras.get('SSH'):
         return post_pull(ui, repo, **kwargs)
     return 0
 
