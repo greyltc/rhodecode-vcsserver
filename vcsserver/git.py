@@ -20,6 +20,7 @@ import os
 import posixpath as vcspath
 import re
 import stat
+import traceback
 import urllib
 import urllib2
 from functools import wraps
@@ -124,11 +125,15 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def assert_correct_path(self, wire):
+        path = wire.get('path')
         try:
             self._factory.repo(wire)
         except NotGitRepository as e:
-            # Exception can contain unicode which we convert
-            raise exceptions.AbortException(repr(e))
+            tb = traceback.format_exc()
+            log.debug("Invalid Git path `%s`, tb: %s", path, tb)
+            return False
+
+        return True
 
     @reraise_safe_exceptions
     def bare(self, wire):
