@@ -53,6 +53,7 @@ def make_ui_from_config(repo_config):
     # make our hgweb quiet so it doesn't print output
     baseui.setconfig('ui', 'quiet', 'true')
 
+    baseui.setconfig('ui', 'paginate', 'never')
     # force mercurial to only use 1 thread, otherwise it may try to set a
     # signal in a non-main thread, thus generating a ValueError.
     baseui.setconfig('worker', 'numcpus', 1)
