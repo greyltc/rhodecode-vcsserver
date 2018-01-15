@@ -417,6 +417,10 @@ class SubprocessIOChunker(object):
                     "Subprocess exited due to an error:\n" + err)
             if _returncode and fail_on_return_code:
                 err = ''.join(bg_err)
+                if not err:
+                    # maybe get empty stderr, try stdout instead
+                    # in many cases git reports the errors on stdout too
+                    err = ''.join(bg_out)
                 raise EnvironmentError(
                     "Subprocess exited with non 0 ret code:%s: stderr:%s" % (
                         _returncode, err))
