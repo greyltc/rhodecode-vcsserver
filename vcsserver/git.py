@@ -447,6 +447,14 @@ class GitRemote(object):
             return remote_refs
 
     @reraise_safe_exceptions
+    def sync_push(self, wire, url, refs=None):
+        if self.check_url(url, wire):
+            repo = self._factory.repo(wire)
+            self.run_git_command(
+                wire, ['push', url, '--mirror'], fail_on_stderr=False)
+
+
+    @reraise_safe_exceptions
     def get_remote_refs(self, wire, url):
         repo = Repo(url)
         return repo.get_refs()
