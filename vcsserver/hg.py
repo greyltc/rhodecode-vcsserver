@@ -561,6 +561,15 @@ class HgRemote(object):
             repo, remote, heads=commit_ids, force=None).cgresult
 
     @reraise_safe_exceptions
+    def sync_push(self, wire, url):
+        if self.check_url(url, wire['config']):
+            repo = self._factory.repo(wire)
+            bookmarks = dict(repo._bookmarks).keys()
+            remote = peer(repo, {}, url)
+            return exchange.push(
+                repo, remote, newbranch=True, bookmarks=bookmarks).cgresult
+
+    @reraise_safe_exceptions
     def revision(self, wire, rev):
         repo = self._factory.repo(wire)
         ctx = repo[rev]
