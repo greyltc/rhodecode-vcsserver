@@ -331,6 +331,8 @@ class HTTPApplication(object):
         username = dict_conf.get('username')
         if username:
             environ['REMOTE_USER'] = username
+            # mercurial specific, some extension api rely on this
+            environ['HGUSER'] = username
 
         ip = dict_conf.get('ip')
         if ip:
