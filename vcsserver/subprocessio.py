@@ -23,9 +23,12 @@ along with git_http_backend.py Project.
 If not, see <http://www.gnu.org/licenses/>.
 """
 import os
+import logging
 import subprocess32 as subprocess
 from collections import deque
 from threading import Event, Thread
+
+log = logging.getLogger(__name__)
 
 
 class StreamFeeder(Thread):
@@ -133,8 +136,9 @@ class InputStreamChunker(Thread):
                 keep_reading.clear()
                 keep_reading.wait(timeout_input)
                 if len(t) > chunk_count_max + timeout_input:
-                    raise IOError(
-                        "Timed out while waiting for input from subprocess.")
+                    log.error("Timed out while waiting for input from subprocess.")
+                    os._exit(-1)  # this will cause the worker to recycle itself
+
             t.append(b)
             da.set()
             b = s.read(cs)
