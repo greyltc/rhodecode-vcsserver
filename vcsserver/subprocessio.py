@@ -117,7 +117,7 @@ class InputStreamChunker(Thread):
         s = self.source
         t = self.target
         cs = self.chunk_size
-        ccm = self.chunk_count_max
+        chunk_count_max = self.chunk_count_max
         keep_reading = self.keep_reading
         da = self.data_added
         go = self.go
@@ -127,15 +127,14 @@ class InputStreamChunker(Thread):
         except ValueError:
             b = ''
 
+        timeout_input = 20
         while b and go.is_set():
-            if len(t) > ccm:
+            if len(t) > chunk_count_max:
                 keep_reading.clear()
-                keep_reading.wait(2)
-
-                if not keep_reading.wait(10):
-                    raise Exception(
-                        "Timed out while waiting for input to be read.")
-
+                keep_reading.wait(timeout_input)
+                if len(t) > chunk_count_max + timeout_input:
+                    raise IOError(
+                        "Timed out while waiting for input from subprocess.")
             t.append(b)
             da.set()
             b = s.read(cs)
