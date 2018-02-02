@@ -22,7 +22,6 @@ from urllib2 import URLError
 import logging
 import posixpath as vcspath
 import StringIO
-import subprocess
 import urllib
 import traceback
 
@@ -33,10 +32,8 @@ import svn.diff
 import svn.fs
 import svn.repos
 
-from vcsserver import svn_diff
-from vcsserver import exceptions
+from vcsserver import svn_diff, exceptions, subprocessio
 from vcsserver.base import RepoFactory, raise_from_original
-
 
 log = logging.getLogger(__name__)
 
@@ -164,10 +161,9 @@ class SvnRemote(object):
             raise Exception(
                 "Path %s is not a valid Subversion repository." % repo_path)
 
-        load = subprocess.Popen(
-            ['svnadmin', 'info', repo_path],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return ''.join(load.stdout)
+        cmd = ['svnadmin', 'info', repo_path]
+        stdout, stderr = subprocessio.run_command(cmd)
+        return stdout
 
     def lookup(self, wire, revision):
         if revision not in [-1, None, 'HEAD']:
@@ -343,7 +339,9 @@ class SvnRemote(object):
         if not self.is_path_valid_repository(wire, repo_path):
             raise Exception(
                 "Path %s is not a valid Subversion repository." % repo_path)
+
         # TODO: johbo: URL checks ?
+        import subprocess
         rdump = subprocess.Popen(
             ['svnrdump', 'dump', '--non-interactive', src_url],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)

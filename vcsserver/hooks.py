@@ -377,30 +377,6 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
     return _call_hook('pre_push', extras, GitMessageWriter())
 
 
-def _run_command(arguments):
-    """
-    Run the specified command and return the stdout.
-
-    :param arguments: sequence of program arguments (including the program name)
-    :type arguments: list[str]
-    """
-
-    cmd = arguments
-    try:
-        gitenv = os.environ.copy()
-        _opts = {'env': gitenv, 'shell': False, 'fail_on_stderr': False}
-        p = subprocessio.SubprocessIOChunker(cmd, **_opts)
-        stdout = ''.join(p)
-    except (EnvironmentError, OSError) as err:
-        cmd = ' '.join(cmd)  # human friendly CMD
-        tb_err = ("Couldn't run git command (%s).\n"
-                  "Original error was:%s\n" % (cmd, err))
-        log.exception(tb_err)
-        raise Exception(tb_err)
-
-    return stdout
-
-
 def git_post_receive(unused_repo_path, revision_lines, env):
     """
     Post push hook.
@@ -437,21 +413,26 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 # Fix up head revision if needed
                 cmd = [settings.GIT_EXECUTABLE, 'show', 'HEAD']
                 try:
-                    _run_command(cmd)
+                    subprocessio.run_command(cmd, env=os.environ.copy())
                 except Exception:
                     cmd = [settings.GIT_EXECUTABLE, 'symbolic-ref', 'HEAD',
                            'refs/heads/%s' % push_ref['name']]
                     print("Setting default branch to %s" % push_ref['name'])
-                    _run_command(cmd)
+                    subprocessio.run_command(cmd, env=os.environ.copy())
 
-                cmd = [settings.GIT_EXECUTABLE, 'for-each-ref', '--format=%(refname)',
-                       'refs/heads/*']
-                heads = _run_command(cmd)
+                cmd = [settings.GIT_EXECUTABLE, 'for-each-ref',
+                       '--format=%(refname)', 'refs/heads/*']
+                stdout, stderr = subprocessio.run_command(
+                    cmd, env=os.environ.copy())
+                heads = stdout
                 heads = heads.replace(push_ref['ref'], '')
                 heads = ' '.join(head for head in heads.splitlines() if head)
-                cmd = [settings.GIT_EXECUTABLE, 'log', '--reverse', '--pretty=format:%H',
-                        '--', push_ref['new_rev'], '--not', heads]
-                git_revs.extend(_run_command(cmd).splitlines())
+                cmd = [settings.GIT_EXECUTABLE, 'log', '--reverse',
+                       '--pretty=format:%H', '--', push_ref['new_rev'],
+                       '--not', heads]
+                stdout, stderr = subprocessio.run_command(
+                    cmd, env=os.environ.copy())
+                git_revs.extend(stdout.splitlines())
             elif push_ref['new_rev'] == empty_commit_id:
                 # delete branch case
                 git_revs.append('delete_branch=>%s' % push_ref['name'])
@@ -462,7 +443,9 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 cmd = [settings.GIT_EXECUTABLE, 'log',
                        '{old_rev}..{new_rev}'.format(**push_ref),
                        '--reverse', '--pretty=format:%H']
-                git_revs.extend(_run_command(cmd).splitlines())
+                stdout, stderr = subprocessio.run_command(
+                    cmd, env=os.environ.copy())
+                git_revs.extend(stdout.splitlines())
         elif type_ == 'tags':
             if push_ref['name'] not in tags:
                 tags.append(push_ref['name'])
