@@ -482,3 +482,30 @@ class SubprocessIOChunker(object):
 
     def __del__(self):
         self.close()
+
+
+def run_command(arguments, env=None):
+    """
+    Run the specified command and return the stdout.
+
+    :param arguments: sequence of program arguments (including the program name)
+    :type arguments: list[str]
+    """
+
+    cmd = arguments
+    log.debug('Running subprocessio command %s', cmd)
+    try:
+        _opts = {'shell': False, 'fail_on_stderr': False}
+        if env:
+            _opts.update({'env': env})
+        p = SubprocessIOChunker(cmd, **_opts)
+        stdout = ''.join(p)
+        stderr = ''.join(''.join(p.error))
+    except (EnvironmentError, OSError) as err:
+        cmd = ' '.join(cmd)  # human friendly CMD
+        tb_err = ("Couldn't run subprocessio command (%s).\n"
+                  "Original error was:%s\n" % (cmd, err))
+        log.exception(tb_err)
+        raise Exception(tb_err)
+
+    return stdout, stderr
