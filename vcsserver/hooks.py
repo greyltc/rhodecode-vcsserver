@@ -24,7 +24,6 @@ import json
 import logging
 import collections
 import importlib
-import subprocess
 
 from httplib import HTTPConnection
 
@@ -33,7 +32,7 @@ import mercurial.scmutil
 import mercurial.node
 import simplejson as json
 
-from vcsserver import exceptions
+from vcsserver import exceptions, subprocessio, settings
 
 log = logging.getLogger(__name__)
 
@@ -385,16 +384,19 @@ def _run_command(arguments):
     :param arguments: sequence of program arguments (including the program name)
     :type arguments: list[str]
     """
-    # TODO(skreft): refactor this method and all the other similar ones.
-    # Probably this should be using subprocessio.
-    process = subprocess.Popen(
-        arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
 
-    if process.returncode != 0:
-        raise Exception(
-            'Command %s exited with exit code %s: stderr:%s' % (
-                arguments, process.returncode, stderr))
+    cmd = arguments
+    try:
+        gitenv = os.environ.copy()
+        _opts = {'env': gitenv, 'shell': False, 'fail_on_stderr': False}
+        p = subprocessio.SubprocessIOChunker(cmd, **_opts)
+        stdout = ''.join(p)
+    except (EnvironmentError, OSError) as err:
+        cmd = ' '.join(cmd)  # human friendly CMD
+        tb_err = ("Couldn't run git command (%s).\n"
+                  "Original error was:%s\n" % (cmd, err))
+        log.exception(tb_err)
+        raise Exception(tb_err)
 
     return stdout
 
@@ -433,21 +435,21 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                     branches.append(push_ref['name'])
 
                 # Fix up head revision if needed
-                cmd = ['git', 'show', 'HEAD']
+                cmd = [settings.GIT_EXECUTABLE, 'show', 'HEAD']
                 try:
                     _run_command(cmd)
                 except Exception:
-                    cmd = ['git', 'symbolic-ref', 'HEAD',
+                    cmd = [settings.GIT_EXECUTABLE, 'symbolic-ref', 'HEAD',
                            'refs/heads/%s' % push_ref['name']]
                     print("Setting default branch to %s" % push_ref['name'])
                     _run_command(cmd)
 
-                cmd = ['git', 'for-each-ref', '--format=%(refname)',
+                cmd = [settings.GIT_EXECUTABLE, 'for-each-ref', '--format=%(refname)',
                        'refs/heads/*']
                 heads = _run_command(cmd)
                 heads = heads.replace(push_ref['ref'], '')
                 heads = ' '.join(head for head in heads.splitlines() if head)
-                cmd = ['git', 'log', '--reverse', '--pretty=format:%H',
+                cmd = [settings.GIT_EXECUTABLE, 'log', '--reverse', '--pretty=format:%H',
                         '--', push_ref['new_rev'], '--not', heads]
                 git_revs.extend(_run_command(cmd).splitlines())
             elif push_ref['new_rev'] == empty_commit_id:
@@ -457,7 +459,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 if push_ref['name'] not in branches:
                     branches.append(push_ref['name'])
 
-                cmd = ['git', 'log',
+                cmd = [settings.GIT_EXECUTABLE, 'log',
                        '{old_rev}..{new_rev}'.format(**push_ref),
                        '--reverse', '--pretty=format:%H']
                 git_revs.extend(_run_command(cmd).splitlines())
