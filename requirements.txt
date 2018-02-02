@@ -11,6 +11,7 @@ infrae.cache==1.0.1
 mercurial==4.4.2
 msgpack-python==0.4.8
 pyramid-jinja2==2.7
+Jinja2==2.9.6
 pyramid==1.9.1
 pyramid-mako==1.0.2
 repoze.lru==0.7
