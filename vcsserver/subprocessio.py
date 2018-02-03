@@ -141,7 +141,12 @@ class InputStreamChunker(Thread):
 
             t.append(b)
             da.set()
-            b = s.read(cs)
+
+            try:
+                b = s.read(cs)
+            except ValueError:
+                b = ''
+
         self.EOF.set()
         da.set()  # for cases when done but there was no input.
 
