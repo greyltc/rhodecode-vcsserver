@@ -15,6 +15,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
+import os
 import base64
 import locale
 import logging
@@ -276,7 +277,8 @@ class HTTPApplication(object):
 
     def status_view(self, request):
         import vcsserver
-        return {'status': 'OK', 'vcsserver_version': vcsserver.__version__}
+        return {'status': 'OK', 'vcsserver_version': vcsserver.__version__,
+                'pid': os.getpid()}
 
     def service_view(self, request):
         import vcsserver
