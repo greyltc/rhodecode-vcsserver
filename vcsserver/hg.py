@@ -553,7 +553,13 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def pull(self, wire, url, commit_ids=None):
         repo = self._factory.repo(wire)
+        # Disable any prompts for this repo
+        repo.ui.setconfig('ui', 'interactive', 'off', '-y')
+
         remote = peer(repo, {}, url)
+        # Disable any prompts for this remote
+        remote.ui.setconfig('ui', 'interactive', 'off', '-y')
+
         if commit_ids:
             commit_ids = [bin(commit_id) for commit_id in commit_ids]
 
@@ -564,8 +570,15 @@ class HgRemote(object):
     def sync_push(self, wire, url):
         if self.check_url(url, wire['config']):
             repo = self._factory.repo(wire)
+
+            # Disable any prompts for this repo
+            repo.ui.setconfig('ui', 'interactive', 'off', '-y')
+
             bookmarks = dict(repo._bookmarks).keys()
             remote = peer(repo, {}, url)
+            # Disable any prompts for this remote
+            remote.ui.setconfig('ui', 'interactive', 'off', '-y')
+
             return exchange.push(
                 repo, remote, newbranch=True, bookmarks=bookmarks).cgresult
 
