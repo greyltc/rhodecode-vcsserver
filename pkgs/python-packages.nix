@@ -237,13 +237,13 @@
     };
   };
   greenlet = super.buildPythonPackage {
-    name = "greenlet-0.4.12";
+    name = "greenlet-0.4.13";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/be/76/82af375d98724054b7e273b5d9369346937324f9bcc20980b45b068ef0b0/greenlet-0.4.12.tar.gz";
-      md5 = "e8637647d58a26c4a1f51ca393e53c00";
+      url = "https://pypi.python.org/packages/13/de/ba92335e9e76040ca7274224942282a80d54f85e342a5e33c5277c7f87eb/greenlet-0.4.13.tar.gz";
+      md5 = "6e0b9dd5385f81d478451ec8ed1d62b3";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -406,13 +406,13 @@
     };
   };
   pexpect = super.buildPythonPackage {
-    name = "pexpect-4.3.0";
+    name = "pexpect-4.3.1";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [ptyprocess];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/f8/44/5466c30e49762bb92e442bbdf4472d6904608d211258eb3198a11f0309a4/pexpect-4.3.0.tar.gz";
-      md5 = "047a486dcd26134b74f2e67046bb61a0";
+      url = "https://pypi.python.org/packages/14/05/47c8bca66390c9b18c91f6152db4b74eb850382e8e13aa2f06dfb3036466/pexpect-4.3.1.tar.gz";
+      md5 = "16aa4549136b2d1b2bf1e0e9788d75a6";
     };
     meta = {
       license = [ pkgs.lib.licenses.isc { fullName = "ISC License (ISCL)"; } ];
@@ -653,7 +653,7 @@
     };
   };
   rhodecode-vcsserver = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.11.3";
+    name = "rhodecode-vcsserver-4.12.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
     propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
