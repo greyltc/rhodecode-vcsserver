@@ -451,8 +451,9 @@ class GitRemote(object):
         if self.check_url(url, wire):
             repo = self._factory.repo(wire)
             self.run_git_command(
-                wire, ['push', url, '--mirror'], fail_on_stderr=False)
-
+                wire, ['push', url, '--mirror'], fail_on_stderr=False,
+                _copts=['-c', 'core.askpass=""'],
+                extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
     @reraise_safe_exceptions
     def get_remote_refs(self, wire, url):
@@ -624,6 +625,10 @@ class GitRemote(object):
             # no exc on failure
             del opts['_safe']
             safe_call = True
+
+        if '_copts' in opts:
+            _copts.extend(opts['_copts'] or [])
+            del opts['_copts']
 
         gitenv = os.environ.copy()
         gitenv.update(opts.pop('extra_env', {}))
