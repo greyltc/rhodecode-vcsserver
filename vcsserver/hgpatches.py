@@ -87,7 +87,7 @@ def patch_subrepo_type_mapping():
             """
             return True
 
-        def dirty(self, ignoreupdate=False):
+        def dirty(self, ignoreupdate=False, missing=False):
             """returns true if the dirstate of the subrepo is dirty or does not
             match current stored state. If ignoreupdate is true, only check
             whether the subrepo has uncommitted changes in its dirstate.
