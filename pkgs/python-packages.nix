@@ -16,13 +16,13 @@
     };
   };
   Jinja2 = super.buildPythonPackage {
-    name = "Jinja2-2.9.6";
+    name = "Jinja2-2.10";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [MarkupSafe];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/90/61/f820ff0076a2599dd39406dcb858ecb239438c02ce706c8e91131ab9c7f1/Jinja2-2.9.6.tar.gz";
-      md5 = "6411537324b4dba0956aaa8109f3c77b";
+      url = "https://pypi.python.org/packages/56/e6/332789f295cf22308386cf5bbd1f4e00ed11484299c5d7383378cf48ba47/Jinja2-2.10.tar.gz";
+      md5 = "61ef1117f945486472850819b8d1eb3d";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -653,7 +653,7 @@
     };
   };
   rhodecode-vcsserver = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.11.5";
+    name = "rhodecode-vcsserver-4.11.6";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
     propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
