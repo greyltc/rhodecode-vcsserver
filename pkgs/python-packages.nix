@@ -372,8 +372,8 @@
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/15/45/30273ee91feb60dabb8fbb2da7868520525f02cf910279b3047182feed80/mock-1.0.1.zip";
-      md5 = "869f08d003c289a97c1a6610faf5e913";
+      url = "https://pypi.python.org/packages/a2/52/7edcd94f0afb721a2d559a5b9aae8af4f8f2c79bc63fdbe8a8a6c9b23bbe/mock-1.0.1.tar.gz";
+      md5 = "c3971991738caa55ec7c356bbc154ee2";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
