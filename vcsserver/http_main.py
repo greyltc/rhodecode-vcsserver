@@ -30,6 +30,7 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from pyramid.config import Configurator
 from pyramid.wsgi import wsgiapp
+from pyramid.compat import configparser
 
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
 from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
@@ -282,7 +283,6 @@ class HTTPApplication(object):
 
     def service_view(self, request):
         import vcsserver
-        import ConfigParser as configparser
 
         payload = msgpack.unpackb(request.body, use_list=True)
 
