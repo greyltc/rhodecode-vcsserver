@@ -769,3 +769,8 @@ class HgRemote(object):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
         commands.bookmark(baseui, repo, bookmark, rev=revision, force=True)
+
+    @reraise_safe_exceptions
+    def install_hooks(self, wire, force=False):
+        # we don't need any special hooks for Mercurial
+        pass

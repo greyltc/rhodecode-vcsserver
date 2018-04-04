@@ -32,7 +32,7 @@ import svn.diff
 import svn.fs
 import svn.repos
 
-from vcsserver import svn_diff, exceptions, subprocessio
+from vcsserver import svn_diff, exceptions, subprocessio, settings
 from vcsserver.base import RepoFactory, raise_from_original
 
 log = logging.getLogger(__name__)
@@ -414,6 +414,17 @@ class SvnRemote(object):
     def is_large_file(self, wire, path):
         return False
 
+    @reraise_safe_exceptions
+    def install_hooks(self, wire, force=False):
+        from vcsserver.hook_utils import install_svn_hooks
+        repo_path = wire['path']
+        binary_dir = settings.BINARY_DIR
+        executable = None
+        if binary_dir:
+            executable = os.path.join(binary_dir, 'python')
+        return install_svn_hooks(
+            repo_path, executable=executable, force_create=force)
+
 
 class SvnDiffer(object):
     """
@@ -574,6 +585,7 @@ class SvnDiffer(object):
         content = svn.core.Stream(
             svn.fs.file_contents(fs_root, node_path)).read()
         return content.splitlines(True)
+
 
 
 class DiffChangeEditor(svn.delta.Editor):

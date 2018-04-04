@@ -73,3 +73,10 @@ def safe_str(unicode_, to_encoding=['utf8']):
         return unicode_.encode(encoding)
     except (ImportError, UnicodeEncodeError):
         return unicode_.encode(to_encoding[0], 'replace')
+
+
+class AttributeDict(dict):
+    def __getattr__(self, attr):
+        return self.get(attr, None)
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__

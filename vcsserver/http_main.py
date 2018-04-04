@@ -92,6 +92,10 @@ class VCS(object):
             svn_repo_cache = self.cache.get_cache_region(
                 'svn', region='repo_object')
             svn_factory = SubversionFactory(svn_repo_cache)
+            # hg factory is used for svn url validation
+            hg_repo_cache = self.cache.get_cache_region(
+                'hg', region='repo_object')
+            hg_factory = MercurialFactory(hg_repo_cache)
             self._svn_remote = SvnRemote(svn_factory, hg_factory=hg_factory)
         else:
             log.info("Subversion client import failed")
@@ -190,6 +194,9 @@ class HTTPApplication(object):
         git_path = app_settings.get('git_path', None)
         if git_path:
             settings.GIT_EXECUTABLE = git_path
+        binary_dir = app_settings.get('core.binary_dir', None)
+        if binary_dir:
+            settings.BINARY_DIR = binary_dir
 
     def _configure(self):
         self.config.add_renderer(
