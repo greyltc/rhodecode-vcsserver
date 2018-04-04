@@ -69,3 +69,18 @@ class ContextINI(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.destroy:
             os.remove(self.new_path)
+
+
+def no_newline_id_generator(test_name):
+    """
+    Generates a test name without spaces or newlines characters. Used for
+    nicer output of progress of test
+    """
+    org_name = test_name
+    test_name = test_name\
+        .replace('\n', '_N') \
+        .replace('\r', '_N') \
+        .replace('\t', '_T') \
+        .replace(' ', '_S')
+
+    return test_name or 'test-with-empty-name'

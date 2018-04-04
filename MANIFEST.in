@@ -8,6 +8,9 @@ include vcsserver/VERSION
 # all config files
 recursive-include configs *
 
+# hook templates
+recursive-include vcsserver/hook_utils/hook_templates *
+
 # skip any tests files
 recursive-exclude vcsserver/tests *
 

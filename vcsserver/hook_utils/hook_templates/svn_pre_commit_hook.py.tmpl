@@ -1,0 +1,52 @@
+#!_ENV_
+
+import os
+import sys
+path_adjust = [_PATH_]
+
+if path_adjust:
+    sys.path = path_adjust
+
+try:
+    from vcsserver import hooks
+except ImportError:
+    if os.environ.get('RC_DEBUG_SVN_HOOK'):
+        import traceback
+        print traceback.format_exc()
+    hooks = None
+
+
+# TIMESTAMP: _DATE_
+RC_HOOK_VER = '_TMPL_'
+
+
+def main():
+    if os.environ.get('SSH_READ_ONLY') == '1':
+        sys.stderr.write('Only read-only access is allowed')
+        sys.exit(1)
+
+    if hooks is None:
+        # exit with success if we cannot import vcsserver.hooks !!
+        # this allows simply push to this repo even without rhodecode
+        sys.exit(0)
+    if os.environ.get('RC_SKIP_HOOKS'):
+        sys.exit(0)
+    repo_path = os.getcwd()
+    push_data = sys.argv[1:]
+
+    os.environ['RC_HOOK_VER'] = RC_HOOK_VER
+
+    try:
+        result = hooks.svn_pre_commit(repo_path, push_data, os.environ)
+        sys.exit(result)
+    except Exception as error:
+        # TODO: johbo: Improve handling of this special case
+        if not getattr(error, '_vcs_kind', None) == 'repo_locked':
+            raise
+        print 'ERROR:', error
+        sys.exit(1)
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

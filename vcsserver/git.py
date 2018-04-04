@@ -655,6 +655,12 @@ class GitRemote(object):
             else:
                 raise exceptions.VcsException(tb_err)
 
+    @reraise_safe_exceptions
+    def install_hooks(self, wire, force=False):
+        from vcsserver.hook_utils import install_git_hooks
+        repo = self._factory.repo(wire)
+        return install_git_hooks(repo.path, repo.bare, force_create=force)
+
 
 def str_to_dulwich(value):
     """

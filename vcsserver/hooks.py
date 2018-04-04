@@ -20,10 +20,10 @@
 import io
 import os
 import sys
-import json
 import logging
 import collections
 import importlib
+import base64
 
 from httplib import HTTPConnection
 
@@ -46,7 +46,11 @@ class HooksHttpClient(object):
     def __call__(self, method, extras):
         connection = HTTPConnection(self.hooks_uri)
         body = self._serialize(method, extras)
-        connection.request('POST', '/', body)
+        try:
+            connection.request('POST', '/', body)
+        except Exception:
+            log.error('Connection failed on %s', connection)
+            raise
         response = connection.getresponse()
         return json.loads(response.read())
 
@@ -97,6 +101,17 @@ class GitMessageWriter(RemoteMessageWriter):
         self.stdout.write(message.encode('utf-8'))
 
 
+class SvnMessageWriter(RemoteMessageWriter):
+    """Writer that knows how to send messages to svn clients."""
+
+    def __init__(self, stderr=None):
+        # SVN needs data sent to stderr for back-to-client messaging
+        self.stderr = stderr or sys.stderr
+
+    def write(self, message):
+        self.stderr.write(message.encode('utf-8'))
+
+
 def _handle_exception(result):
     exception_class = result.get('exception')
     exception_traceback = result.get('exception_traceback')
@@ -122,8 +137,9 @@ def _get_hooks_client(extras):
 
 
 def _call_hook(hook_name, extras, writer):
-    hooks = _get_hooks_client(extras)
-    result = hooks(hook_name, extras)
+    hooks_client = _get_hooks_client(extras)
+    log.debug('Hooks, using client:%s', hooks_client)
+    result = hooks_client(hook_name, extras)
     log.debug('Hooks got result: %s', result)
     writer.write(result['output'])
     _handle_exception(result)
@@ -465,3 +481,61 @@ def git_post_receive(unused_repo_path, revision_lines, env):
             pass
 
     return _call_hook('post_push', extras, GitMessageWriter())
+
+
+def svn_pre_commit(repo_path, commit_data, env):
+    path, txn_id = commit_data
+    branches = []
+    tags = []
+
+    cmd = ['svnlook', 'pget',
+           '-t', txn_id,
+           '--revprop', path, 'rc-scm-extras']
+    stdout, stderr = subprocessio.run_command(
+        cmd, env=os.environ.copy())
+    extras = json.loads(base64.urlsafe_b64decode(stdout))
+
+    extras['commit_ids'] = []
+    extras['txn_id'] = txn_id
+    extras['new_refs'] = {
+        'branches': branches,
+        'bookmarks': [],
+        'tags': tags,
+    }
+    sys.stderr.write(str(extras))
+    return _call_hook('pre_push', extras, SvnMessageWriter())
+
+
+def svn_post_commit(repo_path, commit_data, env):
+    """
+    commit_data is path, rev, txn_id
+    """
+    path, commit_id, txn_id = commit_data
+    branches = []
+    tags = []
+
+    cmd = ['svnlook', 'pget',
+           '-r', commit_id,
+           '--revprop', path, 'rc-scm-extras']
+    stdout, stderr = subprocessio.run_command(
+        cmd, env=os.environ.copy())
+
+    extras = json.loads(base64.urlsafe_b64decode(stdout))
+
+    extras['commit_ids'] = [commit_id]
+    extras['txn_id'] = txn_id
+    extras['new_refs'] = {
+        'branches': branches,
+        'bookmarks': [],
+        'tags': tags,
+    }
+
+    if 'repo_size' in extras['hooks']:
+        try:
+            _call_hook('repo_size', extras, SvnMessageWriter())
+        except:
+            pass
+
+    return _call_hook('post_push', extras, SvnMessageWriter())
+
+
