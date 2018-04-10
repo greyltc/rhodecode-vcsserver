@@ -12,6 +12,12 @@ in
 
 self: super: {
 
+  Beaker = super.Beaker.override (attrs: {
+    patches = [
+      ./patch-beaker-lock-func-debug.diff
+    ];
+  });
+
   subvertpy = super.subvertpy.override (attrs: {
     # TODO: johbo: Remove the "or" once we drop 16.03 support
     SVN_PREFIX = "${pkgs.subversion.dev or pkgs.subversion}";
