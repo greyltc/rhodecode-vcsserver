@@ -15,19 +15,6 @@
       license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
-  Jinja2 = super.buildPythonPackage {
-    name = "Jinja2-2.9.6";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [MarkupSafe];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/90/61/f820ff0076a2599dd39406dcb858ecb239438c02ce706c8e91131ab9c7f1/Jinja2-2.9.6.tar.gz";
-      sha256 = "ddaa01a212cd6d641401cb01b605f4a4d9f37bfc93043d7f760ec70fb99ff9ff";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.bsdOriginal ];
-    };
-  };
   Mako = super.buildPythonPackage {
     name = "Mako-1.0.7";
     buildInputs = with self; [];
@@ -522,19 +509,6 @@
       license = [ { fullName = "Repoze Public License"; } { fullName = "BSD-derived (http://www.repoze.org/LICENSE.txt)"; } ];
     };
   };
-  pyramid-jinja2 = super.buildPythonPackage {
-    name = "pyramid-jinja2-2.7";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [pyramid zope.deprecation Jinja2 MarkupSafe];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/d8/80/d60a7233823de22ce77bd864a8a83736a1fe8b49884b08303a2e68b2c853/pyramid_jinja2-2.7.tar.gz";
-      sha256 = "5c21081f65a5bec0b76957990c2b89ed41f4fd11257121387110cb722fd0e5eb";
-    };
-    meta = {
-      license = [ { fullName = "Repoze Public License"; } { fullName = "BSD-derived (http://www.repoze.org/LICENSE.txt)"; } ];
-    };
-  };
   pyramid-mako = super.buildPythonPackage {
     name = "pyramid-mako-1.0.2";
     buildInputs = with self; [];
@@ -656,7 +630,7 @@
     name = "rhodecode-vcsserver-4.13.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-jinja2 pyramid-mako repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface ipdb ipython gevent greenlet gunicorn waitress pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
+    propagatedBuildInputs = with self; [Beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring WebOb wheel zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock WebTest cov-core coverage];
     src = ./.;
     meta = {
       license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
