@@ -604,7 +604,7 @@
     name = "rhodecode-vcsserver-4.13.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mako markupsafe mercurial msgpack-python pastedeploy pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring webob wheel zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage];
+    propagatedBuildInputs = with self; [beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mako markupsafe mercurial msgpack-python pastedeploy pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring webob zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage];
     src = ./.;
     meta = {
       license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
@@ -800,19 +800,6 @@
     src = fetchurl {
       url = "https://files.pythonhosted.org/packages/94/de/8f94738be649997da99c47b104aa3c3984ecec51a1d8153ed09638253d56/WebTest-2.0.29.tar.gz";
       sha256 = "dbbccc15ac2465066c95dc3a7de0d30cde3791e886ccbd7e91d5d2a2580c922d";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
-  wheel = super.buildPythonPackage {
-    name = "wheel-0.29.0";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/c9/1d/bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/wheel-0.29.0.tar.gz";
-      sha256 = "1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
