@@ -2,45 +2,6 @@
 # See https://github.com/johbo/pip2nix
 
 {
-  Mako = super.buildPythonPackage {
-    name = "Mako-1.0.7";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [MarkupSafe];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/eb/f3/67579bb486517c0d49547f9697e36582cd19dafb5df9e687ed8e22de57fa/Mako-1.0.7.tar.gz";
-      sha256 = "4e02fde57bd4abb5ec400181e4c314f56ac3e49ba4fb8b0d50bba18cb27d25ae";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
-  MarkupSafe = super.buildPythonPackage {
-    name = "MarkupSafe-1.0";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/4d/de/32d741db316d8fdb7680822dd37001ef7a448255de9699ab4bfcbdf4172b/MarkupSafe-1.0.tar.gz";
-      sha256 = "a6be69091dac236ea9c6bc7d012beab42010fa914c459791d627dad4910eb665";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.bsdOriginal ];
-    };
-  };
-  PasteDeploy = super.buildPythonPackage {
-    name = "PasteDeploy-1.5.2";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/0f/90/8e20cdae206c543ea10793cbf4136eb9a8b3f417e04e40a29d72d9922cbd/PasteDeploy-1.5.2.tar.gz";
-      sha256 = "d5858f89a255e6294e63ed46b73613c56e3b9a2d82a42f1df4d06c8421a9e3cb";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
   backports.shutil-get-terminal-size = super.buildPythonPackage {
     name = "backports.shutil-get-terminal-size-1.0.0";
     buildInputs = with self; [];
@@ -314,6 +275,32 @@
       license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
+  mako = super.buildPythonPackage {
+    name = "mako-1.0.7";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [markupsafe];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/eb/f3/67579bb486517c0d49547f9697e36582cd19dafb5df9e687ed8e22de57fa/Mako-1.0.7.tar.gz";
+      sha256 = "4e02fde57bd4abb5ec400181e4c314f56ac3e49ba4fb8b0d50bba18cb27d25ae";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  markupsafe = super.buildPythonPackage {
+    name = "markupsafe-1.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/4d/de/32d741db316d8fdb7680822dd37001ef7a448255de9699ab4bfcbdf4172b/MarkupSafe-1.0.tar.gz";
+      sha256 = "a6be69091dac236ea9c6bc7d012beab42010fa914c459791d627dad4910eb665";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
   mercurial = super.buildPythonPackage {
     name = "mercurial-4.4.2";
     buildInputs = with self; [];
@@ -351,6 +338,19 @@
     };
     meta = {
       license = [ pkgs.lib.licenses.asl20 ];
+    };
+  };
+  pastedeploy = super.buildPythonPackage {
+    name = "pastedeploy-1.5.2";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/0f/90/8e20cdae206c543ea10793cbf4136eb9a8b3f417e04e40a29d72d9922cbd/PasteDeploy-1.5.2.tar.gz";
+      sha256 = "d5858f89a255e6294e63ed46b73613c56e3b9a2d82a42f1df4d06c8421a9e3cb";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
     };
   };
   pathlib2 = super.buildPythonPackage {
@@ -409,7 +409,7 @@
     name = "plaster-pastedeploy-0.5";
     buildInputs = with self; [];
     doCheck = false;
-    propagatedBuildInputs = with self; [PasteDeploy plaster];
+    propagatedBuildInputs = with self; [pastedeploy plaster];
     src = fetchurl {
       url = "https://files.pythonhosted.org/packages/e7/05/cc12d9d3efaa10046b6ec5de91b16486c95de4847dc57599bf58021a3d5c/plaster_pastedeploy-0.5.tar.gz";
       sha256 = "70a3185b2a3336996a26e9987968cf35e84cf13390b7e8a0a9a91eb8f6f85ba9";
@@ -474,7 +474,7 @@
     name = "pyramid-1.9.2";
     buildInputs = with self; [];
     doCheck = false;
-    propagatedBuildInputs = with self; [setuptools webob repoze.lru zope.interface zope.deprecation venusian translationstring PasteDeploy plaster plaster-pastedeploy hupper];
+    propagatedBuildInputs = with self; [setuptools webob repoze.lru zope.interface zope.deprecation venusian translationstring pastedeploy plaster plaster-pastedeploy hupper];
     src = fetchurl {
       url = "https://files.pythonhosted.org/packages/a0/c1/b321d07cfc4870541989ad131c86a1d593bfe802af0eca9718a0dadfb97a/pyramid-1.9.2.tar.gz";
       sha256 = "cf89a48cb899291639686bf3d4a883b39e496151fa4871fb83cc1a3200d5b925";
@@ -487,7 +487,7 @@
     name = "pyramid-mako-1.0.2";
     buildInputs = with self; [];
     doCheck = false;
-    propagatedBuildInputs = with self; [pyramid Mako];
+    propagatedBuildInputs = with self; [pyramid mako];
     src = fetchurl {
       url = "https://files.pythonhosted.org/packages/f1/92/7e69bcf09676d286a71cb3bbb887b16595b96f9ba7adbdc239ffdd4b1eb9/pyramid_mako-1.0.2.tar.gz";
       sha256 = "6da0987b9874cf53e72139624665a73965bbd7fbde504d1753e4231ce916f3a1";
@@ -604,7 +604,7 @@
     name = "rhodecode-vcsserver-4.13.0";
     buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mercurial msgpack-python pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring webob wheel zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage];
+    propagatedBuildInputs = with self; [beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mako markupsafe mercurial msgpack-python pastedeploy pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring webob wheel zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage];
     src = ./.;
     meta = {
       license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
