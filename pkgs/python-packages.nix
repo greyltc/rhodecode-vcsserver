@@ -398,8 +398,8 @@
     doCheck = false;
     propagatedBuildInputs = with self; [six scandir];
     src = fetchurl {
-      url = "https://pypi.python.org/packages/a1/14/df0deb867c2733f7d857523c10942b3d6612a1b222502fdffa9439943dfb/pathlib2-2.3.0.tar.gz";
-      md5 = "89c90409d11fd5947966b6a30a47d18c";
+      url = "https://files.pythonhosted.org/packages/a1/14/df0deb867c2733f7d857523c10942b3d6612a1b222502fdffa9439943dfb/pathlib2-2.3.0.tar.gz";
+      sha256 = "d32550b75a818b289bd4c1f96b60c89957811da205afcceab75bc8b4857ea5b3";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
