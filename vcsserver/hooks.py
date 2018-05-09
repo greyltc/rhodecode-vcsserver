@@ -443,7 +443,8 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                     cmd, env=os.environ.copy())
                 heads = stdout
                 heads = heads.replace(push_ref['ref'], '')
-                heads = ' '.join(head for head in heads.splitlines() if head)
+                heads = ' '.join(head for head
+                                 in heads.splitlines() if head) or '.'
                 cmd = [settings.GIT_EXECUTABLE, 'log', '--reverse',
                        '--pretty=format:%H', '--', push_ref['new_rev'],
                        '--not', heads]
