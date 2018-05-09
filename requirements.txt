@@ -10,7 +10,7 @@ hg-evolve==7.3.0
 infrae.cache==1.0.1
 mako==1.0.7
 markupsafe==1.0.0
-mercurial==4.4.2
+mercurial==4.6.0
 msgpack-python==0.4.8
 
 pastedeploy==1.5.2
