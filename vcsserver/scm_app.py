@@ -21,9 +21,9 @@ import itertools
 
 import mercurial
 import mercurial.error
+import mercurial.wireprotoserver
 import mercurial.hgweb.common
 import mercurial.hgweb.hgweb_mod
-import mercurial.hgweb.protocol
 import webob.exc
 
 from vcsserver import pygrack, exceptions, settings, git_lfs
@@ -73,14 +73,18 @@ class HgWeb(mercurial.hgweb.hgweb_mod.hgweb):
 
         This may be called by multiple threads.
         """
-        req = mercurial.hgweb.request.wsgirequest(environ, start_response)
-        gen = self.run_wsgi(req)
+        from mercurial.hgweb import request as requestmod
+        req = requestmod.parserequestfromenv(environ)
+        res = requestmod.wsgiresponse(req, start_response)
+        gen = self.run_wsgi(req, res)
 
         first_chunk = None
 
         try:
             data = gen.next()
-            def first_chunk(): yield data
+
+            def first_chunk():
+                yield data
         except StopIteration:
             pass
 
@@ -88,17 +92,18 @@ class HgWeb(mercurial.hgweb.hgweb_mod.hgweb):
             return itertools.chain(first_chunk(), gen)
         return gen
 
-    def _runwsgi(self, req, repo):
-        cmd = req.form.get('cmd', [''])[0]
-        if not mercurial.hgweb.protocol.iscmd(cmd):
-            req.respond(
-                mercurial.hgweb.common.ErrorResponse(
-                    mercurial.hgweb.common.HTTP_BAD_REQUEST),
-                mercurial.hgweb.protocol.HGTYPE
-            )
-            return ['']
+    def _runwsgi(self, req, res, repo):
 
-        return super(HgWeb, self)._runwsgi(req, repo)
+        cmd = req.qsparams.get('cmd', '')
+        if not mercurial.wireprotoserver.iscmd(cmd):
+            # NOTE(marcink): for unsupported commands, we return bad request
+            # internally from HG
+            from mercurial.hgweb.common import statusmessage
+            res.status = statusmessage(mercurial.hgweb.common.HTTP_BAD_REQUEST)
+            res.setbodybytes('')
+            return res.sendresponse()
+
+        return super(HgWeb, self)._runwsgi(req, res, repo)
 
 
 def make_hg_ui_from_config(repo_config):

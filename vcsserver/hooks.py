@@ -164,7 +164,8 @@ def _extras_from_ui(ui):
 def _rev_range_hash(repo, node):
 
     commits = []
-    for rev in xrange(repo[node], len(repo)):
+    start = repo[node].rev()
+    for rev in xrange(start, len(repo)):
         ctx = repo[rev]
         commit_id = mercurial.node.hex(ctx.node())
         branch = ctx.branch()
