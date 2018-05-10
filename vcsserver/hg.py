@@ -211,12 +211,12 @@ class HgRemote(object):
                 if node['path'] == path:
                     return memfilectx(
                         _repo,
+                        changectx=memctx,
                         path=node['path'],
                         data=node['content'],
                         islink=False,
                         isexec=bool(node['mode'] & stat.S_IXUSR),
-                        copied=False,
-                        memctx=memctx)
+                        copied=False)
 
             raise exceptions.AbortException(
                 "Given path haven't been marked as added, "
@@ -454,9 +454,10 @@ class HgRemote(object):
         fctx = ctx.filectx(path)
 
         result = []
-        for i, (a_line, content) in enumerate(fctx.annotate()):
-            ln_no = i + 1
-            sha = hex(a_line.fctx.node())
+        for i, annotate_obj in enumerate(fctx.annotate(), 1):
+            ln_no = i
+            sha = hex(annotate_obj.fctx.node())
+            content = annotate_obj.text
             result.append((ln_no, sha, content))
         return result
 
@@ -533,10 +534,22 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def lookup(self, wire, revision, both):
-        # TODO Paris: Ugly hack to "deserialize" long for msgpack
-        if isinstance(revision, float):
-            revision = long(revision)
+
         repo = self._factory.repo(wire)
+
+        if isinstance(revision, int):
+            # NOTE(marcink):
+            # since Mercurial doesn't support indexes properly
+            # we need to shift accordingly by one to get proper index, e.g
+            # repo[-1] => repo[-2]
+            # repo[0]  => repo[-1]
+            # repo[1]  => repo[2] we also never call repo[0] because
+            # it's actually second commit
+            if revision <= 0:
+                revision = revision + -1
+            else:
+                revision = revision + 1
+
         try:
             ctx = repo[revision]
         except RepoLookupError:
