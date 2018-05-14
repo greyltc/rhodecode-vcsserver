@@ -25,7 +25,7 @@ def main():
         # this allows simply push to this repo even without rhodecode
         sys.exit(0)
 
-    if os.environ.get('RC_SKIP_HOOKS'):
+    if os.environ.get('RC_SKIP_HOOKS') or os.environ.get('RC_SKIP_GIT_HOOKS'):
         sys.exit(0)
 
     repo_path = os.getcwd()
