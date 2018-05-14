@@ -29,7 +29,7 @@ def main():
         # exit with success if we cannot import vcsserver.hooks !!
         # this allows simply push to this repo even without rhodecode
         sys.exit(0)
-    if os.environ.get('RC_SKIP_HOOKS'):
+    if os.environ.get('RC_SKIP_HOOKS') or os.environ.get('RC_SKIP_SVN_HOOKS'):
         sys.exit(0)
     repo_path = os.getcwd()
     push_data = sys.argv[1:]
