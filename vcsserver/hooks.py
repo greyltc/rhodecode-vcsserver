@@ -485,17 +485,33 @@ def git_post_receive(unused_repo_path, revision_lines, env):
     return _call_hook('post_push', extras, GitMessageWriter())
 
 
+def _get_extras_from_txn_id(path, txn_id):
+    extras = {}
+    try:
+        cmd = ['svnlook', 'pget',
+               '-t', txn_id,
+               '--revprop', path, 'rc-scm-extras']
+        stdout, stderr = subprocessio.run_command(
+            cmd, env=os.environ.copy())
+        extras = json.loads(base64.urlsafe_b64decode(stdout))
+    except Exception:
+        log.exception('Failed to extract extras info from txn_id')
+
+    return extras
+
+
 def svn_pre_commit(repo_path, commit_data, env):
     path, txn_id = commit_data
     branches = []
     tags = []
 
-    cmd = ['svnlook', 'pget',
-           '-t', txn_id,
-           '--revprop', path, 'rc-scm-extras']
-    stdout, stderr = subprocessio.run_command(
-        cmd, env=os.environ.copy())
-    extras = json.loads(base64.urlsafe_b64decode(stdout))
+    if env.get('RC_SCM_DATA'):
+        extras = json.loads(env['RC_SCM_DATA'])
+    else:
+        # fallback method to read from TXN-ID stored data
+        extras = _get_extras_from_txn_id(path, txn_id)
+        if not extras:
+            return 0
 
     extras['commit_ids'] = []
     extras['txn_id'] = txn_id
@@ -504,8 +520,23 @@ def svn_pre_commit(repo_path, commit_data, env):
         'bookmarks': [],
         'tags': tags,
     }
-    sys.stderr.write(str(extras))
+
     return _call_hook('pre_push', extras, SvnMessageWriter())
+
+
+def _get_extras_from_commit_id(commit_id, path):
+    extras = {}
+    try:
+        cmd = ['svnlook', 'pget',
+               '-r', commit_id,
+               '--revprop', path, 'rc-scm-extras']
+        stdout, stderr = subprocessio.run_command(
+            cmd, env=os.environ.copy())
+        extras = json.loads(base64.urlsafe_b64decode(stdout))
+    except Exception:
+        log.exception('Failed to extract extras info from commit_id')
+
+    return extras
 
 
 def svn_post_commit(repo_path, commit_data, env):
@@ -516,13 +547,13 @@ def svn_post_commit(repo_path, commit_data, env):
     branches = []
     tags = []
 
-    cmd = ['svnlook', 'pget',
-           '-r', commit_id,
-           '--revprop', path, 'rc-scm-extras']
-    stdout, stderr = subprocessio.run_command(
-        cmd, env=os.environ.copy())
-
-    extras = json.loads(base64.urlsafe_b64decode(stdout))
+    if env.get('RC_SCM_DATA'):
+        extras = json.loads(env['RC_SCM_DATA'])
+    else:
+        # fallback method to read from TXN-ID stored data
+        extras = _get_extras_from_commit_id(commit_id, path)
+        if not extras:
+            return 0
 
     extras['commit_ids'] = [commit_id]
     extras['txn_id'] = txn_id
@@ -535,9 +566,7 @@ def svn_post_commit(repo_path, commit_data, env):
     if 'repo_size' in extras['hooks']:
         try:
             _call_hook('repo_size', extras, SvnMessageWriter())
-        except:
+        except Exception:
             pass
 
     return _call_hook('post_push', extras, SvnMessageWriter())
-
-
