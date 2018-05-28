@@ -561,19 +561,6 @@
       license = [ pkgs.lib.licenses.mit ];
     };
   };
-  pytest-catchlog = super.buildPythonPackage {
-    name = "pytest-catchlog-1.2.2";
-    buildInputs = with self; [];
-    doCheck = false;
-    propagatedBuildInputs = with self; [py pytest];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/f2/2b/2faccdb1a978fab9dd0bf31cca9f6847fbe9184a0bdcc3011ac41dd44191/pytest-catchlog-1.2.2.zip";
-      sha256 = "4be15dc5ac1750f83960897f591453040dff044b5966fe24a91c2f7d04ecfcf0";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
   pytest-cov = super.buildPythonPackage {
     name = "pytest-cov-2.5.1";
     buildInputs = with self; [];
@@ -654,9 +641,9 @@
   };
   rhodecode-vcsserver = super.buildPythonPackage {
     name = "rhodecode-vcsserver-4.13.0";
-    buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage configobj];
+    buildInputs = with self; [pytest py pytest-cov pytest-sugar pytest-runner pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage configobj];
     doCheck = true;
-    propagatedBuildInputs = with self; [beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mako markupsafe mercurial msgpack-python pastedeploy pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring webob zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-catchlog pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage];
+    propagatedBuildInputs = with self; [beaker configobj decorator dulwich hgsubversion hg-evolve infrae.cache mako markupsafe mercurial msgpack-python pastedeploy pyramid pyramid-mako pygments pathlib2 repoze.lru simplejson subprocess32 subvertpy six translationstring webob zope.deprecation zope.interface gevent greenlet gunicorn waitress ipdb ipython pytest py pytest-cov pytest-sugar pytest-runner pytest-profiling gprof2dot pytest-timeout mock webtest cov-core coverage];
     src = ./.;
     meta = {
       license = [ { fullName = "GPL V3"; } { fullName = "GNU General Public License v3 or later (GPLv3+)"; } ];
