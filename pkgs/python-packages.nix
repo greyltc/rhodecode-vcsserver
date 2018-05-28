@@ -2,6 +2,32 @@
 # See https://github.com/johbo/pip2nix
 
 {
+  atomicwrites = super.buildPythonPackage {
+    name = "atomicwrites-1.1.5";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/a1/e1/2d9bc76838e6e6667fde5814aa25d7feb93d6fa471bf6816daac2596e8b2/atomicwrites-1.1.5.tar.gz";
+      sha256 = "240831ea22da9ab882b551b31d4225591e5e447a68c5e188db5b89ca1d487585";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
+  attrs = super.buildPythonPackage {
+    name = "attrs-18.1.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/e4/ac/a04671e118b57bee87dabca1e0f2d3bda816b7a551036012d0ca24190e71/attrs-18.1.0.tar.gz";
+      sha256 = "e0d0eb91441a3b53dab4d9b743eafc1ac44476296a2053b6ca3af0b139faf87b";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
   backports.shutil-get-terminal-size = super.buildPythonPackage {
     name = "backports.shutil-get-terminal-size-1.0.0";
     buildInputs = with self; [];
@@ -327,6 +353,19 @@
       license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
+  more-itertools = super.buildPythonPackage {
+    name = "more-itertools-4.2.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [six];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/c0/2f/6773347277d76c5ade4414a6c3f785ef27e7f5c4b0870ec7e888e66a8d83/more-itertools-4.2.0.tar.gz";
+      sha256 = "2b6b9893337bfd9166bee6a62c2b0c9fe7735dcf85948b387ec8cba30e85d8e8";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
   msgpack-python = super.buildPythonPackage {
     name = "msgpack-python-0.4.8";
     buildInputs = with self; [];
@@ -418,6 +457,19 @@
       license = [ pkgs.lib.licenses.mit ];
     };
   };
+  pluggy = super.buildPythonPackage {
+    name = "pluggy-0.6.0";
+    buildInputs = with self; [];
+    doCheck = false;
+    propagatedBuildInputs = with self; [];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/11/bf/cbeb8cdfaffa9f2ea154a30ae31a9d04a1209312e2919138b4171a1f8199/pluggy-0.6.0.tar.gz";
+      sha256 = "7f8ae7f5bdf75671a718d2daf0a64b7885f74510bcd98b1a0bb420eb9a9d0cff";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
   prompt-toolkit = super.buildPythonPackage {
     name = "prompt-toolkit-1.0.15";
     buildInputs = with self; [];
@@ -445,13 +497,13 @@
     };
   };
   py = super.buildPythonPackage {
-    name = "py-1.5.2";
+    name = "py-1.5.3";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/90/e3/e075127d39d35f09a500ebb4a90afd10f9ef0a1d28a6d09abeec0e444fdd/py-1.5.2.tar.gz";
-      sha256 = "ca18943e28235417756316bfada6cd96b23ce60dd532642690dcfdaba988a76d";
+      url = "https://files.pythonhosted.org/packages/f7/84/b4c6e84672c4ceb94f727f3da8344037b62cee960d80e999b1cd9b832d83/py-1.5.3.tar.gz";
+      sha256 = "29c9fab495d7528e80ba1e343b958684f4ace687327e6f789a94bf3d1915f881";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -497,13 +549,13 @@
     };
   };
   pytest = super.buildPythonPackage {
-    name = "pytest-3.2.5";
+    name = "pytest-3.6.0";
     buildInputs = with self; [];
     doCheck = false;
-    propagatedBuildInputs = with self; [py setuptools];
+    propagatedBuildInputs = with self; [py six setuptools attrs more-itertools atomicwrites pluggy funcsigs];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/1f/f8/8cd74c16952163ce0db0bd95fdd8810cbf093c08be00e6e665ebf0dc3138/pytest-3.2.5.tar.gz";
-      sha256 = "6d5bd4f7113b444c55a3bbb5c738a3dd80d43563d063fc42dcb0aaefbdd78b81";
+      url = "https://files.pythonhosted.org/packages/67/6a/5bcdc22f8dbada1d2910d6e1a3a03f6b14306c78f81122890735b28be4bf/pytest-3.6.0.tar.gz";
+      sha256 = "39555d023af3200d004d09e51b4dd9fdd828baa863cded3fd6ba2f29f757ae2d";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -536,13 +588,13 @@
     };
   };
   pytest-profiling = super.buildPythonPackage {
-    name = "pytest-profiling-1.2.11";
+    name = "pytest-profiling-1.3.0";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [six pytest gprof2dot];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/c0/4a/b4aa786e93c07a86f1f87c581a36bf355a9e06a9da7e00dbd05047626bd2/pytest-profiling-1.2.11.tar.gz";
-      sha256 = "8904f9a1ed31d6be2c0b586c4e2fbc14cc17fb0afae2c01a6c0f701978a1c9a4";
+      url = "https://files.pythonhosted.org/packages/f5/34/4626126e041a51ef50a80d0619519b18d20aef249aac25b0d0fdd47e57ee/pytest-profiling-1.3.0.tar.gz";
+      sha256 = "6b86a2e547bf1a70610da6568d91ed3e785d15a12151abebdd5e885fba532523";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -562,13 +614,13 @@
     };
   };
   pytest-sugar = super.buildPythonPackage {
-    name = "pytest-sugar-0.9.0";
+    name = "pytest-sugar-0.9.1";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [pytest termcolor];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/49/d8/c5ff6cca3ce2ebd8b73eec89779bf6b4a7737456a70e8ea4d44c1ff90f71/pytest-sugar-0.9.0.tar.gz";
-      sha256 = "8f1aca70235559f95abe2d7508a029d933e9c9961888d74d423e6460678a9686";
+      url = "https://files.pythonhosted.org/packages/3e/6a/a3f909083079d03bde11d06ab23088886bbe25f2c97fbe4bb865e2bf05bc/pytest-sugar-0.9.1.tar.gz";
+      sha256 = "ab8cc42faf121344a4e9b13f39a51257f26f410e416c52ea11078cdd00d98a2c";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
