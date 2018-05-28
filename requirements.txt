@@ -21,7 +21,7 @@ pygments==2.2.0
 pathlib2==2.3.0
 repoze.lru==0.7
 simplejson==3.11.1
-subprocess32==3.2.7
+subprocess32==3.5.1
 
 subvertpy==0.10.1
 
