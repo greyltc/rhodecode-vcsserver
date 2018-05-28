@@ -588,13 +588,13 @@
     };
   };
   pytest-runner = super.buildPythonPackage {
-    name = "pytest-runner-3.0";
+    name = "pytest-runner-4.2";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/65/b4/ae89338cd2d81e2cc54bd6db2e962bfe948f612303610d68ab24539ac2d1/pytest-runner-3.0.tar.gz";
-      sha256 = "0f7c3a3cf5aead13f54baaa01ceb49e5ae92aba5d3ff1928e81e189c40bc6703";
+      url = "https://files.pythonhosted.org/packages/9e/b7/fe6e8f87f9a756fd06722216f1b6698ccba4d269eac6329d9f0c441d0f93/pytest-runner-4.2.tar.gz";
+      sha256 = "d23f117be39919f00dd91bffeb4f15e031ec797501b717a245e377aee0f577be";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -614,13 +614,13 @@
     };
   };
   pytest-timeout = super.buildPythonPackage {
-    name = "pytest-timeout-1.2.0";
+    name = "pytest-timeout-1.2.1";
     buildInputs = with self; [];
     doCheck = false;
     propagatedBuildInputs = with self; [pytest];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/cc/b7/b2a61365ea6b6d2e8881360ae7ed8dad0327ad2df89f2f0be4a02304deb2/pytest-timeout-1.2.0.tar.gz";
-      sha256 = "c29e3168f10897728059bd6b8ca20b28733d7fe6b8f6c09bb9d89f6146f27cb8";
+      url = "https://files.pythonhosted.org/packages/be/e9/a9106b8bc87521c6813060f50f7d1fdc15665bc1bbbe71c0ffc1c571aaa2/pytest-timeout-1.2.1.tar.gz";
+      sha256 = "68b7d264633d5d33ee6b14ce3a7f7d05f8fd9d2f6ae594283221ec021736b7cd";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit { fullName = "DFSG approved"; } ];
