@@ -16,10 +16,10 @@ let
   pkgs = pkgs_.overridePackages (self: super: {
     # bump GIT version
     git = pkgs.lib.overrideDerivation pkgs_.git (oldAttrs: {
-      name = "git-2.16.3";
+      name = "git-2.16.4";
       src = pkgs.fetchurl {
-        url = "https://www.kernel.org/pub/software/scm/git/git-2.16.3.tar.xz";
-        sha256 = "0j1dwvg5llnj3g0fp8hdgpms4hp90qw9f6509vqw30dhwplrjpfn";
+        url = "https://www.kernel.org/pub/software/scm/git/git-2.16.4.tar.xz";
+        sha256 = "0cnmidjvbdf81mybcvxvl0c2r2x2nvq2jj2dl59dmrc7qklv0sbf";
       };
 
       patches = [
