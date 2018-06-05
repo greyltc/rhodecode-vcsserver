@@ -32,7 +32,7 @@ from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
-    httppeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
+    makepeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
     RepoLookupError, InterventionRequired, RequirementError)
 
@@ -383,7 +383,9 @@ class HgRemote(object):
                 log.debug(
                     "Verifying if URL is a Mercurial repository: %s",
                     cleaned_uri)
-                httppeer(make_ui_from_config(config), url).lookup('tip')
+                ui = make_ui_from_config(config)
+                peer_checker = makepeer(ui, url)
+                peer_checker.lookup('tip')
         except Exception as e:
             log.warning("URL is not a valid Mercurial repository: %s",
                         cleaned_uri)
