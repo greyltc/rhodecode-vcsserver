@@ -636,6 +636,7 @@ class GitRemote(object):
         if 'GIT_DIR' in gitenv:
             del gitenv['GIT_DIR']
         gitenv['GIT_CONFIG_NOGLOBAL'] = '1'
+        gitenv['GIT_DISCOVERY_ACROSS_FILESYSTEM'] = '1'
 
         cmd = [settings.GIT_EXECUTABLE] + _copts + cmd
 
