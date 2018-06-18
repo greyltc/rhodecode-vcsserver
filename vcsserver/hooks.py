@@ -164,7 +164,8 @@ def _extras_from_ui(ui):
 def _rev_range_hash(repo, node):
 
     commits = []
-    for rev in xrange(repo[node], len(repo)):
+    start = repo[node].rev()
+    for rev in xrange(start, len(repo)):
         ctx = repo[rev]
         commit_id = mercurial.node.hex(ctx.node())
         branch = ctx.branch()
@@ -442,7 +443,8 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                     cmd, env=os.environ.copy())
                 heads = stdout
                 heads = heads.replace(push_ref['ref'], '')
-                heads = ' '.join(head for head in heads.splitlines() if head)
+                heads = ' '.join(head for head
+                                 in heads.splitlines() if head) or '.'
                 cmd = [settings.GIT_EXECUTABLE, 'log', '--reverse',
                        '--pretty=format:%H', '--', push_ref['new_rev'],
                        '--not', heads]

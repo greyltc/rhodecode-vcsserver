@@ -36,15 +36,15 @@ def patch_largefiles_capabilities():
     lfproto = hgcompat.largefiles.proto
     wrapper = _dynamic_capabilities_wrapper(
         lfproto, hgcompat.extensions.extensions)
-    lfproto.capabilities = wrapper
+    lfproto._capabilities = wrapper
 
 
 def _dynamic_capabilities_wrapper(lfproto, extensions):
 
-    wrapped_capabilities = lfproto.capabilities
+    wrapped_capabilities = lfproto._capabilities
     logger = logging.getLogger('vcsserver.hg')
 
-    def _dynamic_capabilities(repo, proto):
+    def _dynamic_capabilities(orig, repo, proto):
         """
         Adds dynamic behavior, so that the capability is only added if the
         extension is enabled in the current ui object.
@@ -52,10 +52,10 @@ def _dynamic_capabilities_wrapper(lfproto, extensions):
         if 'largefiles' in dict(extensions(repo.ui)):
             logger.debug('Extension largefiles enabled')
             calc_capabilities = wrapped_capabilities
+            return calc_capabilities(orig, repo, proto)
         else:
             logger.debug('Extension largefiles disabled')
-            calc_capabilities = lfproto.capabilitiesorig
-        return calc_capabilities(repo, proto)
+            return orig(repo, proto)
 
     return _dynamic_capabilities
 

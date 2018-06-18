@@ -28,56 +28,45 @@ def test_patch_largefiles_capabilities_applies_patch(
         patched_capabilities):
     lfproto = hgcompat.largefiles.proto
     hgpatches.patch_largefiles_capabilities()
-    assert lfproto.capabilities.func_name == '_dynamic_capabilities'
+    assert lfproto._capabilities.func_name == '_dynamic_capabilities'
 
 
 def test_dynamic_capabilities_uses_original_function_if_not_enabled(
-        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities):
+        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities,
+        orig_capabilities):
     dynamic_capabilities = hgpatches._dynamic_capabilities_wrapper(
         hgcompat.largefiles.proto, stub_extensions)
 
-    caps = dynamic_capabilities(stub_repo, stub_proto)
+    caps = dynamic_capabilities(orig_capabilities, stub_repo, stub_proto)
 
     stub_extensions.assert_called_once_with(stub_ui)
     assert LARGEFILES_CAPABILITY not in caps
 
 
-def test_dynamic_capabilities_uses_updated_capabilitiesorig(
-        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities):
-    dynamic_capabilities = hgpatches._dynamic_capabilities_wrapper(
-        hgcompat.largefiles.proto, stub_extensions)
-
-    # This happens when the extension is loaded for the first time, important
-    # to ensure that an updated function is correctly picked up.
-    hgcompat.largefiles.proto.capabilitiesorig = mock.Mock(
-        return_value='REPLACED')
-
-    caps = dynamic_capabilities(stub_repo, stub_proto)
-    assert 'REPLACED' == caps
-
-
 def test_dynamic_capabilities_ignores_updated_capabilities(
-        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities):
+        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities,
+        orig_capabilities):
     stub_extensions.return_value = [('largefiles', mock.Mock())]
     dynamic_capabilities = hgpatches._dynamic_capabilities_wrapper(
         hgcompat.largefiles.proto, stub_extensions)
 
     # This happens when the extension is loaded for the first time, important
     # to ensure that an updated function is correctly picked up.
-    hgcompat.largefiles.proto.capabilities = mock.Mock(
+    hgcompat.largefiles.proto._capabilities = mock.Mock(
         side_effect=Exception('Must not be called'))
 
-    dynamic_capabilities(stub_repo, stub_proto)
+    dynamic_capabilities(orig_capabilities, stub_repo, stub_proto)
 
 
 def test_dynamic_capabilities_uses_largefiles_if_enabled(
-        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities):
+        stub_repo, stub_proto, stub_ui, stub_extensions, patched_capabilities,
+        orig_capabilities):
     stub_extensions.return_value = [('largefiles', mock.Mock())]
 
     dynamic_capabilities = hgpatches._dynamic_capabilities_wrapper(
         hgcompat.largefiles.proto, stub_extensions)
 
-    caps = dynamic_capabilities(stub_repo, stub_proto)
+    caps = dynamic_capabilities(orig_capabilities, stub_repo, stub_proto)
 
     stub_extensions.assert_called_once_with(stub_ui)
     assert LARGEFILES_CAPABILITY in caps
@@ -94,15 +83,11 @@ def patched_capabilities(request):
     Patch in `capabilitiesorig` and restore both capability functions.
     """
     lfproto = hgcompat.largefiles.proto
-    orig_capabilities = lfproto.capabilities
-    orig_capabilitiesorig = lfproto.capabilitiesorig
-
-    lfproto.capabilitiesorig = mock.Mock(return_value='ORIG')
+    orig_capabilities = lfproto._capabilities
 
     @request.addfinalizer
     def restore():
-        lfproto.capabilities = orig_capabilities
-        lfproto.capabilitiesorig = orig_capabilitiesorig
+        lfproto._capabilities = orig_capabilities
 
 
 @pytest.fixture
@@ -117,6 +102,15 @@ def stub_proto(stub_ui):
     proto = mock.Mock()
     proto.ui = stub_ui
     return proto
+
+
+@pytest.fixture
+def orig_capabilities():
+    from mercurial.wireprotov1server import wireprotocaps
+
+    def _capabilities(repo, proto):
+        return wireprotocaps
+    return _capabilities
 
 
 @pytest.fixture

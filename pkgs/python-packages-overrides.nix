@@ -12,9 +12,10 @@ in
 
 self: super: {
 
-  Beaker = super.Beaker.override (attrs: {
+  beaker = super.beaker.override (attrs: {
     patches = [
       ./patch-beaker-lock-func-debug.diff
+      ./patch-beaker-metadata-reuse.diff
     ];
   });
 
