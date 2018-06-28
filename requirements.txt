@@ -13,6 +13,7 @@ mercurial==4.6.1
 msgpack-python==0.4.8
 
 pastedeploy==1.5.2
+psutil==5.4.6
 pyramid==1.9.2
 pyramid-mako==1.0.2
 
