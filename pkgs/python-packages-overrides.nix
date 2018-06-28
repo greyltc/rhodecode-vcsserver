@@ -22,6 +22,14 @@ self: super: {
     ];
   });
 
+  "gevent" = super."gevent".override (attrs: {
+    propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
+      # NOTE: (marcink) odd requirements from gevent aren't set properly,
+      # thus we need to inject psutil manually
+      self."psutil"
+    ];
+  });
+
   "hgsubversion" = super."hgsubversion".override (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
       pkgs.sqlite
