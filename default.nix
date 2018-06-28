@@ -4,163 +4,168 @@
 # derivation. For advanced tweaks to pimp up the development environment we use
 # "shell.nix" so that it does not have to clutter this file.
 
-{ pkgs ? (import <nixpkgs> {})
-, pythonPackages ? "python27Packages"
+args@
+{ pythonPackages ? "python27Packages"
 , pythonExternalOverrides ? self: super: {}
-, doCheck ? true
+, doCheck ? false
+, ...
 }:
 
-let pkgs_ = pkgs; in
+let pkgs_ = (import <nixpkgs> {}); in
 
 let
-  pkgs = pkgs_.overridePackages (self: super: {
-    # bump GIT version
-    git = pkgs.lib.overrideDerivation pkgs_.git (oldAttrs: {
-      name = "git-2.16.4";
-      src = pkgs.fetchurl {
-        url = "https://www.kernel.org/pub/software/scm/git/git-2.16.4.tar.xz";
-        sha256 = "0cnmidjvbdf81mybcvxvl0c2r2x2nvq2jj2dl59dmrc7qklv0sbf";
-      };
 
-      patches = [
-        ./pkgs/git_patches/docbook2texi.patch
-        ./pkgs/git_patches/symlinks-in-bin.patch
-        ./pkgs/git_patches/git-sh-i18n.patch
-        ./pkgs/git_patches/ssh-path.patch
-      ];
+  # TODO: Currently we ignore the passed in pkgs, instead we should use it
+  # somehow as a base and apply overlays to it.
+  pkgs = import <nixpkgs> {
+    overlays = [
+      (import ./pkgs/overlays.nix)
+    ];
+    inherit (pkgs_)
+      system;
+  };
 
-    });
+  # Works with the new python-packages, still can fallback to the old
+  # variant.
+  basePythonPackagesUnfix = basePythonPackages.__unfix__ or (
+    self: basePythonPackages.override (a: { inherit self; }));
 
-    # Override subversion derivation to
-    #  - activate python bindings
-    subversion = let
-      subversionWithPython = super.subversion.override {
-        httpSupport = true;
-        pythonBindings = true;
-        python = self.python27Packages.python;
-      };
-
-    in
-
-    pkgs.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      name = "subversion-1.9.7";
-      src = pkgs.fetchurl {
-        url = "https://www.apache.org/dist/subversion/subversion-1.9.7.tar.gz";
-        sha256 = "0g3cs2h008z8ymgkhbk54jp87bjh7y049rn42igj881yi2f20an7";
-      };
-
-    });
-
-  });
-
-  inherit (pkgs.lib) fix extends;
-  basePythonPackages = with builtins; if isAttrs pythonPackages
-    then pythonPackages
-    else getAttr pythonPackages pkgs;
-
-  elem = builtins.elem;
+  # Evaluates to the last segment of a file system path.
   basename = path: with pkgs.lib; last (splitString "/" path);
-  startsWith = prefix: full: let
-    actualPrefix = builtins.substring 0 (builtins.stringLength prefix) full;
-  in actualPrefix == prefix;
 
+  # source code filter used as arugment to builtins.filterSource.
   src-filter = path: type: with pkgs.lib;
     let
       ext = last (splitString "." path);
     in
-      !elem (basename path) [".hg" ".git" "__pycache__" ".eggs"
-        "node_modules" "build" "data" "tmp"] &&
-      !elem ext ["egg-info" "pyc"] &&
-      !startsWith "result" path;
+      !builtins.elem (basename path) [
+        ".git" ".hg" "__pycache__" ".eggs" ".idea" ".dev"
+        "bower_components" "node_modules"
+        "build" "data" "result" "tmp"] &&
+      !builtins.elem ext ["egg-info" "pyc"] &&
+      # TODO: johbo: This check is wrong, since "path" contains an absolute path,
+      # it would still be good to restore it since we want to ignore "result-*".
+      !hasPrefix "result" path;
 
+  sources =
+    let
+      inherit (pkgs.lib) all isString attrValues;
+      sourcesConfig = pkgs.config.rc.sources or {};
+    in
+      # Ensure that sources are configured as strings. Using a path
+      # would result in a copy into the nix store.
+      assert all isString (attrValues sourcesConfig);
+      sourcesConfig;
+
+  version = builtins.readFile "${rhodecode-vcsserver-src}/vcsserver/VERSION";
   rhodecode-vcsserver-src = builtins.filterSource src-filter ./.;
 
-  pythonGeneratedPackages = self: basePythonPackages.override (a: {
-    inherit self;
-  }) // (scopedImport {
-    self = self;
-    super = basePythonPackages;
-    inherit pkgs;
-    inherit (pkgs) fetchurl fetchgit;
-  } ./pkgs/python-packages.nix);
-
-  pythonOverrides = import ./pkgs/python-packages-overrides.nix {
-    inherit basePythonPackages pkgs;
-  };
-
-  version = builtins.readFile ./vcsserver/VERSION;
-
   pythonLocalOverrides = self: super: {
-    rhodecode-vcsserver = super.rhodecode-vcsserver.override (attrs: {
-      inherit doCheck version;
+    rhodecode-vcsserver =
+      let
+        releaseName = "RhodeCodeVCSServer-${version}";
+      in super.rhodecode-vcsserver.override (attrs: {
+      inherit
+        doCheck
+        version;
 
       name = "rhodecode-vcsserver-${version}";
-      releaseName = "RhodeCodeVCSServer-${version}";
+      releaseName = releaseName;
       src = rhodecode-vcsserver-src;
       dontStrip = true; # prevent strip, we don't need it.
 
-      propagatedBuildInputs = attrs.propagatedBuildInputs ++ ([
-        pkgs.git
-        pkgs.subversion
-      ]);
-
-      # TODO: johbo: Make a nicer way to expose the parts. Maybe
-      # pkgs/default.nix?
+      # expose following attributed outside
       passthru = {
         pythonPackages = self;
       };
 
-      # Add VCSServer bin directory to path so that tests can find 'vcsserver'.
+      propagatedBuildInputs =
+        attrs.propagatedBuildInputs or [] ++ [
+        pkgs.git
+        pkgs.subversion
+      ];
+
+      # Add bin directory to path so that tests can find 'vcsserver'.
       preCheck = ''
         export PATH="$out/bin:$PATH"
       '';
 
-      # put custom attrs here
+      # custom check phase for testing
       checkPhase = ''
         runHook preCheck
-        PYTHONHASHSEED=random py.test -p no:sugar -vv --cov-config=.coveragerc --cov=vcsserver --cov-report=term-missing vcsserver
+        PYTHONHASHSEED=random py.test -vv -p no:sugar -r xw --cov-config=.coveragerc --cov=vcsserver --cov-report=term-missing vcsserver
         runHook postCheck
       '';
 
+      postCheck = ''
+        echo "Cleanup of vcsserver/tests"
+        rm -rf $out/lib/${self.python.libPrefix}/site-packages/vcsserver/tests
+      '';
+
       postInstall = ''
-        echo "Writing meta information for rccontrol to nix-support/rccontrol"
+        echo "Writing vcsserver meta information for rccontrol to nix-support/rccontrol"
         mkdir -p $out/nix-support/rccontrol
         cp -v vcsserver/VERSION $out/nix-support/rccontrol/version
-        echo "DONE: Meta information for rccontrol written"
+        echo "DONE: vcsserver meta information for rccontrol written"
+
+        mkdir -p $out/etc
+        cp configs/production.ini $out/etc
+        echo "DONE: saved vcsserver production.ini into $out/etc"
 
         # python based programs need to be wrapped
+        mkdir -p $out/bin
+        ln -s ${self.python}/bin/python $out/bin
         ln -s ${self.pyramid}/bin/* $out/bin/
         ln -s ${self.gunicorn}/bin/gunicorn $out/bin/
 
         # Symlink version control utilities
-        #
         # We ensure that always the correct version is available as a symlink.
         # So that users calling them via the profile path will always use the
         # correct version.
-        ln -s ${self.python}/bin/python $out/bin
+
         ln -s ${pkgs.git}/bin/git $out/bin
         ln -s ${self.mercurial}/bin/hg $out/bin
         ln -s ${pkgs.subversion}/bin/svn* $out/bin
+        echo "DONE: created symlinks into $out/bin"
 
         for file in $out/bin/*;
         do
           wrapProgram $file \
-            --set PATH $PATH \
-            --set PYTHONPATH $PYTHONPATH \
+            --prefix PATH : $PATH \
+            --prefix PYTHONPATH : $PYTHONPATH \
             --set PYTHONHASHSEED random
         done
+        echo "DONE: vcsserver binary wrapping"
 
       '';
 
     });
   };
 
+  basePythonPackages = with builtins;
+    if isAttrs pythonPackages then
+      pythonPackages
+    else
+      getAttr pythonPackages pkgs;
+
+  pythonGeneratedPackages = import ./pkgs/python-packages.nix {
+    inherit pkgs;
+    inherit (pkgs) fetchurl fetchgit fetchhg;
+  };
+
+  pythonVCSServerOverrides = import ./pkgs/python-packages-overrides.nix {
+    inherit pkgs basePythonPackages;
+  };
+
+
   # Apply all overrides and fix the final package set
-  myPythonPackages =
-    (fix
+  myPythonPackagesUnfix = with pkgs.lib;
     (extends pythonExternalOverrides
     (extends pythonLocalOverrides
-    (extends pythonOverrides
-             pythonGeneratedPackages))));
+    (extends pythonVCSServerOverrides
+    (extends pythonGeneratedPackages
+             basePythonPackagesUnfix))));
+
+  myPythonPackages = (pkgs.lib.fix myPythonPackagesUnfix);
 
 in myPythonPackages.rhodecode-vcsserver
