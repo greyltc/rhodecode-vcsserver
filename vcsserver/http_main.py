@@ -460,10 +460,13 @@ class HTTPApplication(object):
             status_code = request.headers.get('X-RC-Locked-Status-Code')
             return HTTPRepoLocked(
                 title=exception.message, status_code=status_code)
+        traceback_info = 'unavailable'
+        if request.exc_info:
+            traceback_info = traceback.format_exc(request.exc_info[2])
 
-        # Re-raise exception if we can not handle it.
-        log.exception(
-            'error occurred handling this request for path: %s', request.path)
+        log.error(
+            'error occurred handling this request for path: %s, \n tb: %s',
+            request.path, traceback_info)
         raise exception
 
 
