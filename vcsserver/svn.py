@@ -40,13 +40,13 @@ log = logging.getLogger(__name__)
 
 # Set of svn compatible version flags.
 # Compare with subversion/svnadmin/svnadmin.c
-svn_compatible_versions = set([
+svn_compatible_versions = {
     'pre-1.4-compatible',
     'pre-1.5-compatible',
     'pre-1.6-compatible',
     'pre-1.8-compatible',
-    'pre-1.9-compatible',
-])
+    'pre-1.9-compatible'
+}
 
 svn_compatible_versions_map = {
     'pre-1.4-compatible': '1.3',
@@ -71,6 +71,7 @@ def reraise_safe_exceptions(func):
 
 
 class SubversionFactory(RepoFactory):
+    repo_type = 'svn'
 
     def _create_repo(self, wire, create, compatible_version):
         path = svn.core.svn_path_canonicalize(wire['path'])
@@ -92,10 +93,25 @@ class SubversionFactory(RepoFactory):
         return repo
 
     def repo(self, wire, create=False, compatible_version=None):
-        def create_new_repo():
+        """
+        Get a repository instance for the given path.
+
+        Uses internally the low level beaker API since the decorators introduce
+        significant overhead.
+        """
+        region = self._cache_region
+        context = wire.get('context', None)
+        repo_path = wire.get('path', '')
+        context_uid = '{}'.format(context)
+        cache = wire.get('cache', True)
+        cache_on = context and cache
+
+        @region.conditional_cache_on_arguments(condition=cache_on)
+        def create_new_repo(_repo_type, _repo_path, _context_uid, compatible_version_id):
             return self._create_repo(wire, create, compatible_version)
 
-        return self._repo(wire, create_new_repo)
+        return create_new_repo(self.repo_type, repo_path, context_uid,
+                               compatible_version)
 
 
 NODE_TYPE_MAPPING = {

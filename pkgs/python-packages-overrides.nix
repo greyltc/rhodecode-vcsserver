@@ -15,13 +15,6 @@ in
 
 self: super: {
 
-  "beaker" = super."beaker".override (attrs: {
-    patches = [
-      ./patch_beaker/patch-beaker-lock-func-debug.diff
-      ./patch_beaker/patch-beaker-metadata-reuse.diff
-    ];
-  });
-
   "gevent" = super."gevent".override (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
       # NOTE: (marcink) odd requirements from gevent aren't set properly,

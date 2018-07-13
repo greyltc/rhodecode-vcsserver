@@ -26,9 +26,8 @@ from itertools import chain
 
 import simplejson as json
 import msgpack
-from beaker.cache import CacheManager
-from beaker.util import parse_cache_config_options
 from pyramid.config import Configurator
+from pyramid.settings import asbool, aslist
 from pyramid.wsgi import wsgiapp
 from pyramid.compat import configparser
 
@@ -65,47 +64,59 @@ def _is_request_chunked(environ):
     return stream
 
 
+def _int_setting(settings, name, default):
+    settings[name] = int(settings.get(name, default))
+
+
+def _bool_setting(settings, name, default):
+    input_val = settings.get(name, default)
+    if isinstance(input_val, unicode):
+        input_val = input_val.encode('utf8')
+    settings[name] = asbool(input_val)
+
+
+def _list_setting(settings, name, default):
+    raw_value = settings.get(name, default)
+
+    # Otherwise we assume it uses pyramids space/newline separation.
+    settings[name] = aslist(raw_value)
+
+
+def _string_setting(settings, name, default, lower=True):
+    value = settings.get(name, default)
+    if lower:
+        value = value.lower()
+    settings[name] = value
+
+
 class VCS(object):
     def __init__(self, locale=None, cache_config=None):
         self.locale = locale
         self.cache_config = cache_config
         self._configure_locale()
-        self._initialize_cache()
 
         if GitFactory and GitRemote:
-            git_repo_cache = self.cache.get_cache_region(
-                'git', region='repo_object')
-            git_factory = GitFactory(git_repo_cache)
+            git_factory = GitFactory()
             self._git_remote = GitRemote(git_factory)
         else:
             log.info("Git client import failed")
 
         if MercurialFactory and HgRemote:
-            hg_repo_cache = self.cache.get_cache_region(
-                'hg', region='repo_object')
-            hg_factory = MercurialFactory(hg_repo_cache)
+            hg_factory = MercurialFactory()
             self._hg_remote = HgRemote(hg_factory)
         else:
             log.info("Mercurial client import failed")
 
         if SubversionFactory and SvnRemote:
-            svn_repo_cache = self.cache.get_cache_region(
-                'svn', region='repo_object')
-            svn_factory = SubversionFactory(svn_repo_cache)
+            svn_factory = SubversionFactory()
+
             # hg factory is used for svn url validation
-            hg_repo_cache = self.cache.get_cache_region(
-                'hg', region='repo_object')
-            hg_factory = MercurialFactory(hg_repo_cache)
+            hg_factory = MercurialFactory()
             self._svn_remote = SvnRemote(svn_factory, hg_factory=hg_factory)
         else:
             log.info("Subversion client import failed")
 
         self._vcsserver = VcsServer()
-
-    def _initialize_cache(self):
-        cache_config = parse_cache_config_options(self.cache_config)
-        log.info('Initializing beaker cache: %s' % cache_config)
-        self.cache = CacheManager(**cache_config)
 
     def _configure_locale(self):
         if self.locale:
@@ -169,8 +180,11 @@ class HTTPApplication(object):
     _use_echo_app = False
 
     def __init__(self, settings=None, global_config=None):
+        self._sanitize_settings_and_apply_defaults(settings)
+
         self.config = Configurator(settings=settings)
         self.global_config = global_config
+        self.config.include('vcsserver.lib.rc_cache')
 
         locale = settings.get('locale', '') or 'en_US.UTF-8'
         vcs = VCS(locale=locale, cache_config=settings)
@@ -197,6 +211,21 @@ class HTTPApplication(object):
         binary_dir = app_settings.get('core.binary_dir', None)
         if binary_dir:
             settings.BINARY_DIR = binary_dir
+
+    def _sanitize_settings_and_apply_defaults(self, settings):
+        # repo_object cache
+        _string_setting(
+            settings,
+            'rc_cache.repo_object.backend',
+            'dogpile.cache.rc.memory_lru')
+        _int_setting(
+            settings,
+            'rc_cache.repo_object.expiration_time',
+            300)
+        _int_setting(
+            settings,
+            'rc_cache.repo_object.max_size',
+            1024)
 
     def _configure(self):
         self.config.add_renderer(
@@ -246,14 +275,17 @@ class HTTPApplication(object):
         wire = params.get('wire')
         args = params.get('args')
         kwargs = params.get('kwargs')
+        context_uid = None
+
         if wire:
             try:
-                wire['context'] = uuid.UUID(wire['context'])
+                wire['context'] = context_uid = uuid.UUID(wire['context'])
             except KeyError:
                 pass
             args.insert(0, wire)
 
-        log.debug('method called:%s with kwargs:%s', method, kwargs)
+        log.debug('method called:%s with kwargs:%s context_uid: %s',
+                  method, kwargs, context_uid)
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
@@ -272,7 +304,7 @@ class HTTPApplication(object):
                 }
             }
             try:
-                resp['error']['_vcs_kind'] = e._vcs_kind
+                resp['error']['_vcs_kind'] = getattr(e, '_vcs_kind', None)
             except AttributeError:
                 pass
         else:
@@ -486,5 +518,6 @@ def main(global_config, **settings):
     if MercurialFactory:
         hgpatches.patch_largefiles_capabilities()
         hgpatches.patch_subrepo_type_mapping()
+
     app = HTTPApplication(settings=settings, global_config=global_config)
     return app.wsgi_app()

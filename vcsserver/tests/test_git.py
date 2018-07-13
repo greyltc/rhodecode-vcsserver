@@ -152,11 +152,14 @@ class TestDulwichRepoWrapper(object):
 
 class TestGitFactory(object):
     def test_create_repo_returns_dulwich_wrapper(self):
-        factory = git.GitFactory(repo_cache=Mock())
-        wire = {
-            'path': '/tmp/abcde'
-        }
-        isdir_patcher = patch('dulwich.repo.os.path.isdir', return_value=True)
-        with isdir_patcher:
-            result = factory._create_repo(wire, True)
-        assert isinstance(result, git.Repo)
+
+        with patch('vcsserver.lib.rc_cache.region_meta.dogpile_cache_regions') as mock:
+            mock.side_effect = {'repo_objects': ''}
+            factory = git.GitFactory()
+            wire = {
+                'path': '/tmp/abcde'
+            }
+            isdir_patcher = patch('dulwich.repo.os.path.isdir', return_value=True)
+            with isdir_patcher:
+                result = factory._create_repo(wire, True)
+            assert isinstance(result, git.Repo)
