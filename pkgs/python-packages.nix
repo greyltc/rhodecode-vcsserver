@@ -37,20 +37,6 @@ self: super: {
       license = [ pkgs.lib.licenses.mit ];
     };
   };
-  "beaker" = super.buildPythonPackage {
-    name = "beaker-1.9.1";
-    doCheck = false;
-    propagatedBuildInputs = [
-      self."funcsigs"
-    ];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/ca/14/a626188d0d0c7b55dd7cf1902046c2743bd392a7078bb53073e13280eb1e/Beaker-1.9.1.tar.gz";
-      sha256 = "08arsn61r255lhz6hcpn2lsiqpg30clla805ysx06wmbhvb6w9rj";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.bsdOriginal ];
-    };
-  };
   "beautifulsoup4" = super.buildPythonPackage {
     name = "beautifulsoup4-4.6.0";
     doCheck = false;
@@ -110,6 +96,28 @@ self: super: {
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal { fullName = "new BSD License"; } ];
+    };
+  };
+  "dogpile.cache" = super.buildPythonPackage {
+    name = "dogpile.cache-0.6.6";
+    doCheck = false;
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/48/ca/604154d835c3668efb8a31bd979b0ea4bf39c2934a40ffecc0662296cb51/dogpile.cache-0.6.6.tar.gz";
+      sha256 = "1h8n1lxd4l2qvahfkiinljkqz7pww7w3sgag0j8j9ixbl2h4wk84";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
+  "dogpile.core" = super.buildPythonPackage {
+    name = "dogpile.core-0.4.1";
+    doCheck = false;
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/0e/77/e72abc04c22aedf874301861e5c1e761231c288b5de369c18be8f4b5c9bb/dogpile.core-0.4.1.tar.gz";
+      sha256 = "0xpdvg4kr1isfkrh1rfsh7za4q5a5s6l2kf9wpvndbwf3aqjyrdy";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
   "dulwich" = super.buildPythonPackage {
@@ -229,21 +237,6 @@ self: super: {
       license = [ pkgs.lib.licenses.mit ];
     };
   };
-  "infrae.cache" = super.buildPythonPackage {
-    name = "infrae.cache-1.0.1";
-    doCheck = false;
-    propagatedBuildInputs = [
-      self."beaker"
-      self."repoze.lru"
-    ];
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/bb/f0/e7d5e984cf6592fd2807dc7bc44a93f9d18e04e6a61f87fdfb2622422d74/infrae.cache-1.0.1.tar.gz";
-      sha256 = "1dvqsjn8vw253wz9d1pz17j79mf4bs53dvp2qxck2qdp1am1njw4";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.zpl21 ];
-    };
-  };
   "ipdb" = super.buildPythonPackage {
     name = "ipdb-0.11";
     doCheck = false;
@@ -292,6 +285,17 @@ self: super: {
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
+  "lru-dict" = super.buildPythonPackage {
+    name = "lru-dict-1.1.6";
+    doCheck = false;
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/00/a5/32ed6e10246cd341ca8cc205acea5d208e4053f48a4dced2b1b31d45ba3f/lru-dict-1.1.6.tar.gz";
+      sha256 = "1k2lhd4dpl6xa6iialbwx4l6bkdzxmzhygms39pvf19x1rk5fm1n";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
     };
   };
   "mako" = super.buildPythonPackage {
@@ -680,13 +684,14 @@ self: super: {
     ];
     doCheck = true;
     propagatedBuildInputs = [
-      self."beaker"
       self."configobj"
+      self."dogpile.cache"
+      self."dogpile.core"
       self."decorator"
       self."dulwich"
       self."hgsubversion"
       self."hg-evolve"
-      self."infrae.cache"
+      self."lru-dict"
       self."mako"
       self."markupsafe"
       self."mercurial"

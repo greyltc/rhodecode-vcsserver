@@ -20,6 +20,7 @@ import traceback
 import logging
 import urlparse
 
+from vcsserver.lib.rc_cache import region_meta
 log = logging.getLogger(__name__)
 
 
@@ -30,9 +31,10 @@ class RepoFactory(object):
     It provides internal caching of the `repo` object based on
     the :term:`call context`.
     """
+    repo_type = None
 
-    def __init__(self, repo_cache):
-        self._cache = repo_cache
+    def __init__(self):
+        self._cache_region = region_meta.dogpile_cache_regions['repo_object']
 
     def _create_config(self, path, config):
         config = {}
@@ -48,26 +50,19 @@ class RepoFactory(object):
         Uses internally the low level beaker API since the decorators introduce
         significant overhead.
         """
-        def create_new_repo():
+        region = self._cache_region
+        context = wire.get('context', None)
+        repo_path = wire.get('path', '')
+        context_uid = '{}'.format(context)
+        cache = wire.get('cache', True)
+        cache_on = context and cache
+
+        @region.conditional_cache_on_arguments(condition=cache_on)
+        def create_new_repo(_repo_type, _repo_path, _context_uid):
             return self._create_repo(wire, create)
 
-        return self._repo(wire, create_new_repo)
-
-    def _repo(self, wire, createfunc):
-        context = wire.get('context', None)
-        cache = wire.get('cache', True)
-
-        if context and cache:
-            cache_key = (context, wire['path'])
-            log.debug(
-                'FETCH %s@%s repo object from cache. Context: %s',
-                self.__class__.__name__, wire['path'], context)
-            return self._cache.get(key=cache_key, createfunc=createfunc)
-        else:
-            log.debug(
-                'INIT %s@%s repo object based on wire %s. Context: %s',
-                self.__class__.__name__, wire['path'], wire, context)
-            return createfunc()
+        repo = create_new_repo(self.repo_type, repo_path, context_uid)
+        return repo
 
 
 def obfuscate_qs(query_string):

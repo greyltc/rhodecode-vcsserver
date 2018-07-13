@@ -87,6 +87,7 @@ class Repo(DulwichRepo):
 
 
 class GitFactory(RepoFactory):
+    repo_type = 'git'
 
     def _create_repo(self, wire, create):
         repo_path = str_to_dulwich(wire['path'])

@@ -40,7 +40,7 @@ def repeat(request):
 @pytest.fixture(scope='session')
 def vcsserver_port(request):
     port = get_available_port()
-    print 'Using vcsserver port %s' % (port, )
+    print('Using vcsserver port %s' % (port, ))
     return port
 
 
@@ -55,4 +55,3 @@ def get_available_port():
     mysocket.close()
     del mysocket
     return port
-

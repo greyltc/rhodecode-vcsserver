@@ -15,6 +15,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 import logging
+import hashlib
 
 log = logging.getLogger(__name__)
 
@@ -80,3 +81,9 @@ class AttributeDict(dict):
         return self.get(attr, None)
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+
+def sha1(val):
+    return hashlib.sha1(val).hexdigest()
+
+

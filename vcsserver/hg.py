@@ -93,6 +93,7 @@ def reraise_safe_exceptions(func):
 
 
 class MercurialFactory(RepoFactory):
+    repo_type = 'hg'
 
     def _create_config(self, config, hooks=True):
         if not hooks:
