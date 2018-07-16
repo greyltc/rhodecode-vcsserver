@@ -10,7 +10,7 @@ hg-evolve==8.0.1
 lru-dict==1.1.6
 mako==1.0.7
 markupsafe==1.0.0
-mercurial==4.6.1
+mercurial==4.6.2
 msgpack-python==0.5.6
 
 pastedeploy==1.5.2
