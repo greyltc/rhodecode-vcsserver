@@ -27,10 +27,10 @@ self: super: {
     };
   in
     super.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      name = "subversion-1.9.7";
+      name = "subversion-1.9.9";
       src = self.fetchurl {
-        url = "https://www.apache.org/dist/subversion/subversion-1.9.7.tar.gz";
-        sha256 = "0g3cs2h008z8ymgkhbk54jp87bjh7y049rn42igj881yi2f20an7";
+        url = "https://archive.apache.org/dist/subversion/subversion-1.9.9.tar.gz";
+        sha256 = "0f0ivhv6mjrpmlxa6a81zsjqdpw6y06ivszky7x5fz5h34c05lr8";
       };
   });
 
