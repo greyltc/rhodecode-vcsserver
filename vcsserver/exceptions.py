@@ -28,7 +28,7 @@ import functools
 from pyramid.httpexceptions import HTTPLocked
 
 
-def _make_exception(kind, *args):
+def _make_exception(kind, org_exc, *args):
     """
     Prepares a base `Exception` instance to be sent over the wire.
 
@@ -37,26 +37,62 @@ def _make_exception(kind, *args):
     """
     exc = Exception(*args)
     exc._vcs_kind = kind
+    exc._org_exc = org_exc
     return exc
 
 
-AbortException = functools.partial(_make_exception, 'abort')
+def AbortException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('abort', org_exc, *args)
+    return _make_exception_wrapper
 
-ArchiveException = functools.partial(_make_exception, 'archive')
 
-LookupException = functools.partial(_make_exception, 'lookup')
+def ArchiveException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('archive', org_exc, *args)
+    return _make_exception_wrapper
 
-VcsException = functools.partial(_make_exception, 'error')
 
-RepositoryLockedException = functools.partial(_make_exception, 'repo_locked')
+def LookupException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('lookup', org_exc, *args)
+    return _make_exception_wrapper
 
-RequirementException = functools.partial(_make_exception, 'requirement')
 
-UnhandledException = functools.partial(_make_exception, 'unhandled')
+def VcsException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('error', org_exc, *args)
+    return _make_exception_wrapper
 
-URLError = functools.partial(_make_exception, 'url_error')
 
-SubrepoMergeException = functools.partial(_make_exception, 'subrepo_merge_error')
+def RepositoryLockedException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('repo_locked', org_exc, *args)
+    return _make_exception_wrapper
+
+
+def RequirementException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('requirement', org_exc, *args)
+    return _make_exception_wrapper
+
+
+def UnhandledException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('unhandled', org_exc, *args)
+    return _make_exception_wrapper
+
+
+def URLError(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('url_error', org_exc, *args)
+    return _make_exception_wrapper
+
+
+def SubrepoMergeException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('subrepo_merge_error', org_exc, *args)
+    return _make_exception_wrapper
 
 
 class HTTPRepoLocked(HTTPLocked):

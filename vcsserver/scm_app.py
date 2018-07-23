@@ -152,8 +152,8 @@ def create_hg_wsgi_app(repo_path, repo_name, config):
 
     try:
         return HgWeb(repo_path, name=repo_name, baseui=baseui)
-    except mercurial.error.RequirementError as exc:
-        raise exceptions.RequirementException(exc)
+    except mercurial.error.RequirementError as e:
+        raise exceptions.RequirementException(e)(e)
 
 
 class GitHandler(object):

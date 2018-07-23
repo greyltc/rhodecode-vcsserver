@@ -116,7 +116,7 @@ def patch_subrepo_type_mapping():
 
         def merge(self, state):
             """merge currently-saved state with the new state."""
-            raise SubrepoMergeException()
+            raise SubrepoMergeException()()
 
         def push(self, opts):
             """perform whatever action is analogous to 'hg push'

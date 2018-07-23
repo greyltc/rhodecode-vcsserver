@@ -64,8 +64,8 @@ def reraise_safe_exceptions(func):
             return func(*args, **kwargs)
         except Exception as e:
             if not hasattr(e, '_vcs_kind'):
-                log.exception("Unhandled exception in hg remote call")
-                raise_from_original(exceptions.UnhandledException)
+                log.exception("Unhandled exception in svn remote call")
+                raise_from_original(exceptions.UnhandledException(e))
             raise
     return wrapper
 
