@@ -56,9 +56,9 @@ def reraise_safe_exceptions(func):
             return func(*args, **kwargs)
         except (ChecksumMismatch, WrongObjectException, MissingCommitError,
                 ObjectMissing) as e:
-            raise exceptions.LookupException(e.message)
+            raise exceptions.LookupException(e)(e.message)
         except (HangupException, UnexpectedCommandError) as e:
-            raise exceptions.VcsException(e.message)
+            raise exceptions.VcsException(e)(e.message)
         except Exception as e:
             # NOTE(marcink): becuase of how dulwich handles some exceptions
             # (KeyError on empty repos), we cannot track this and catch all
@@ -214,8 +214,8 @@ class GitRemote(object):
                 elif attr in ["author", "message", "parents"]:
                     args.append(attr)
                 result[attr] = method(*args)
-            except KeyError:
-                raise exceptions.VcsException(
+            except KeyError as e:
+                raise exceptions.VcsException(e)(
                     "Unknown bulk attribute: %s" % attr)
         return result
 
@@ -258,11 +258,11 @@ class GitRemote(object):
             log.debug("Trying to open URL %s", cleaned_uri)
             resp = o.open(req)
             if resp.code != 200:
-                raise exceptions.URLError('Return Code is not 200')
+                raise exceptions.URLError()('Return Code is not 200')
         except Exception as e:
             log.warning("URL cannot be opened: %s", cleaned_uri, exc_info=True)
             # means it cannot be cloned
-            raise exceptions.URLError("[%s] org_exc: %s" % (cleaned_uri, e))
+            raise exceptions.URLError(e)("[%s] org_exc: %s" % (cleaned_uri, e))
 
         # now detect if it's proper git repo
         gitdata = resp.read()
@@ -272,7 +272,7 @@ class GitRemote(object):
             # old style git can return some other format !
             pass
         else:
-            raise exceptions.URLError(
+            raise exceptions.URLError()(
                 "url [%s] does not look like an git" % (cleaned_uri,))
 
         return True
@@ -419,7 +419,7 @@ class GitRemote(object):
             log.warning(
                 'Trying to fetch from "%s" failed, not a Git repository.', url)
             # Exception can contain unicode which we convert
-            raise exceptions.AbortException(repr(e))
+            raise exceptions.AbortException(e)(repr(e))
 
         # mikhail: client.fetch() returns all the remote refs, but fetches only
         # refs filtered by `determine_wants` function. We need to filter result
@@ -655,7 +655,7 @@ class GitRemote(object):
             if safe_call:
                 return '', err
             else:
-                raise exceptions.VcsException(tb_err)
+                raise exceptions.VcsException()(tb_err)
 
     @reraise_safe_exceptions
     def install_hooks(self, wire, force=False):

@@ -120,9 +120,9 @@ def _handle_exception(result):
         log.error('Got traceback from remote call:%s', exception_traceback)
 
     if exception_class == 'HTTPLockedRC':
-        raise exceptions.RepositoryLockedException(*result['exception_args'])
+        raise exceptions.RepositoryLockedException()(*result['exception_args'])
     elif exception_class == 'RepositoryError':
-        raise exceptions.VcsException(*result['exception_args'])
+        raise exceptions.VcsException()(*result['exception_args'])
     elif exception_class:
         raise Exception('Got remote exception "%s" with args "%s"' %
                         (exception_class, result['exception_args']))

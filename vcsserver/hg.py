@@ -74,20 +74,21 @@ def reraise_safe_exceptions(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (Abort, InterventionRequired):
-            raise_from_original(exceptions.AbortException)
-        except RepoLookupError:
-            raise_from_original(exceptions.LookupException)
-        except RequirementError:
-            raise_from_original(exceptions.RequirementException)
-        except RepoError:
-            raise_from_original(exceptions.VcsException)
-        except LookupError:
-            raise_from_original(exceptions.LookupException)
+        except (Abort, InterventionRequired) as e:
+            raise_from_original(exceptions.AbortException(e))
+        except RepoLookupError as e:
+            raise_from_original(exceptions.LookupException(e))
+        except RequirementError as e:
+            raise_from_original(exceptions.RequirementException(e))
+        except RepoError as e:
+            raise_from_original(exceptions.VcsException(e))
+        except LookupError as e:
+            raise_from_original(exceptions.LookupException(e))
         except Exception as e:
             if not hasattr(e, '_vcs_kind'):
                 log.exception("Unhandled exception in hg remote call")
-                raise_from_original(exceptions.UnhandledException)
+                raise_from_original(exceptions.UnhandledException(e))
+
             raise
     return wrapper
 
@@ -149,7 +150,7 @@ class HgRemote(object):
         elif kind == 'zip':
             archiver = archival.zipit(archive_path, mtime)
         else:
-            raise exceptions.ArchiveException(
+            raise exceptions.ArchiveException()(
                 'Remote does not support: "%s".' % kind)
 
         for f_path, f_mode, f_is_link, f_content in file_info:
@@ -181,8 +182,8 @@ class HgRemote(object):
             try:
                 method = self._bulk_methods[attr]
                 result[attr] = method(wire, rev)
-            except KeyError:
-                raise exceptions.VcsException(
+            except KeyError as e:
+                raise exceptions.VcsException(e)(
                     'Unknown bulk attribute: "%s"' % attr)
         return result
 
@@ -219,7 +220,7 @@ class HgRemote(object):
                         isexec=bool(node['mode'] & stat.S_IXUSR),
                         copied=False)
 
-            raise exceptions.AbortException(
+            raise exceptions.AbortException()(
                 "Given path haven't been marked as added, "
                 "changed or removed (%s)" % path)
 
@@ -369,11 +370,11 @@ class HgRemote(object):
             log.debug("Trying to open URL %s", cleaned_uri)
             resp = o.open(req)
             if resp.code != 200:
-                raise exceptions.URLError('Return Code is not 200')
+                raise exceptions.URLError()('Return Code is not 200')
         except Exception as e:
             log.warning("URL cannot be opened: %s", cleaned_uri, exc_info=True)
             # means it cannot be cloned
-            raise exceptions.URLError("[%s] org_exc: %s" % (cleaned_uri, e))
+            raise exceptions.URLError(e)("[%s] org_exc: %s" % (cleaned_uri, e))
 
         # now check if it's a proper hg repo, but don't do it for svn
         try:
@@ -390,7 +391,7 @@ class HgRemote(object):
         except Exception as e:
             log.warning("URL is not a valid Mercurial repository: %s",
                         cleaned_uri)
-            raise exceptions.URLError(
+            raise exceptions.URLError(e)(
                 "url [%s] does not look like an hg repo org_exc: %s"
                 % (cleaned_uri, e))
 
@@ -412,8 +413,8 @@ class HgRemote(object):
         try:
             return "".join(patch.diff(
                 repo, node1=rev1, node2=rev2, match=match_filter, opts=opts))
-        except RepoLookupError:
-            raise exceptions.LookupException()
+        except RepoLookupError as e:
+            raise exceptions.LookupException(e)()
 
     @reraise_safe_exceptions
     def file_history(self, wire, revision, path, limit):
@@ -555,10 +556,10 @@ class HgRemote(object):
 
         try:
             ctx = repo[revision]
-        except RepoLookupError:
-            raise exceptions.LookupException(revision)
+        except RepoLookupError as e:
+            raise exceptions.LookupException(e)(revision)
         except LookupError as e:
-            raise exceptions.LookupException(e.name)
+            raise exceptions.LookupException(e)(e.name)
 
         if not both:
             return ctx.hex()
@@ -674,7 +675,7 @@ class HgRemote(object):
         except Abort as e:
             log.exception("Tag operation aborted")
             # Exception can contain unicode which we convert
-            raise exceptions.AbortException(repr(e))
+            raise exceptions.AbortException(e)(repr(e))
 
     @reraise_safe_exceptions
     def tags(self, wire):

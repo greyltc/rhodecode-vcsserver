@@ -120,7 +120,7 @@ class TestReraiseSafeExceptions(object):
     def test_does_not_map_known_exceptions(self):
         @hg.reraise_safe_exceptions
         def stub_method():
-            raise exceptions.LookupException('stub')
+            raise exceptions.LookupException()('stub')
 
         with pytest.raises(Exception) as exc_info:
             stub_method()
