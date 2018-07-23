@@ -16,6 +16,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
 import os
+import sys
 import base64
 import locale
 import logging
@@ -36,6 +37,7 @@ from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
 from vcsserver.echo_stub.echo_app import EchoApp
 from vcsserver.exceptions import HTTPRepoLocked
+from vcsserver.lib.exc_tracking import store_exception
 from vcsserver.server import VcsServer
 
 try:
@@ -289,7 +291,21 @@ class HTTPApplication(object):
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
-            tb_info = traceback.format_exc()
+            exc_info = list(sys.exc_info())
+            exc_type, exc_value, exc_traceback = exc_info
+
+            org_exc = getattr(e, '_org_exc', None)
+            org_exc_name = None
+            if org_exc:
+                org_exc_name = org_exc.__class__.__name__
+                # replace our "faked" exception with our org
+                exc_info[0] = org_exc.__class__
+                exc_info[1] = org_exc
+
+            store_exception(id(exc_info), exc_info)
+
+            tb_info = ''.join(
+                traceback.format_exception(exc_type, exc_value, exc_traceback))
 
             type_ = e.__class__.__name__
             if type_ not in self.ALLOWED_EXCEPTIONS:
@@ -300,6 +316,7 @@ class HTTPApplication(object):
                 'error': {
                     'message': e.message,
                     'traceback': tb_info,
+                    'org_exc': org_exc_name,
                     'type': type_
                 }
             }
@@ -492,9 +509,14 @@ class HTTPApplication(object):
             status_code = request.headers.get('X-RC-Locked-Status-Code')
             return HTTPRepoLocked(
                 title=exception.message, status_code=status_code)
+
+        exc_info = request.exc_info
+        store_exception(id(exc_info), exc_info)
+
         traceback_info = 'unavailable'
         if request.exc_info:
-            traceback_info = traceback.format_exc(request.exc_info[2])
+            exc_type, exc_value, exc_tb = request.exc_info
+            traceback_info = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         log.error(
             'error occurred handling this request for path: %s, \n tb: %s',
