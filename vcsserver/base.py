@@ -85,8 +85,6 @@ def raise_from_original(new_type):
     """
     exc_type, exc_value, exc_traceback = sys.exc_info()
 
-    traceback.format_exception(exc_type, exc_value, exc_traceback)
-
     try:
         raise new_type(*exc_value.args), None, exc_traceback
     finally:
