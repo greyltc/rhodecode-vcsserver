@@ -1,10 +1,10 @@
 self: super: {
   # bump GIT version
   git = super.lib.overrideDerivation super.git (oldAttrs: {
-    name = "git-2.16.4";
+    name = "git-2.17.1";
     src = self.fetchurl {
-      url = "https://www.kernel.org/pub/software/scm/git/git-2.16.4.tar.xz";
-      sha256 = "0cnmidjvbdf81mybcvxvl0c2r2x2nvq2jj2dl59dmrc7qklv0sbf";
+      url = "https://www.kernel.org/pub/software/scm/git/git-2.17.1.tar.xz";
+      sha256 = "0pm6bdnrrm165k3krnazxcxadifk2gqi30awlbcf9fism1x6w4vr";
     };
 
     patches = [
