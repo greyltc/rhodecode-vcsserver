@@ -27,11 +27,19 @@ self: super: {
     };
   in
     super.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      name = "subversion-1.9.9";
+      name = "subversion-1.10.2";
       src = self.fetchurl {
-        url = "https://archive.apache.org/dist/subversion/subversion-1.9.9.tar.gz";
-        sha256 = "0f0ivhv6mjrpmlxa6a81zsjqdpw6y06ivszky7x5fz5h34c05lr8";
+        url = "https://archive.apache.org/dist/subversion/subversion-1.10.2.tar.gz";
+        sha256 = "0xv5z2bg0lw7057g913yc13f60nfj257wvmsq22pr33m4syf26sg";
       };
+
+      ## use internal lz4/utf8proc because it is stable and shipped with SVN
+      configureFlags = oldAttrs.configureFlags ++ [
+        " --with-lz4=internal"
+        " --with-utf8proc=internal"
+      ];
+
+
   });
 
 }
