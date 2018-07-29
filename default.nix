@@ -85,6 +85,13 @@ let
         pkgs.subversion
       ];
 
+      # set some default locale env variables
+      LC_ALL = "en_US.UTF-8";
+      LOCALE_ARCHIVE =
+        if pkgs.stdenv.isLinux
+        then "${pkgs.glibcLocales}/lib/locale/locale-archive"
+        else "";
+
       # Add bin directory to path so that tests can find 'vcsserver'.
       preCheck = ''
         export PATH="$out/bin:$PATH"
