@@ -693,6 +693,7 @@ self: super: {
       self."repoze.lru"
       self."simplejson"
       self."subprocess32"
+      self."setproctitle"
       self."subvertpy"
       self."six"
       self."translationstring"
@@ -732,6 +733,17 @@ self: super: {
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal { fullName = "New BSD License"; } ];
+    };
+  };
+  "setproctitle" = super.buildPythonPackage {
+    name = "setproctitle-1.1.10";
+    doCheck = false;
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/5a/0d/dc0d2234aacba6cf1a729964383e3452c52096dc695581248b548786f2b3/setproctitle-1.1.10.tar.gz";
+      sha256 = "163kplw9dcrw0lffq1bvli5yws3rngpnvrxrzdw89pbphjjvg0v2";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
   "simplegeneric" = super.buildPythonPackage {
