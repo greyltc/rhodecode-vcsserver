@@ -38,11 +38,11 @@ self: super: {
     };
   };
   "beautifulsoup4" = super.buildPythonPackage {
-    name = "beautifulsoup4-4.6.0";
+    name = "beautifulsoup4-4.6.1";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/fa/8d/1d14391fdaed5abada4e0f63543fef49b8331a34ca60c88bd521bcf7f782/beautifulsoup4-4.6.0.tar.gz";
-      sha256 = "12cf0ygpz9srpfh9gx2f9ba0swa1rzypv3sm4r0hmjyw6b4nm2w0";
+      url = "https://files.pythonhosted.org/packages/8e/37/84b216b36760d157ea81ad7cba48ba2052abe54c604784e7b04668fcb281/beautifulsoup4-4.6.1.tar.gz";
+      sha256 = "1ynvk89cdall0ammpm5n7rhfl3dn46l3vi3h63bar1i8dnra6hxx";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
