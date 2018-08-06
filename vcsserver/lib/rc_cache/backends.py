@@ -18,7 +18,7 @@
 import logging
 
 from dogpile.cache.backends import memory as memory_backend
-from lru import LRU as LRUDict
+from vcsserver.lib.memory_lru_dict import LRUDict, LRUDictDebug
 
 
 _default_max_size = 1024
@@ -31,21 +31,21 @@ class LRUMemoryBackend(memory_backend.MemoryBackend):
 
     def __init__(self, arguments):
         max_size = arguments.pop('max_size', _default_max_size)
-        callback = None
-        if arguments.pop('log_max_size_reached', None):
-            def evicted(key, value):
-                log.debug(
-                    'LRU: evicting key `%s` due to max size %s reach', key, max_size)
-            callback = evicted
 
-        arguments['cache_dict'] = LRUDict(max_size, callback=callback)
+        LRUDictClass = LRUDict
+        if arguments.pop('log_key_count', None):
+            LRUDictClass = LRUDictDebug
+
+        arguments['cache_dict'] = LRUDictClass(max_size)
         super(LRUMemoryBackend, self).__init__(arguments)
 
     def delete(self, key):
-        if self._cache.has_key(key):
+        try:
             del self._cache[key]
+        except KeyError:
+            # we don't care if key isn't there at deletion
+            pass
 
     def delete_multi(self, keys):
         for key in keys:
-            if self._cache.has_key(key):
-                del self._cache[key]
+            self.delete(key)

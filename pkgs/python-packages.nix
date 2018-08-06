@@ -287,17 +287,6 @@ self: super: {
       license = [ pkgs.lib.licenses.bsdOriginal ];
     };
   };
-  "lru-dict" = super.buildPythonPackage {
-    name = "lru-dict-1.1.6";
-    doCheck = false;
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/00/a5/32ed6e10246cd341ca8cc205acea5d208e4053f48a4dced2b1b31d45ba3f/lru-dict-1.1.6.tar.gz";
-      sha256 = "1k2lhd4dpl6xa6iialbwx4l6bkdzxmzhygms39pvf19x1rk5fm1n";
-    };
-    meta = {
-      license = [ pkgs.lib.licenses.mit ];
-    };
-  };
   "mako" = super.buildPythonPackage {
     name = "mako-1.0.7";
     doCheck = false;
@@ -691,7 +680,6 @@ self: super: {
       self."dulwich"
       self."hgsubversion"
       self."hg-evolve"
-      self."lru-dict"
       self."mako"
       self."markupsafe"
       self."mercurial"
