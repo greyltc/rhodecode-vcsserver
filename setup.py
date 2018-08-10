@@ -113,7 +113,7 @@ setup(
     keywords=keywords,
     license=__license__,
     author=__author__,
-    author_email='marcin@rhodecode.com',
+    author_email='admin@rhodecode.com',
     url=__url__,
     setup_requires=setup_requirements,
     install_requires=install_requirements,
