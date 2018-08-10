@@ -15,4 +15,4 @@ test-clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf '{}' ';'
 
 test-only:
-	PYTHONHASHSEED=random py.test -vv -r xw --cov=vcsserver --cov-report=term-missing --cov-report=html vcsserver
+	PYTHONHASHSEED=random py.test -vv -r xw -p no:sugar --cov=vcsserver --cov-report=term-missing --cov-report=html vcsserver
