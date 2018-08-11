@@ -526,9 +526,13 @@ class GitRemote(object):
         return repo.refs.path
 
     @reraise_safe_exceptions
-    def head(self, wire):
+    def head(self, wire, show_exc=True):
         repo = self._factory.repo(wire)
-        return repo.head()
+        try:
+            return repo.head()
+        except Exception:
+            if show_exc:
+                raise
 
     @reraise_safe_exceptions
     def init(self, wire):
