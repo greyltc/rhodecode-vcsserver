@@ -32,6 +32,20 @@ from pyramid.settings import asbool, aslist
 from pyramid.wsgi import wsgiapp
 from pyramid.compat import configparser
 
+
+log = logging.getLogger(__name__)
+
+# due to Mercurial/glibc2.27 problems we need to detect if locale settings are
+# causing problems and "fix" it in case they do and fallback to LC_ALL = C
+
+try:
+    locale.setlocale(locale.LC_ALL, '')
+except locale.Error as e:
+    log.error(
+        'LOCALE ERROR: failed to set LC_ALL, fallback to LC_ALL=C, org error: %s', e)
+    os.environ['LC_ALL'] = 'C'
+
+
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
 from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
@@ -58,7 +72,7 @@ except ImportError:
     SubversionFactory = None
     SvnRemote = None
 
-log = logging.getLogger(__name__)
+
 
 
 def _is_request_chunked(environ):
