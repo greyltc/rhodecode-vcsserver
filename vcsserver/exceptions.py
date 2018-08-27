@@ -24,8 +24,7 @@ which contain an extra attribute `_vcs_kind` to allow a client to distinguish
 different error conditions.
 """
 
-import functools
-from pyramid.httpexceptions import HTTPLocked
+from pyramid.httpexceptions import HTTPLocked, HTTPForbidden
 
 
 def _make_exception(kind, org_exc, *args):
@@ -71,6 +70,12 @@ def RepositoryLockedException(org_exc=None):
     return _make_exception_wrapper
 
 
+def RepositoryBranchProtectedException(org_exc=None):
+    def _make_exception_wrapper(*args):
+        return _make_exception('repo_branch_protected', org_exc, *args)
+    return _make_exception_wrapper
+
+
 def RequirementException(org_exc=None):
     def _make_exception_wrapper(*args):
         return _make_exception('requirement', org_exc, *args)
@@ -104,3 +109,8 @@ class HTTPRepoLocked(HTTPLocked):
         self.code = status_code or HTTPLocked.code
         self.title = title
         super(HTTPRepoLocked, self).__init__(**kwargs)
+
+
+class HTTPRepoBranchProtected(HTTPForbidden):
+    def __init__(self, *args, **kwargs):
+        super(HTTPForbidden, self).__init__(*args, **kwargs)
