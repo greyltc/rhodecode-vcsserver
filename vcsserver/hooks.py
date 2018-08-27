@@ -121,6 +121,8 @@ def _handle_exception(result):
 
     if exception_class == 'HTTPLockedRC':
         raise exceptions.RepositoryLockedException()(*result['exception_args'])
+    elif exception_class == 'HTTPBranchProtected':
+        raise exceptions.RepositoryBranchProtectedException()(*result['exception_args'])
     elif exception_class == 'RepositoryError':
         raise exceptions.VcsException()(*result['exception_args'])
     elif exception_class:
@@ -161,17 +163,54 @@ def _extras_from_ui(ui):
     return extras
 
 
-def _rev_range_hash(repo, node):
+def _rev_range_hash(repo, node, check_heads=False):
 
     commits = []
+    revs = []
     start = repo[node].rev()
-    for rev in xrange(start, len(repo)):
+    end = len(repo)
+    for rev in range(start, end):
+        revs.append(rev)
         ctx = repo[rev]
         commit_id = mercurial.node.hex(ctx.node())
         branch = ctx.branch()
         commits.append((commit_id, branch))
 
-    return commits
+    parent_heads = []
+    if check_heads:
+        parent_heads = _check_heads(repo, start, end, revs)
+    return commits, parent_heads
+
+
+def _check_heads(repo, start, end, commits):
+    changelog = repo.changelog
+    parents = set()
+
+    for new_rev in commits:
+        for p in changelog.parentrevs(new_rev):
+            if p == mercurial.node.nullrev:
+                continue
+            if p < start:
+                parents.add(p)
+
+    for p in parents:
+        branch = repo[p].branch()
+        # The heads descending from that parent, on the same branch
+        parent_heads = set([p])
+        reachable = set([p])
+        for x in xrange(p + 1, end):
+            if repo[x].branch() != branch:
+                continue
+            for pp in changelog.parentrevs(x):
+                if pp in reachable:
+                    reachable.add(x)
+                    parent_heads.discard(pp)
+                    parent_heads.add(x)
+        # More than one head? Suggest merging
+        if len(parent_heads) > 1:
+            return list(parent_heads)
+
+    return []
 
 
 def repo_size(ui, repo, **kwargs):
@@ -204,15 +243,20 @@ def post_pull_ssh(ui, repo, **kwargs):
 
 
 def pre_push(ui, repo, node=None, **kwargs):
+    """
+    Mercurial pre_push hook
+    """
     extras = _extras_from_ui(ui)
+    detect_force_push = extras.get('detect_force_push')
 
     rev_data = []
     if node and kwargs.get('hooktype') == 'pretxnchangegroup':
         branches = collections.defaultdict(list)
-        for commit_id, branch in _rev_range_hash(repo, node):
+        commits, _heads = _rev_range_hash(repo, node, check_heads=detect_force_push)
+        for commit_id, branch in commits:
             branches[branch].append(commit_id)
 
-        for branch, commits in branches.iteritems():
+        for branch, commits in branches.items():
             old_rev = kwargs.get('node_last') or commits[0]
             rev_data.append({
                 'old_rev': old_rev,
@@ -221,6 +265,9 @@ def pre_push(ui, repo, node=None, **kwargs):
                 'type': 'branch',
                 'name': branch,
             })
+
+        for push_ref in rev_data:
+            push_ref['multiple_heads'] = _heads
 
     extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, HgMessageWriter(ui))
@@ -234,6 +281,9 @@ def pre_push_ssh(ui, repo, node=None, **kwargs):
 
 
 def pre_push_ssh_auth(ui, repo, node=None, **kwargs):
+    """
+    Mercurial pre_push hook for SSH
+    """
     extras = _extras_from_ui(ui)
     if extras.get('SSH'):
         permission = extras['SSH_PERMISSIONS']
@@ -248,6 +298,9 @@ def pre_push_ssh_auth(ui, repo, node=None, **kwargs):
 
 
 def post_push(ui, repo, node, **kwargs):
+    """
+    Mercurial post_push hook
+    """
     extras = _extras_from_ui(ui)
 
     commit_ids = []
@@ -255,7 +308,8 @@ def post_push(ui, repo, node, **kwargs):
     bookmarks = []
     tags = []
 
-    for commit_id, branch in _rev_range_hash(repo, node):
+    commits, _heads = _rev_range_hash(repo, node)
+    for commit_id, branch in commits:
         commit_ids.append(commit_id)
         if branch not in branches:
             branches.append(branch)
@@ -274,6 +328,9 @@ def post_push(ui, repo, node, **kwargs):
 
 
 def post_push_ssh(ui, repo, node, **kwargs):
+    """
+    Mercurial post_push hook for SSH
+    """
     if _extras_from_ui(ui).get('SSH'):
         return post_push(ui, repo, node, **kwargs)
     return 0
@@ -390,6 +447,30 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
     rev_data = _parse_git_ref_lines(revision_lines)
     if 'push' not in extras['hooks']:
         return 0
+    empty_commit_id = '0' * 40
+
+    detect_force_push = extras.get('detect_force_push')
+
+    for push_ref in rev_data:
+        push_ref['pruned_sha'] = ''
+        if not detect_force_push:
+            # don't check for forced-push when we don't need to
+            continue
+
+        type_ = push_ref['type']
+        new_branch = push_ref['old_rev'] == empty_commit_id
+        if type_ == 'heads' and not new_branch:
+            old_rev = push_ref['old_rev']
+            new_rev = push_ref['new_rev']
+            cmd = [settings.GIT_EXECUTABLE, 'rev-list',
+                   old_rev, '^{}'.format(new_rev)]
+            stdout, stderr = subprocessio.run_command(
+                cmd, env=os.environ.copy())
+            # means we're having some non-reachable objects, this forced push
+            # was used
+            if stdout:
+                push_ref['pruned_sha'] = stdout.splitlines()
+
     extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, GitMessageWriter())
 

@@ -50,7 +50,7 @@ from vcsserver import remote_wsgi, scm_app, settings, hgpatches
 from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
 from vcsserver.echo_stub.echo_app import EchoApp
-from vcsserver.exceptions import HTTPRepoLocked
+from vcsserver.exceptions import HTTPRepoLocked, HTTPRepoBranchProtected
 from vcsserver.lib.exc_tracking import store_exception
 from vcsserver.server import VcsServer
 
@@ -523,6 +523,10 @@ class HTTPApplication(object):
             status_code = request.headers.get('X-RC-Locked-Status-Code')
             return HTTPRepoLocked(
                 title=exception.message, status_code=status_code)
+
+        elif _vcs_kind == 'repo_branch_protected':
+            # Get custom repo-branch-protected status code if present.
+            return HTTPRepoBranchProtected(title=exception.message)
 
         exc_info = request.exc_info
         store_exception(id(exc_info), exc_info)
