@@ -274,7 +274,8 @@ def pre_push(ui, repo, node=None, **kwargs):
 
 
 def pre_push_ssh(ui, repo, node=None, **kwargs):
-    if _extras_from_ui(ui).get('SSH'):
+    extras = _extras_from_ui(ui)
+    if extras.get('SSH'):
         return pre_push(ui, repo, node, **kwargs)
 
     return 0
@@ -452,6 +453,9 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
     detect_force_push = extras.get('detect_force_push')
 
     for push_ref in rev_data:
+        # store our git-env which holds the temp store
+        push_ref['git_env'] = [
+            (k, v) for k, v in os.environ.items() if k.startswith('GIT')]
         push_ref['pruned_sha'] = ''
         if not detect_force_push:
             # don't check for forced-push when we don't need to
