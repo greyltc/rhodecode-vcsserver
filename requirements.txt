@@ -2,6 +2,8 @@
 
 # our custom configobj
 https://code.rhodecode.com/upstream/configobj/archive/a11ff0a0bd4fbda9e3a91267e720f88329efb4a6.tar.gz?md5=9916c524ea11a6c418217af6b28d4b3c#egg=configobj==5.0.6
+atomicwrites==1.1.5
+attrs==18.1.0
 dogpile.cache==0.6.6
 dogpile.core==0.4.1
 decorator==4.1.2

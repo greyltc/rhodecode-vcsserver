@@ -674,6 +674,8 @@ self: super: {
     doCheck = true;
     propagatedBuildInputs = [
       self."configobj"
+      self."atomicwrites"
+      self."attrs"
       self."dogpile.cache"
       self."dogpile.core"
       self."decorator"
