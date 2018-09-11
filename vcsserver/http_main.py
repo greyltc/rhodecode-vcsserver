@@ -23,6 +23,7 @@ import logging
 import uuid
 import wsgiref.util
 import traceback
+import tempfile
 from itertools import chain
 
 import simplejson as json
@@ -45,7 +46,7 @@ except locale.Error as e:
         'LOCALE ERROR: failed to set LC_ALL, fallback to LC_ALL=C, org error: %s', e)
     os.environ['LC_ALL'] = 'C'
 
-
+import vcsserver
 from vcsserver import remote_wsgi, scm_app, settings, hgpatches
 from vcsserver.git_lfs.app import GIT_LFS_CONTENT_TYPE, GIT_LFS_PROTO_PAT
 from vcsserver.echo_stub import remote_wsgi as remote_wsgi_stub
@@ -73,8 +74,6 @@ except ImportError:
     SvnRemote = None
 
 
-
-
 def _is_request_chunked(environ):
     stream = environ.get('HTTP_TRANSFER_ENCODING', '') == 'chunked'
     return stream
@@ -82,6 +81,7 @@ def _is_request_chunked(environ):
 
 def _int_setting(settings, name, default):
     settings[name] = int(settings.get(name, default))
+    return settings[name]
 
 
 def _bool_setting(settings, name, default):
@@ -89,6 +89,7 @@ def _bool_setting(settings, name, default):
     if isinstance(input_val, unicode):
         input_val = input_val.encode('utf8')
     settings[name] = asbool(input_val)
+    return settings[name]
 
 
 def _list_setting(settings, name, default):
@@ -96,13 +97,20 @@ def _list_setting(settings, name, default):
 
     # Otherwise we assume it uses pyramids space/newline separation.
     settings[name] = aslist(raw_value)
+    return settings[name]
 
 
-def _string_setting(settings, name, default, lower=True):
+def _string_setting(settings, name, default, lower=True, default_when_empty=False):
     value = settings.get(name, default)
+
+    if default_when_empty and not value:
+        # use default value when value is empty
+        value = default
+
     if lower:
         value = value.lower()
     settings[name] = value
+    return settings[name]
 
 
 class VCS(object):
@@ -214,13 +222,17 @@ class HTTPApplication(object):
             self._use_echo_app = True
             log.warning("Using EchoApp for VCS operations.")
             self.remote_wsgi = remote_wsgi_stub
-        self._configure_settings(settings)
+
+        self._configure_settings(global_config, settings)
         self._configure()
 
-    def _configure_settings(self, app_settings):
+    def _configure_settings(self, global_config, app_settings):
         """
         Configure the settings module.
         """
+        settings_merged = global_config.copy()
+        settings_merged.update(app_settings)
+
         git_path = app_settings.get('git_path', None)
         if git_path:
             settings.GIT_EXECUTABLE = git_path
@@ -228,7 +240,30 @@ class HTTPApplication(object):
         if binary_dir:
             settings.BINARY_DIR = binary_dir
 
+        # Store the settings to make them available to other modules.
+        vcsserver.PYRAMID_SETTINGS = settings_merged
+        vcsserver.CONFIG = settings_merged
+
     def _sanitize_settings_and_apply_defaults(self, settings):
+
+        default_cache_dir = os.path.join(tempfile.gettempdir(), 'rc_cache')
+
+        # save default, cache dir, and use it for all backends later.
+        default_cache_dir = _string_setting(
+            settings,
+            'cache_dir',
+            default_cache_dir, lower=False, default_when_empty=True)
+
+        # ensure we have our dir created
+        if not os.path.isdir(default_cache_dir):
+            os.makedirs(default_cache_dir, mode=0755)
+
+        # exception store cache
+        _string_setting(
+            settings,
+            'exception_store_path',
+            default_cache_dir, lower=False)
+
         # repo_object cache
         _string_setting(
             settings,

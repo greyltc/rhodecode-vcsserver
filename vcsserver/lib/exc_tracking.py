@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 
 # NOTE: Any changes should be synced with exc_tracking at rhodecode.lib.exc_tracking
 global_prefix = 'vcsserver'
+exc_store_dir_name = 'rc_exception_store_v1'
 
 
 def exc_serialize(exc_id, tb, exc_type):
@@ -54,13 +55,10 @@ def get_exc_store():
     """
     Get and create exception store if it's not existing
     """
-    exc_store_dir = 'rc_exception_store_v1'
-    # fallback
-    _exc_store_path = os.path.join(tempfile.gettempdir(), exc_store_dir)
+    import vcsserver as app
 
-    exc_store_dir = ''  # TODO: need a persistent cross instance store here
-    if exc_store_dir:
-        _exc_store_path = os.path.join(exc_store_dir, exc_store_dir)
+    exc_store_dir = app.CONFIG.get('exception_store_path', '') or tempfile.gettempdir()
+    _exc_store_path = os.path.join(exc_store_dir, exc_store_dir_name)
 
     _exc_store_path = os.path.abspath(_exc_store_path)
     if not os.path.isdir(_exc_store_path):
@@ -87,6 +85,13 @@ def _store_exception(exc_id, exc_info, prefix):
 
 
 def store_exception(exc_id, exc_info, prefix=global_prefix):
+    """
+    Example usage::
+
+        exc_info = sys.exc_info()
+        store_exception(id(exc_info), exc_info)
+    """
+
     try:
         _store_exception(exc_id=exc_id, exc_info=exc_info, prefix=prefix)
     except Exception:
