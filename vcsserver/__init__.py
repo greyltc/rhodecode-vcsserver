@@ -19,3 +19,10 @@ import pkgutil
 
 
 __version__ = pkgutil.get_data('vcsserver', 'VERSION').strip()
+
+# link to config for pyramid
+CONFIG = {}
+
+# Populated with the settings dictionary from application init in
+#
+PYRAMID_SETTINGS = {}
