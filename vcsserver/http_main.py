@@ -144,7 +144,7 @@ class VCS(object):
 
     def _configure_locale(self):
         if self.locale:
-            log.info('Settings locale: `LC_ALL` to %s' % self.locale)
+            log.info('Settings locale: `LC_ALL` to %s', self.locale)
         else:
             log.info(
                 'Configuring locale subsystem based on environment variables')
