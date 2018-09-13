@@ -261,7 +261,7 @@ class HTTPApplication(object):
         # exception store cache
         _string_setting(
             settings,
-            'exception_store_path',
+            'exception_tracker.store_path',
             default_cache_dir, lower=False)
 
         # repo_object cache
