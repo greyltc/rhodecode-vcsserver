@@ -356,7 +356,6 @@ class SvnRemote(object):
             raise Exception(
                 "Path %s is not a valid Subversion repository." % repo_path)
 
-        # TODO: johbo: URL checks ?
         import subprocess
         rdump = subprocess.Popen(
             ['svnrdump', 'dump', '--non-interactive', src_url],
@@ -370,6 +369,7 @@ class SvnRemote(object):
         rdump.wait()
         load.wait()
 
+        log.debug('Return process ended with code: %s', rdump.returncode)
         if rdump.returncode != 0:
             errors = rdump.stderr.read()
             log.error('svnrdump dump failed: statuscode %s: message: %s',
@@ -377,9 +377,12 @@ class SvnRemote(object):
             reason = 'UNKNOWN'
             if 'svnrdump: E230001:' in errors:
                 reason = 'INVALID_CERTIFICATE'
+
+            if reason == 'UNKNOWN':
+                reason = 'UNKNOWN:{}'.format(errors)
             raise Exception(
-                'Failed to dump the remote repository from %s.' % src_url,
-                reason)
+                'Failed to dump the remote repository from %s. Reason:%s' % (
+                    src_url, reason))
         if load.returncode != 0:
             raise Exception(
                 'Failed to load the dump of remote repository from %s.' %
