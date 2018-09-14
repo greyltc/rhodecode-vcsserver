@@ -18,7 +18,9 @@
 from __future__ import absolute_import
 
 import os
+import subprocess
 from urllib2 import URLError
+import urlparse
 import logging
 import posixpath as vcspath
 import StringIO
@@ -350,15 +352,27 @@ class SvnRemote(object):
         self._factory.repo(wire, create=True,
                            compatible_version=compatible_version)
 
+    def get_url_and_credentials(self, src_url):
+        obj = urlparse.urlparse(src_url)
+        username = obj.username or None
+        password = obj.password or None
+        return username, password, src_url
+
     def import_remote_repository(self, wire, src_url):
         repo_path = wire['path']
         if not self.is_path_valid_repository(wire, repo_path):
             raise Exception(
                 "Path %s is not a valid Subversion repository." % repo_path)
 
-        import subprocess
+        username, password, src_url = self.get_url_and_credentials(src_url)
+        rdump_cmd = ['svnrdump', 'dump', '--non-interactive',
+                     '--trust-server-cert-failures=unknown-ca']
+        if username and password:
+            rdump_cmd += ['--username', username, '--password', password]
+        rdump_cmd += [src_url]
+
         rdump = subprocess.Popen(
-            ['svnrdump', 'dump', '--non-interactive', src_url],
+            rdump_cmd,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         load = subprocess.Popen(
             ['svnadmin', 'load', repo_path], stdin=rdump.stdout)
