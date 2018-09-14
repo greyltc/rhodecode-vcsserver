@@ -64,3 +64,19 @@ def test_svn_libraries_can_be_imported():
     import svn
     import svn.client
     assert svn.client is not None
+
+
+@pytest.mark.parametrize('example_url, parts', [
+    ('http://server.com', (None, None, 'http://server.com')),
+    ('http://user@server.com', ('user', None, 'http://user@server.com')),
+    ('http://user:pass@server.com', ('user', 'pass', 'http://user:pass@server.com')),
+    ('<script>', (None, None, '<script>')),
+    ('http://', (None, None, 'http://')),
+])
+def test_username_password_extraction_from_url(example_url, parts):
+    from vcsserver import svn
+
+    remote = svn.SvnRemote(None)
+    remote.is_path_valid_repository = lambda wire, path: True
+
+    assert remote.get_url_and_credentials(example_url) == parts
