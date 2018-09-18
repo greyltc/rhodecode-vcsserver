@@ -245,8 +245,8 @@ class HTTPApplication(object):
         vcsserver.CONFIG = settings_merged
 
     def _sanitize_settings_and_apply_defaults(self, settings):
-
-        default_cache_dir = os.path.join(tempfile.gettempdir(), 'rc_cache')
+        temp_store = tempfile.gettempdir()
+        default_cache_dir = os.path.join(temp_store, 'rc_cache')
 
         # save default, cache dir, and use it for all backends later.
         default_cache_dir = _string_setting(
@@ -262,7 +262,7 @@ class HTTPApplication(object):
         _string_setting(
             settings,
             'exception_tracker.store_path',
-            default_cache_dir, lower=False)
+            temp_store, lower=False, default_when_empty=True)
 
         # repo_object cache
         _string_setting(
