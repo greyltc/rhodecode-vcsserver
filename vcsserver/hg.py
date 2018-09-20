@@ -585,19 +585,21 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def sync_push(self, wire, url):
-        if self.check_url(url, wire['config']):
-            repo = self._factory.repo(wire)
+        if not self.check_url(url, wire['config']):
+            return
 
-            # Disable any prompts for this repo
-            repo.ui.setconfig('ui', 'interactive', 'off', '-y')
+        repo = self._factory.repo(wire)
 
-            bookmarks = dict(repo._bookmarks).keys()
-            remote = peer(repo, {}, url)
-            # Disable any prompts for this remote
-            remote.ui.setconfig('ui', 'interactive', 'off', '-y')
+        # Disable any prompts for this repo
+        repo.ui.setconfig('ui', 'interactive', 'off', '-y')
 
-            return exchange.push(
-                repo, remote, newbranch=True, bookmarks=bookmarks).cgresult
+        bookmarks = dict(repo._bookmarks).keys()
+        remote = peer(repo, {}, url)
+        # Disable any prompts for this remote
+        remote.ui.setconfig('ui', 'interactive', 'off', '-y')
+
+        return exchange.push(
+            repo, remote, newbranch=True, bookmarks=bookmarks).cgresult
 
     @reraise_safe_exceptions
     def revision(self, wire, rev):

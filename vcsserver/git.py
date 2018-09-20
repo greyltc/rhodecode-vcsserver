@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-
+import collections
 import logging
 import os
 import posixpath as vcspath
@@ -448,13 +448,49 @@ class GitRemote(object):
             return remote_refs
 
     @reraise_safe_exceptions
+    def sync_fetch(self, wire, url, refs=None):
+        repo = self._factory.repo(wire)
+        if refs and not isinstance(refs, (list, tuple)):
+            refs = [refs]
+
+        # get remote heads
+        output, __ = self.run_git_command(
+            wire, ['ls-remote', url], fail_on_stderr=False,
+            _copts=['-c', 'core.askpass=""'],
+            extra_env={'GIT_TERMINAL_PROMPT': '0'})
+
+        remote_refs = collections.OrderedDict()
+        fetch_refs = []
+        for ref_line in output.splitlines():
+            sha, ref = ref_line.split('\t')
+            sha = sha.strip()
+            remote_refs[ref] = sha
+
+            if refs and sha in refs:
+                # we filter fetch using our specified refs
+                fetch_refs.append('{}:{}'.format(ref, ref))
+            elif not refs:
+                fetch_refs.append('{}:{}'.format(ref, ref))
+
+            fetch_refs.append('{}:{}'.format(ref, ref))
+
+        _out, _err = self.run_git_command(
+            wire, ['fetch', url, '--'] + fetch_refs, fail_on_stderr=False,
+            _copts=['-c', 'core.askpass=""'],
+            extra_env={'GIT_TERMINAL_PROMPT': '0'})
+
+        return remote_refs
+
+    @reraise_safe_exceptions
     def sync_push(self, wire, url, refs=None):
-        if self.check_url(url, wire):
-            repo = self._factory.repo(wire)
-            self.run_git_command(
-                wire, ['push', url, '--mirror'], fail_on_stderr=False,
-                _copts=['-c', 'core.askpass=""'],
-                extra_env={'GIT_TERMINAL_PROMPT': '0'})
+        if not self.check_url(url, wire):
+            return
+
+        repo = self._factory.repo(wire)
+        self.run_git_command(
+            wire, ['push', url, '--mirror'], fail_on_stderr=False,
+            _copts=['-c', 'core.askpass=""'],
+            extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
     @reraise_safe_exceptions
     def get_remote_refs(self, wire, url):
