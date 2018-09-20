@@ -98,7 +98,7 @@ class GitRemote(object):
 
     def __init__(self, factory):
         self._factory = factory
-
+        self.peeled_ref_marker = '^{}'
         self._bulk_methods = {
             "author": self.commit_attribute,
             "date": self.get_object_attrs,
@@ -279,7 +279,8 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def clone(self, wire, url, deferred, valid_refs, update_after_clone):
-        remote_refs = self.fetch(wire, url, apply_refs=False)
+        # TODO(marcink): deprecate this method. Last i checked we don't use it anymore
+        remote_refs = self.pull(wire, url, apply_refs=False)
         repo = self._factory.repo(wire)
         if isinstance(valid_refs, list):
             valid_refs = tuple(valid_refs)
@@ -396,7 +397,7 @@ class GitRemote(object):
         return commit.id
 
     @reraise_safe_exceptions
-    def fetch(self, wire, url, apply_refs=True, refs=None):
+    def pull(self, wire, url, apply_refs=True, refs=None):
         if url != 'default' and '://' not in url:
             client = LocalGitClient(url)
         else:
@@ -431,10 +432,9 @@ class GitRemote(object):
             # TODO: johbo: Needs proper test coverage with a git repository
             # that contains a tag object, so that we would end up with
             # a peeled ref at this point.
-            PEELED_REF_MARKER = '^{}'
             for k in remote_refs:
-                if k.endswith(PEELED_REF_MARKER):
-                    log.info("Skipping peeled reference %s", k)
+                if k.endswith(self.peeled_ref_marker):
+                    log.debug("Skipping peeled reference %s", k)
                     continue
                 repo[k] = remote_refs[k]
 
@@ -442,8 +442,6 @@ class GitRemote(object):
                 # mikhail: explicitly set the head to the last ref.
                 repo['HEAD'] = remote_refs[refs[-1]]
 
-            # TODO: mikhail: should we return remote_refs here to be
-            # consistent?
         else:
             return remote_refs
 
@@ -453,7 +451,7 @@ class GitRemote(object):
         if refs and not isinstance(refs, (list, tuple)):
             refs = [refs]
 
-        # get remote heads
+        # get all remote refs we'll use to fetch later
         output, __ = self.run_git_command(
             wire, ['ls-remote', url], fail_on_stderr=False,
             _copts=['-c', 'core.askpass=""'],
@@ -461,9 +459,16 @@ class GitRemote(object):
 
         remote_refs = collections.OrderedDict()
         fetch_refs = []
+
         for ref_line in output.splitlines():
             sha, ref = ref_line.split('\t')
             sha = sha.strip()
+            if ref in remote_refs:
+                # duplicate, skip
+                continue
+            if ref.endswith(self.peeled_ref_marker):
+                log.debug("Skipping peeled reference %s", ref)
+                continue
             remote_refs[ref] = sha
 
             if refs and sha in refs:
@@ -472,12 +477,12 @@ class GitRemote(object):
             elif not refs:
                 fetch_refs.append('{}:{}'.format(ref, ref))
 
-            fetch_refs.append('{}:{}'.format(ref, ref))
-
-        _out, _err = self.run_git_command(
-            wire, ['fetch', url, '--'] + fetch_refs, fail_on_stderr=False,
-            _copts=['-c', 'core.askpass=""'],
-            extra_env={'GIT_TERMINAL_PROMPT': '0'})
+        if fetch_refs:
+            _out, _err = self.run_git_command(
+                wire, ['fetch', url, '--prune', '--'] + fetch_refs,
+                fail_on_stderr=False,
+                _copts=['-c', 'core.askpass=""'],
+                extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
         return remote_refs
 
