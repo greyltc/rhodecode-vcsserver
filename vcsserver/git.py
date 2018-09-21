@@ -397,7 +397,7 @@ class GitRemote(object):
         return commit.id
 
     @reraise_safe_exceptions
-    def pull(self, wire, url, apply_refs=True, refs=None):
+    def pull(self, wire, url, apply_refs=True, refs=None, update_after=False):
         if url != 'default' and '://' not in url:
             client = LocalGitClient(url)
         else:
@@ -438,12 +438,16 @@ class GitRemote(object):
                     continue
                 repo[k] = remote_refs[k]
 
-            if refs:
+            if refs and not update_after:
                 # mikhail: explicitly set the head to the last ref.
                 repo['HEAD'] = remote_refs[refs[-1]]
 
-        else:
-            return remote_refs
+        if update_after:
+            # we want to checkout HEAD
+            repo["HEAD"] = remote_refs["HEAD"]
+            index.build_index_from_tree(repo.path, repo.index_path(),
+                                        repo.object_store, repo["HEAD"].tree)
+        return remote_refs
 
     @reraise_safe_exceptions
     def sync_fetch(self, wire, url, refs=None):
