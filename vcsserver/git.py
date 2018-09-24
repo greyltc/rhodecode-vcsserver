@@ -483,7 +483,7 @@ class GitRemote(object):
 
         if fetch_refs:
             _out, _err = self.run_git_command(
-                wire, ['fetch', url, '--prune', '--'] + fetch_refs,
+                wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs,
                 fail_on_stderr=False,
                 _copts=['-c', 'core.askpass=""'],
                 extra_env={'GIT_TERMINAL_PROMPT': '0'})
