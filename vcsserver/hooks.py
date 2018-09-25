@@ -143,8 +143,9 @@ def _call_hook(hook_name, extras, writer):
     log.debug('Hooks, using client:%s', hooks_client)
     result = hooks_client(hook_name, extras)
     log.debug('Hooks got result: %s', result)
-    writer.write(result['output'])
+
     _handle_exception(result)
+    writer.write(result['output'])
 
     return result['status']
 
