@@ -689,9 +689,9 @@ class GitRemote(object):
         gitenv['GIT_DISCOVERY_ACROSS_FILESYSTEM'] = '1'
 
         cmd = [settings.GIT_EXECUTABLE] + _copts + cmd
+        _opts = {'env': gitenv, 'shell': False}
 
         try:
-            _opts = {'env': gitenv, 'shell': False}
             _opts.update(opts)
             p = subprocessio.SubprocessIOChunker(cmd, **_opts)
 
@@ -699,7 +699,9 @@ class GitRemote(object):
         except (EnvironmentError, OSError) as err:
             cmd = ' '.join(cmd)  # human friendly CMD
             tb_err = ("Couldn't run git command (%s).\n"
-                      "Original error was:%s\n" % (cmd, err))
+                      "Original error was:%s\n"
+                      "Call options:%s\n"
+                      % (cmd, err, _opts))
             log.exception(tb_err)
             if safe_call:
                 return '', err
