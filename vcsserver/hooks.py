@@ -270,6 +270,7 @@ def pre_push(ui, repo, node=None, **kwargs):
         for push_ref in rev_data:
             push_ref['multiple_heads'] = _heads
 
+    extras['hook_type'] = kwargs.get('hooktype', 'pre_push')
     extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, HgMessageWriter(ui))
 
@@ -319,6 +320,7 @@ def post_push(ui, repo, node, **kwargs):
     if hasattr(ui, '_rc_pushkey_branches'):
         bookmarks = ui._rc_pushkey_branches
 
+    extras['hook_type'] = kwargs.get('hooktype', 'post_push')
     extras['commit_ids'] = commit_ids
     extras['new_refs'] = {
         'branches': branches,
@@ -476,6 +478,7 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
             if stdout:
                 push_ref['pruned_sha'] = stdout.splitlines()
 
+    extras['hook_type'] = 'pre_receive'
     extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, GitMessageWriter())
 
@@ -555,6 +558,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 tags.append(push_ref['name'])
             git_revs.append('tag=>%s' % push_ref['name'])
 
+    extras['hook_type'] = 'post_receive'
     extras['commit_ids'] = git_revs
     extras['new_refs'] = {
         'branches': branches,
