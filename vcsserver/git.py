@@ -473,6 +473,10 @@ class GitRemote(object):
             if ref.endswith(self.peeled_ref_marker):
                 log.debug("Skipping peeled reference %s", ref)
                 continue
+            # don't sync HEAD
+            if ref in ['HEAD']:
+                continue
+
             remote_refs[ref] = sha
 
             if refs and sha in refs:
