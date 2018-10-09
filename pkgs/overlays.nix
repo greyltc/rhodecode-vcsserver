@@ -8,10 +8,10 @@ self: super: {
     };
 
     patches = [
-      ./git_patches/docbook2texi.patch
-      ./git_patches/symlinks-in-bin.patch
-      ./git_patches/git-sh-i18n.patch
-      ./git_patches/ssh-path.patch
+      ./patches/git/docbook2texi.patch
+      ./patches/git/symlinks-in-bin.patch
+      ./patches/git/git-sh-i18n.patch
+      ./patches/git/ssh-path.patch
     ];
 
   });
