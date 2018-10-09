@@ -214,6 +214,30 @@ def _check_heads(repo, start, end, commits):
     return []
 
 
+def _get_git_env():
+    env = {}
+    for k, v in os.environ.items():
+        if k.startswith('GIT'):
+            env[k] = v
+
+    # serialized version
+    return [(k, v) for k, v in env.items()]
+
+
+def _get_hg_env(old_rev, new_rev, txnid, repo_path):
+    env = {}
+    for k, v in os.environ.items():
+        if k.startswith('HG'):
+            env[k] = v
+
+    env['HG_NODE'] = old_rev
+    env['HG_NODE_LAST'] = new_rev
+    env['HG_TXNID'] = txnid
+    env['HG_PENDING'] = repo_path
+
+    return [(k, v) for k, v in env.items()]
+
+
 def repo_size(ui, repo, **kwargs):
     extras = _extras_from_ui(ui)
     return _call_hook('repo_size', extras, HgMessageWriter(ui))
@@ -260,6 +284,7 @@ def pre_push(ui, repo, node=None, **kwargs):
         for branch, commits in branches.items():
             old_rev = kwargs.get('node_last') or commits[0]
             rev_data.append({
+                'total_commits': len(commits),
                 'old_rev': old_rev,
                 'new_rev': commits[-1],
                 'ref': '',
@@ -270,7 +295,16 @@ def pre_push(ui, repo, node=None, **kwargs):
         for push_ref in rev_data:
             push_ref['multiple_heads'] = _heads
 
+            repo_path = os.path.join(
+                extras.get('repo_store', ''), extras.get('repository', ''))
+            push_ref['hg_env'] = _get_hg_env(
+                old_rev=push_ref['old_rev'],
+                new_rev=push_ref['new_rev'], txnid=kwargs.get('txnid'),
+                repo_path=repo_path)
+
+    extras['hook_type'] = kwargs.get('hooktype', 'pre_push')
     extras['commit_ids'] = rev_data
+
     return _call_hook('pre_push', extras, HgMessageWriter(ui))
 
 
@@ -319,6 +353,7 @@ def post_push(ui, repo, node, **kwargs):
     if hasattr(ui, '_rc_pushkey_branches'):
         bookmarks = ui._rc_pushkey_branches
 
+    extras['hook_type'] = kwargs.get('hooktype', 'post_push')
     extras['commit_ids'] = commit_ids
     extras['new_refs'] = {
         'branches': branches,
@@ -426,6 +461,10 @@ def _parse_git_ref_lines(revision_lines):
         ref_data = ref.split('/', 2)
         if ref_data[1] in ('tags', 'heads'):
             rev_data.append({
+                # NOTE(marcink):
+                # we're unable to tell total_commits for git at this point
+                # but we set the variable for consistency with GIT
+                'total_commits': -1,
                 'old_rev': old_rev,
                 'new_rev': new_rev,
                 'ref': ref,
@@ -455,8 +494,7 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
 
     for push_ref in rev_data:
         # store our git-env which holds the temp store
-        push_ref['git_env'] = [
-            (k, v) for k, v in os.environ.items() if k.startswith('GIT')]
+        push_ref['git_env'] = _get_git_env()
         push_ref['pruned_sha'] = ''
         if not detect_force_push:
             # don't check for forced-push when we don't need to
@@ -476,6 +514,7 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
             if stdout:
                 push_ref['pruned_sha'] = stdout.splitlines()
 
+    extras['hook_type'] = 'pre_receive'
     extras['commit_ids'] = rev_data
     return _call_hook('pre_push', extras, GitMessageWriter())
 
@@ -555,6 +594,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
                 tags.append(push_ref['name'])
             git_revs.append('tag=>%s' % push_ref['name'])
 
+    extras['hook_type'] = 'post_receive'
     extras['commit_ids'] = git_revs
     extras['new_refs'] = {
         'branches': branches,
@@ -586,6 +626,21 @@ def _get_extras_from_txn_id(path, txn_id):
     return extras
 
 
+def _get_extras_from_commit_id(commit_id, path):
+    extras = {}
+    try:
+        cmd = ['svnlook', 'pget',
+               '-r', commit_id,
+               '--revprop', path, 'rc-scm-extras']
+        stdout, stderr = subprocessio.run_command(
+            cmd, env=os.environ.copy())
+        extras = json.loads(base64.urlsafe_b64decode(stdout))
+    except Exception:
+        log.exception('Failed to extract extras info from commit_id')
+
+    return extras
+
+
 def svn_pre_commit(repo_path, commit_data, env):
     path, txn_id = commit_data
     branches = []
@@ -602,27 +657,13 @@ def svn_pre_commit(repo_path, commit_data, env):
     extras['commit_ids'] = []
     extras['txn_id'] = txn_id
     extras['new_refs'] = {
+        'total_commits': 1,
         'branches': branches,
         'bookmarks': [],
         'tags': tags,
     }
 
     return _call_hook('pre_push', extras, SvnMessageWriter())
-
-
-def _get_extras_from_commit_id(commit_id, path):
-    extras = {}
-    try:
-        cmd = ['svnlook', 'pget',
-               '-r', commit_id,
-               '--revprop', path, 'rc-scm-extras']
-        stdout, stderr = subprocessio.run_command(
-            cmd, env=os.environ.copy())
-        extras = json.loads(base64.urlsafe_b64decode(stdout))
-    except Exception:
-        log.exception('Failed to extract extras info from commit_id')
-
-    return extras
 
 
 def svn_post_commit(repo_path, commit_data, env):
@@ -647,6 +688,7 @@ def svn_post_commit(repo_path, commit_data, env):
         'branches': branches,
         'bookmarks': [],
         'tags': tags,
+        'total_commits': 1,
     }
 
     if 'repo_size' in extras['hooks']:

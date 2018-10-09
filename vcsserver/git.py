@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-
+import collections
 import logging
 import os
 import posixpath as vcspath
@@ -98,7 +98,7 @@ class GitRemote(object):
 
     def __init__(self, factory):
         self._factory = factory
-
+        self.peeled_ref_marker = '^{}'
         self._bulk_methods = {
             "author": self.commit_attribute,
             "date": self.get_object_attrs,
@@ -279,7 +279,8 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def clone(self, wire, url, deferred, valid_refs, update_after_clone):
-        remote_refs = self.fetch(wire, url, apply_refs=False)
+        # TODO(marcink): deprecate this method. Last i checked we don't use it anymore
+        remote_refs = self.pull(wire, url, apply_refs=False)
         repo = self._factory.repo(wire)
         if isinstance(valid_refs, list):
             valid_refs = tuple(valid_refs)
@@ -396,7 +397,7 @@ class GitRemote(object):
         return commit.id
 
     @reraise_safe_exceptions
-    def fetch(self, wire, url, apply_refs=True, refs=None):
+    def pull(self, wire, url, apply_refs=True, refs=None, update_after=False):
         if url != 'default' and '://' not in url:
             client = LocalGitClient(url)
         else:
@@ -431,30 +432,78 @@ class GitRemote(object):
             # TODO: johbo: Needs proper test coverage with a git repository
             # that contains a tag object, so that we would end up with
             # a peeled ref at this point.
-            PEELED_REF_MARKER = '^{}'
             for k in remote_refs:
-                if k.endswith(PEELED_REF_MARKER):
-                    log.info("Skipping peeled reference %s", k)
+                if k.endswith(self.peeled_ref_marker):
+                    log.debug("Skipping peeled reference %s", k)
                     continue
                 repo[k] = remote_refs[k]
 
-            if refs:
+            if refs and not update_after:
                 # mikhail: explicitly set the head to the last ref.
                 repo['HEAD'] = remote_refs[refs[-1]]
 
-            # TODO: mikhail: should we return remote_refs here to be
-            # consistent?
-        else:
-            return remote_refs
+        if update_after:
+            # we want to checkout HEAD
+            repo["HEAD"] = remote_refs["HEAD"]
+            index.build_index_from_tree(repo.path, repo.index_path(),
+                                        repo.object_store, repo["HEAD"].tree)
+        return remote_refs
+
+    @reraise_safe_exceptions
+    def sync_fetch(self, wire, url, refs=None):
+        repo = self._factory.repo(wire)
+        if refs and not isinstance(refs, (list, tuple)):
+            refs = [refs]
+
+        # get all remote refs we'll use to fetch later
+        output, __ = self.run_git_command(
+            wire, ['ls-remote', url], fail_on_stderr=False,
+            _copts=['-c', 'core.askpass=""'],
+            extra_env={'GIT_TERMINAL_PROMPT': '0'})
+
+        remote_refs = collections.OrderedDict()
+        fetch_refs = []
+
+        for ref_line in output.splitlines():
+            sha, ref = ref_line.split('\t')
+            sha = sha.strip()
+            if ref in remote_refs:
+                # duplicate, skip
+                continue
+            if ref.endswith(self.peeled_ref_marker):
+                log.debug("Skipping peeled reference %s", ref)
+                continue
+            # don't sync HEAD
+            if ref in ['HEAD']:
+                continue
+
+            remote_refs[ref] = sha
+
+            if refs and sha in refs:
+                # we filter fetch using our specified refs
+                fetch_refs.append('{}:{}'.format(ref, ref))
+            elif not refs:
+                fetch_refs.append('{}:{}'.format(ref, ref))
+
+        if fetch_refs:
+            _out, _err = self.run_git_command(
+                wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs,
+                fail_on_stderr=False,
+                _copts=['-c', 'core.askpass=""'],
+                extra_env={'GIT_TERMINAL_PROMPT': '0'})
+
+        return remote_refs
 
     @reraise_safe_exceptions
     def sync_push(self, wire, url, refs=None):
-        if self.check_url(url, wire):
-            repo = self._factory.repo(wire)
-            self.run_git_command(
-                wire, ['push', url, '--mirror'], fail_on_stderr=False,
-                _copts=['-c', 'core.askpass=""'],
-                extra_env={'GIT_TERMINAL_PROMPT': '0'})
+        if not self.check_url(url, wire):
+            return
+
+        repo = self._factory.repo(wire)
+        self.run_git_command(
+            wire, ['push', url, '--mirror'], fail_on_stderr=False,
+            _copts=['-c', 'core.askpass=""'],
+            extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
     @reraise_safe_exceptions
     def get_remote_refs(self, wire, url):
@@ -644,9 +693,9 @@ class GitRemote(object):
         gitenv['GIT_DISCOVERY_ACROSS_FILESYSTEM'] = '1'
 
         cmd = [settings.GIT_EXECUTABLE] + _copts + cmd
+        _opts = {'env': gitenv, 'shell': False}
 
         try:
-            _opts = {'env': gitenv, 'shell': False}
             _opts.update(opts)
             p = subprocessio.SubprocessIOChunker(cmd, **_opts)
 
@@ -654,7 +703,9 @@ class GitRemote(object):
         except (EnvironmentError, OSError) as err:
             cmd = ' '.join(cmd)  # human friendly CMD
             tb_err = ("Couldn't run git command (%s).\n"
-                      "Original error was:%s\n" % (cmd, err))
+                      "Original error was:%s\n"
+                      "Call options:%s\n"
+                      % (cmd, err, _opts))
             log.exception(tb_err)
             if safe_call:
                 return '', err
