@@ -46,6 +46,13 @@ self: super: {
     ];
   });
 
+  "dulwich" = super."dulwich".override (attrs: {
+    patches = [
+      ./patches/dulwich/handle-dir-refs.patch
+    ];
+  });
+
+
   # Avoid that base packages screw up the build process
   inherit (basePythonPackages)
     setuptools;
