@@ -1,0 +1,15 @@
+This patch allows handling directories inside the refs/heads. This was added in dulwich
+0.19.X series
+
+diff -rup dulwich-0.13.0-orig/dulwich/refs.py dulwich-0.13.0/dulwich/refs.py
+--- dulwich-0.13.0-orig/dulwich/refs.py	2018-10-09 09:42:38.182597268 +0200
++++ dulwich-0.13.0/dulwich/refs.py	2018-10-09 09:43:39.057145566 +0200
+@@ -509,7 +509,7 @@ class DiskRefsContainer(RefsContainer):
+                     # Read only the first 40 bytes
+                     return header + f.read(40 - len(SYMREF))
+         except IOError as e:
+-            if e.errno == errno.ENOENT:
++            if e.errno in (errno.ENOENT, errno.EISDIR):
+                 return None
+             raise
+
