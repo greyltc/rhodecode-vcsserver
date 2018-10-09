@@ -61,7 +61,7 @@ class TestGitFetch(object):
 
         with patch('dulwich.client.LocalGitClient.fetch') as mock_fetch:
             mock_fetch.side_effect = side_effect
-            self.remote_git.fetch(wire=None, url='/tmp/', apply_refs=False)
+            self.remote_git.pull(wire=None, url='/tmp/', apply_refs=False)
             determine_wants = self.mock_repo.object_store.determine_wants_all
             determine_wants.assert_called_once_with(SAMPLE_REFS)
 
@@ -78,7 +78,7 @@ class TestGitFetch(object):
 
         with patch('dulwich.client.LocalGitClient.fetch') as mock_fetch:
             mock_fetch.side_effect = side_effect
-            self.remote_git.fetch(
+            self.remote_git.pull(
                 wire=None, url='/tmp/', apply_refs=False,
                 refs=selected_refs.keys())
             determine_wants = self.mock_repo.object_store.determine_wants_all
