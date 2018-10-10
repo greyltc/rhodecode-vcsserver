@@ -131,9 +131,6 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     entry_points={
-        'console_scripts': [
-            'vcsserver=vcsserver.main:main',
-        ],
         'paste.app_factory': ['main=vcsserver.http_main:main']
     },
 )
