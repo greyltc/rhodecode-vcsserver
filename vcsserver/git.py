@@ -56,9 +56,11 @@ def reraise_safe_exceptions(func):
             return func(*args, **kwargs)
         except (ChecksumMismatch, WrongObjectException, MissingCommitError,
                 ObjectMissing) as e:
-            raise exceptions.LookupException(e)(e.message)
+            exc = exceptions.LookupException(e)
+            raise exc(e)
         except (HangupException, UnexpectedCommandError) as e:
-            raise exceptions.VcsException(e)(e.message)
+            exc = exceptions.VcsException(e)
+            raise exc(e)
         except Exception as e:
             # NOTE(marcink): becuase of how dulwich handles some exceptions
             # (KeyError on empty repos), we cannot track this and catch all
