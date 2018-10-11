@@ -121,27 +121,34 @@ let
 
         # python based programs need to be wrapped
         mkdir -p $out/bin
-        ln -s ${self.python}/bin/python $out/bin
-        ln -s ${self.pyramid}/bin/* $out/bin/
+        ln -s ${self.python}/bin/python $out/bin/
         ln -s ${self.gunicorn}/bin/gunicorn $out/bin/
+        ln -s ${self.pyramid}/bin/prequest $out/bin/
+        ln -s ${self.pyramid}/bin/pserve $out/bin/
 
         # Symlink version control utilities
         # We ensure that always the correct version is available as a symlink.
         # So that users calling them via the profile path will always use the
-        # correct version.
+        # correct version. Wrapping is required so those can "import"
+        # vcsserver python hooks.
 
         ln -s ${pkgs.git}/bin/git $out/bin
         ln -s ${self.mercurial}/bin/hg $out/bin
         ln -s ${pkgs.subversion}/bin/svn* $out/bin
-        echo "DONE: created symlinks into $out/bin"
 
-        for file in $out/bin/*;
+        echo "DONE: created symlinks into $out/bin"
+        DEPS="$out/bin/*"
+
+        # wrap only dependency scripts, they require to have full PYTHONPATH set
+        # to be able to import all packages
+        for file in $DEPS;
         do
           wrapProgram $file \
             --prefix PATH : $PATH \
             --prefix PYTHONPATH : $PYTHONPATH \
             --set PYTHONHASHSEED random
         done
+
         echo "DONE: vcsserver binary wrapping"
 
       '';
