@@ -15,15 +15,13 @@ let pkgs_ = (import <nixpkgs> {}); in
 
 let
 
-  # TODO: Currently we ignore the passed in pkgs, instead we should use it
-  # somehow as a base and apply overlays to it.
-  pkgs = import <nixpkgs> {
+  pkgs = args.pkgs or (import <nixpkgs> {
     overlays = [
       (import ./pkgs/overlays.nix)
     ];
     inherit (pkgs_)
       system;
-  };
+  });
 
   # Works with the new python-packages, still can fallback to the old
   # variant.
