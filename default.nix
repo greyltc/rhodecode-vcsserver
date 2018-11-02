@@ -11,17 +11,17 @@ args@
 , ...
 }:
 
-let pkgs_ = (import <nixpkgs> {}); in
+let
+  pkgs_ = (import <nixpkgs> {});
+in
 
 let
-
-  # TODO: Currently we ignore the passed in pkgs, instead we should use it
-  # somehow as a base and apply overlays to it.
   pkgs = import <nixpkgs> {
     overlays = [
       (import ./pkgs/overlays.nix)
     ];
-    inherit (pkgs_)
+    inherit
+      (pkgs_)
       system;
   };
 
@@ -40,7 +40,7 @@ let
     in
       !builtins.elem (basename path) [
         ".git" ".hg" "__pycache__" ".eggs" ".idea" ".dev"
-        "bower_components" "node_modules"
+        "node_modules" "node_binaries"
         "build" "data" "result" "tmp"] &&
       !builtins.elem ext ["egg-info" "pyc"] &&
       # TODO: johbo: This check is wrong, since "path" contains an absolute path,
@@ -49,7 +49,11 @@ let
 
   sources =
     let
-      inherit (pkgs.lib) all isString attrValues;
+      inherit
+        (pkgs.lib)
+        all
+        isString
+        attrValues;
       sourcesConfig = pkgs.config.rc.sources or {};
     in
       # Ensure that sources are configured as strings. Using a path
@@ -121,27 +125,34 @@ let
 
         # python based programs need to be wrapped
         mkdir -p $out/bin
-        ln -s ${self.python}/bin/python $out/bin
-        ln -s ${self.pyramid}/bin/* $out/bin/
+        ln -s ${self.python}/bin/python $out/bin/
         ln -s ${self.gunicorn}/bin/gunicorn $out/bin/
+        ln -s ${self.pyramid}/bin/prequest $out/bin/
+        ln -s ${self.pyramid}/bin/pserve $out/bin/
 
         # Symlink version control utilities
         # We ensure that always the correct version is available as a symlink.
         # So that users calling them via the profile path will always use the
-        # correct version.
+        # correct version. Wrapping is required so those can "import"
+        # vcsserver python hooks.
 
         ln -s ${pkgs.git}/bin/git $out/bin
         ln -s ${self.mercurial}/bin/hg $out/bin
         ln -s ${pkgs.subversion}/bin/svn* $out/bin
-        echo "DONE: created symlinks into $out/bin"
 
-        for file in $out/bin/*;
+        echo "DONE: created symlinks into $out/bin"
+        DEPS="$out/bin/*"
+
+        # wrap only dependency scripts, they require to have full PYTHONPATH set
+        # to be able to import all packages
+        for file in $DEPS;
         do
           wrapProgram $file \
             --prefix PATH : $PATH \
             --prefix PYTHONPATH : $PYTHONPATH \
             --set PYTHONHASHSEED random
         done
+
         echo "DONE: vcsserver binary wrapping"
 
       '';
@@ -156,12 +167,19 @@ let
       getAttr pythonPackages pkgs;
 
   pythonGeneratedPackages = import ./pkgs/python-packages.nix {
-    inherit pkgs;
-    inherit (pkgs) fetchurl fetchgit fetchhg;
+    inherit
+      pkgs;
+    inherit
+      (pkgs)
+      fetchurl
+      fetchgit
+      fetchhg;
   };
 
   pythonVCSServerOverrides = import ./pkgs/python-packages-overrides.nix {
-    inherit pkgs basePythonPackages;
+    inherit
+      pkgs
+      basePythonPackages;
   };
 
 

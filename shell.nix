@@ -10,7 +10,6 @@ let
 
   vcsserver = import ./default.nix {
     inherit
-      pkgs
       doCheck;
   };
 
