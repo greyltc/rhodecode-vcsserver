@@ -11,18 +11,19 @@ args@
 , ...
 }:
 
-let pkgs_ = (import <nixpkgs> {}); in
+let
+  pkgs_ = (import <nixpkgs> {});
+in
 
 let
-
-  pkgs = args.pkgs or (import <nixpkgs> {
+  pkgs = import <nixpkgs> {
     overlays = [
       (import ./pkgs/overlays.nix)
     ];
     inherit
       (pkgs_)
       system;
-  });
+  };
 
   # Works with the new python-packages, still can fallback to the old
   # variant.
@@ -39,7 +40,7 @@ let
     in
       !builtins.elem (basename path) [
         ".git" ".hg" "__pycache__" ".eggs" ".idea" ".dev"
-        "bower_components" "node_modules"
+        "node_modules" "node_binaries"
         "build" "data" "result" "tmp"] &&
       !builtins.elem ext ["egg-info" "pyc"] &&
       # TODO: johbo: This check is wrong, since "path" contains an absolute path,
