@@ -46,10 +46,8 @@ class RequestWrapperTween(object):
         finally:
             end = time.time()
 
-            log.info('IP: %s Request to path: `%s` time: %.3fs' % (
-                '127.0.0.1',
-                safe_str(get_access_path(request)), end - start)
-            )
+            log.info('IP: %s Request to path: `%s` time: %.3fs',
+                     '127.0.0.1', safe_str(get_access_path(request)), end - start)
 
         return response
 
