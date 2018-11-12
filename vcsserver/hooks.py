@@ -654,6 +654,7 @@ def svn_pre_commit(repo_path, commit_data, env):
         if not extras:
             return 0
 
+    extras['hook_type'] = 'pre_commit'
     extras['commit_ids'] = []
     extras['txn_id'] = txn_id
     extras['new_refs'] = {
@@ -682,6 +683,7 @@ def svn_post_commit(repo_path, commit_data, env):
         if not extras:
             return 0
 
+    extras['hook_type'] = 'post_commit'
     extras['commit_ids'] = [commit_id]
     extras['txn_id'] = txn_id
     extras['new_refs'] = {
