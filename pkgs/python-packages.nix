@@ -227,11 +227,11 @@ self: super: {
     };
   };
   "hupper" = super.buildPythonPackage {
-    name = "hupper-1.3.1";
+    name = "hupper-1.4";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/cf/4b/467b826a84c8594b81f414b5ab6794e981951dac90ca40abaf9ea1cb36b0/hupper-1.3.1.tar.gz";
-      sha256 = "03mf13n6i4dd60wlb9m99ddl4m3lmly70cjp7f82vdkibfl1v6l9";
+      url = "https://files.pythonhosted.org/packages/fb/8e/0e45729d54e88c3791fb7e8c0c99530c5b9204bae73156a28b258583609a/hupper-1.4.tar.gz";
+      sha256 = "0f571zcphbja39blfgw657iwlj8wr7gxglvq0bi1xl7xawjapngr";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -656,7 +656,7 @@ self: super: {
     };
   };
   "rhodecode-vcsserver" = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.14.1";
+    name = "rhodecode-vcsserver-4.15.0";
     buildInputs = [
       self."pytest"
       self."py"
@@ -750,11 +750,11 @@ self: super: {
     };
   };
   "setuptools" = super.buildPythonPackage {
-    name = "setuptools-40.4.3";
+    name = "setuptools-40.5.0";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/6e/9c/6a003320b00ef237f94aa74e4ad66c57a7618f6c79d67527136e2544b728/setuptools-40.4.3.zip";
-      sha256 = "058v6zns4634n4al2nmmvp15j8nrgwn8wjrbdks47wk3vm05gg5c";
+      url = "https://files.pythonhosted.org/packages/26/e5/9897eee1100b166a61f91b68528cb692e8887300d9cbdaa1a349f6304b79/setuptools-40.5.0.zip";
+      sha256 = "1aqykblgfxd21q9ccrgdxwl4xjifpq01l29ssbgdn2kn987j0aia";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
