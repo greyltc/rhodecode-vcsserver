@@ -212,15 +212,15 @@ self: super: {
     };
   };
   "hgsubversion" = super.buildPythonPackage {
-    name = "hgsubversion-1.9.2";
+    name = "hgsubversion-1.9.3";
     doCheck = false;
     propagatedBuildInputs = [
       self."mercurial"
       self."subvertpy"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/05/80/3a3cef10dd65e86528ef8d7ac57a41ebc782d0f3c6cfa4fed021aa9fbee0/hgsubversion-1.9.2.tar.gz";
-      sha256 = "16490narhq14vskml3dam8g5y3w3hdqj3g8bgm2b0c0i85l1xvcz";
+      url = "https://files.pythonhosted.org/packages/a3/53/6d205e641f3e09abcf1ddaed66e5e4b20da22d0145566d440a02c9e35f0d/hgsubversion-1.9.3.tar.gz";
+      sha256 = "0nymcjlch8c4zjbncrs30p2nrbylsf25g3h6mr0zzzxr141h3sig";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 ];
