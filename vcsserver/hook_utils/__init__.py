@@ -42,7 +42,7 @@ def install_git_hooks(repo_path, bare, executable=None, force_create=False):
     if not bare:
         hooks_path = os.path.join(repo_path, '.git', 'hooks')
     if not os.path.isdir(hooks_path):
-        os.makedirs(hooks_path, mode=0777)
+        os.makedirs(hooks_path, mode=0o777)
 
     tmpl_post = pkg_resources.resource_string(
         'vcsserver', '/'.join(
@@ -69,7 +69,7 @@ def install_git_hooks(repo_path, bare, executable=None, force_create=False):
                     template = template.replace('_ENV_', executable)
                     template = template.replace('_PATH_', path)
                     f.write(template)
-                os.chmod(_hook_file, 0755)
+                os.chmod(_hook_file, 0o755)
             except IOError:
                 log.exception('error writing hook file %s', _hook_file)
         else:
@@ -89,7 +89,7 @@ def install_svn_hooks(repo_path, executable=None, force_create=False):
     executable = executable or sys.executable
     hooks_path = os.path.join(repo_path, 'hooks')
     if not os.path.isdir(hooks_path):
-        os.makedirs(hooks_path, mode=0777)
+        os.makedirs(hooks_path, mode=0o777)
 
     tmpl_post = pkg_resources.resource_string(
         'vcsserver', '/'.join(
@@ -118,7 +118,7 @@ def install_svn_hooks(repo_path, executable=None, force_create=False):
                     template = template.replace('_PATH_', path)
 
                     f.write(template)
-                os.chmod(_hook_file, 0755)
+                os.chmod(_hook_file, 0o755)
             except IOError:
                 log.exception('error writing hook file %s', _hook_file)
         else:
