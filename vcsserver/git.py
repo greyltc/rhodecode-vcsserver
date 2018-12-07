@@ -518,15 +518,6 @@ class GitRemote(object):
         return repo.get_description()
 
     @reraise_safe_exceptions
-    def get_file_history(self, wire, file_path, commit_id, limit):
-        repo = self._factory.repo(wire)
-        include = [commit_id]
-        paths = [file_path]
-
-        walker = repo.get_walker(include, paths=paths, max_entries=limit)
-        return [x.commit.id for x in walker]
-
-    @reraise_safe_exceptions
     def get_missing_revs(self, wire, rev1, rev2, path2):
         repo = self._factory.repo(wire)
         LocalGitClient(thin_packs=False).fetch(path2, repo)
