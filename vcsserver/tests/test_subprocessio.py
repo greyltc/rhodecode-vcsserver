@@ -36,8 +36,7 @@ def environ():
 
 
 def _get_python_args(script):
-    return [sys.executable, '-c',
-            'import sys; import time; import shutil; ' + script]
+    return [sys.executable, '-c', 'import sys; import time; import shutil; ' + script]
 
 
 def test_raise_exception_on_non_zero_return_code(environ):
@@ -48,8 +47,11 @@ def test_raise_exception_on_non_zero_return_code(environ):
 
 def test_does_not_fail_on_non_zero_return_code(environ):
     args = _get_python_args('sys.exit(1)')
-    output = ''.join(subprocessio.SubprocessIOChunker(
-        args, shell=False, fail_on_return_code=False, env=environ))
+    output = ''.join(
+        subprocessio.SubprocessIOChunker(
+            args, shell=False, fail_on_return_code=False, env=environ
+        )
+    )
 
     assert output == ''
 
@@ -64,49 +66,56 @@ def test_raise_exception_on_stderr(environ):
 
 def test_does_not_fail_on_stderr(environ):
     args = _get_python_args('sys.stderr.write("X"); time.sleep(1);')
-    output = ''.join(subprocessio.SubprocessIOChunker(
-        args, shell=False, fail_on_stderr=False, env=environ))
+    output = ''.join(
+        subprocessio.SubprocessIOChunker(
+            args, shell=False, fail_on_stderr=False, env=environ
+        )
+    )
 
     assert output == ''
 
 
-@pytest.mark.parametrize('size', [1, 10**5])
+@pytest.mark.parametrize('size', [1, 10 ** 5])
 def test_output_with_no_input(size, environ):
-    print type(environ)
+    print(type(environ))
     data = 'X'
     args = _get_python_args('sys.stdout.write("%s" * %d)' % (data, size))
-    output = ''.join(subprocessio.SubprocessIOChunker(
-        args, shell=False, env=environ))
+    output = ''.join(subprocessio.SubprocessIOChunker(args, shell=False, env=environ))
 
     assert output == data * size
 
 
-@pytest.mark.parametrize('size', [1, 10**5])
+@pytest.mark.parametrize('size', [1, 10 ** 5])
 def test_output_with_no_input_does_not_fail(size, environ):
     data = 'X'
-    args = _get_python_args(
-        'sys.stdout.write("%s" * %d); sys.exit(1)' % (data, size))
-    output = ''.join(subprocessio.SubprocessIOChunker(
-        args, shell=False, fail_on_return_code=False, env=environ))
+    args = _get_python_args('sys.stdout.write("%s" * %d); sys.exit(1)' % (data, size))
+    output = ''.join(
+        subprocessio.SubprocessIOChunker(
+            args, shell=False, fail_on_return_code=False, env=environ
+        )
+    )
 
-    print len(data * size), len(output)
+    print("{} {}".format(len(data * size), len(output)))
     assert output == data * size
 
 
-@pytest.mark.parametrize('size', [1, 10**5])
+@pytest.mark.parametrize('size', [1, 10 ** 5])
 def test_output_with_input(size, environ):
     data = 'X' * size
     inputstream = io.BytesIO(data)
     # This acts like the cat command.
     args = _get_python_args('shutil.copyfileobj(sys.stdin, sys.stdout)')
-    output = ''.join(subprocessio.SubprocessIOChunker(
-        args, shell=False, inputstream=inputstream, env=environ))
+    output = ''.join(
+        subprocessio.SubprocessIOChunker(
+            args, shell=False, inputstream=inputstream, env=environ
+        )
+    )
 
-    print len(data), len(output)
+    print("{} {}".format(len(data * size), len(output)))
     assert output == data
 
 
-@pytest.mark.parametrize('size', [1, 10**5])
+@pytest.mark.parametrize('size', [1, 10 ** 5])
 def test_output_with_input_skipping_iterator(size, environ):
     data = 'X' * size
     inputstream = io.BytesIO(data)
@@ -115,8 +124,9 @@ def test_output_with_input_skipping_iterator(size, environ):
 
     # Note: assigning the chunker makes sure that it is not deleted too early
     chunker = subprocessio.SubprocessIOChunker(
-        args, shell=False, inputstream=inputstream, env=environ)
+        args, shell=False, inputstream=inputstream, env=environ
+    )
     output = ''.join(chunker.output)
 
-    print len(data), len(output)
+    print("{} {}".format(len(data * size), len(output)))
     assert output == data

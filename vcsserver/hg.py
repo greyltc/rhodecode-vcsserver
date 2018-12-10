@@ -417,7 +417,7 @@ class HgRemote(object):
             raise exceptions.LookupException(e)()
 
     @reraise_safe_exceptions
-    def file_history(self, wire, revision, path, limit):
+    def node_history(self, wire, revision, path, limit):
         repo = self._factory.repo(wire)
 
         ctx = repo[revision]
@@ -439,7 +439,7 @@ class HgRemote(object):
         return [x for x in history]
 
     @reraise_safe_exceptions
-    def file_history_untill(self, wire, revision, path, limit):
+    def node_history_untill(self, wire, revision, path, limit):
         repo = self._factory.repo(wire)
         ctx = repo[revision]
         fctx = ctx.filectx(path)

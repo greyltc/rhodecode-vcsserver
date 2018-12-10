@@ -1,17 +1,19 @@
 self: super: {
   # bump GIT version
   git = super.lib.overrideDerivation super.git (oldAttrs: {
-    name = "git-2.17.2";
+    name = "git-2.19.1";
     src = self.fetchurl {
-      url = "https://www.kernel.org/pub/software/scm/git/git-2.17.2.tar.xz";
-      sha256 = "1ghljlxmyqphx13qspy382cpl2pbkbwbhqm7w7z57r9mkhswx668";
+      url = "https://www.kernel.org/pub/software/scm/git/git-2.19.1.tar.xz";
+      sha256 = "1dfv43lmdnxz42504jc89sihbv1d4d6kgqcz3c5ji140kfm5cl1l";
     };
 
+    # patches come from: https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/version-management/git-and-tools/git
     patches = [
       ./patches/git/docbook2texi.patch
-      ./patches/git/symlinks-in-bin.patch
       ./patches/git/git-sh-i18n.patch
       ./patches/git/ssh-path.patch
+      ./patches/git/git-send-email-honor-PATH.patch
+      ./patches/git/installCheck-path.patch
     ];
 
   });
