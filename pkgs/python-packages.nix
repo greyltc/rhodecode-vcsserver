@@ -154,14 +154,14 @@ self: super: {
     };
   };
   "gevent" = super.buildPythonPackage {
-    name = "gevent-1.3.6";
+    name = "gevent-1.3.7";
     doCheck = false;
     propagatedBuildInputs = [
       self."greenlet"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/49/13/aa4bb3640b5167fe58875d3d7e65390cdb14f9682a41a741a566bb560842/gevent-1.3.6.tar.gz";
-      sha256 = "1ih4k73dqz2zb561hda99vbanja3m6cdch3mgxxn1mla3qwkqhbv";
+      url = "https://files.pythonhosted.org/packages/10/c1/9499b146bfa43aa4f1e0ed1bab1bd3209a4861d25650c11725036c731cf5/gevent-1.3.7.tar.gz";
+      sha256 = "0b0fr04qdk1p4sniv87fh8z5psac60x01pv054kpgi94520g81iz";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -212,26 +212,26 @@ self: super: {
     };
   };
   "hgsubversion" = super.buildPythonPackage {
-    name = "hgsubversion-1.9.2";
+    name = "hgsubversion-1.9.3";
     doCheck = false;
     propagatedBuildInputs = [
       self."mercurial"
       self."subvertpy"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/05/80/3a3cef10dd65e86528ef8d7ac57a41ebc782d0f3c6cfa4fed021aa9fbee0/hgsubversion-1.9.2.tar.gz";
-      sha256 = "16490narhq14vskml3dam8g5y3w3hdqj3g8bgm2b0c0i85l1xvcz";
+      url = "https://files.pythonhosted.org/packages/a3/53/6d205e641f3e09abcf1ddaed66e5e4b20da22d0145566d440a02c9e35f0d/hgsubversion-1.9.3.tar.gz";
+      sha256 = "0nymcjlch8c4zjbncrs30p2nrbylsf25g3h6mr0zzzxr141h3sig";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 ];
     };
   };
   "hupper" = super.buildPythonPackage {
-    name = "hupper-1.3.1";
+    name = "hupper-1.4.2";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/cf/4b/467b826a84c8594b81f414b5ab6794e981951dac90ca40abaf9ea1cb36b0/hupper-1.3.1.tar.gz";
-      sha256 = "03mf13n6i4dd60wlb9m99ddl4m3lmly70cjp7f82vdkibfl1v6l9";
+      url = "https://files.pythonhosted.org/packages/f1/75/1915dc7650b4867fa3049256e24ca8eddb5989998fcec788cf52b9812dfc/hupper-1.4.2.tar.gz";
+      sha256 = "16vb9fkiaakdpcp6pn56h3w0dwvm67bxq2k2dv4i382qhqwphdzb";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -502,11 +502,11 @@ self: super: {
     };
   };
   "pygments" = super.buildPythonPackage {
-    name = "pygments-2.2.0";
+    name = "pygments-2.3.0";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/71/2a/2e4e77803a8bd6408a2903340ac498cb0a2181811af7c9ec92cb70b0308a/Pygments-2.2.0.tar.gz";
-      sha256 = "1k78qdvir1yb1c634nkv6rbga8wv4289xarghmsbbvzhvr311bnv";
+      url = "https://files.pythonhosted.org/packages/63/a2/91c31c4831853dedca2a08a0f94d788fc26a48f7281c99a303769ad2721b/Pygments-2.3.0.tar.gz";
+      sha256 = "1z34ms51dh4jq4h3cizp7vd1dmsxcbvffkjsd2xxfav22nn6lrl2";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -656,7 +656,7 @@ self: super: {
     };
   };
   "rhodecode-vcsserver" = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.14.1";
+    name = "rhodecode-vcsserver-4.15.0";
     buildInputs = [
       self."pytest"
       self."py"
@@ -750,11 +750,11 @@ self: super: {
     };
   };
   "setuptools" = super.buildPythonPackage {
-    name = "setuptools-40.4.3";
+    name = "setuptools-40.6.2";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/6e/9c/6a003320b00ef237f94aa74e4ad66c57a7618f6c79d67527136e2544b728/setuptools-40.4.3.zip";
-      sha256 = "058v6zns4634n4al2nmmvp15j8nrgwn8wjrbdks47wk3vm05gg5c";
+      url = "https://files.pythonhosted.org/packages/b0/d1/8acb42f391cba52e35b131e442e80deffbb8d0676b93261d761b1f0ef8fb/setuptools-40.6.2.zip";
+      sha256 = "0r2c5hapirlzm34h7pl1lgkm6gk7bcrlrdj28qgsvaqg3f74vfw6";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];

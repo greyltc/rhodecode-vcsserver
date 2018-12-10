@@ -52,7 +52,16 @@ class HooksHttpClient(object):
             log.error('Connection failed on %s', connection)
             raise
         response = connection.getresponse()
-        return json.loads(response.read())
+
+        response_data = response.read()
+
+        try:
+            return json.loads(response_data)
+        except Exception:
+            log.exception('Failed to decode hook response json data. '
+                          'response_code:%s, raw_data:%s',
+                          response.status, response_data)
+            raise
 
     def _serialize(self, hook_name, extras):
         data = {

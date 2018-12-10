@@ -197,6 +197,28 @@ class WsgiProxy(object):
             yield msgpack.packb(d)
 
 
+def not_found(request):
+    return {'status': '404 NOT FOUND'}
+
+
+class VCSViewPredicate(object):
+    def __init__(self, val, config):
+        self.remotes = val
+
+    def text(self):
+        return 'vcs view method = %s' % (self.remotes.keys(),)
+
+    phash = text
+
+    def __call__(self, context, request):
+        """
+        View predicate that returns true if given backend is supported by
+        defined remotes.
+        """
+        backend = request.matchdict.get('backend')
+        return backend in self.remotes
+
+
 class HTTPApplication(object):
     ALLOWED_EXCEPTIONS = ('KeyError', 'URLError')
 
@@ -256,7 +278,7 @@ class HTTPApplication(object):
 
         # ensure we have our dir created
         if not os.path.isdir(default_cache_dir):
-            os.makedirs(default_cache_dir, mode=0755)
+            os.makedirs(default_cache_dir, mode=0o755)
 
         # exception store cache
         _string_setting(
@@ -279,9 +301,7 @@ class HTTPApplication(object):
             1024)
 
     def _configure(self):
-        self.config.add_renderer(
-            name='msgpack',
-            factory=self._msgpack_renderer_factory)
+        self.config.add_renderer(name='msgpack', factory=self._msgpack_renderer_factory)
 
         self.config.add_route('service', '/_service')
         self.config.add_route('status', '/status')
@@ -291,23 +311,20 @@ class HTTPApplication(object):
         self.config.add_route('stream_git', '/stream/git/*repo_name')
         self.config.add_route('stream_hg', '/stream/hg/*repo_name')
 
-        self.config.add_view(
-            self.status_view, route_name='status', renderer='json')
-        self.config.add_view(
-            self.service_view, route_name='service', renderer='msgpack')
+        self.config.add_view(self.status_view, route_name='status', renderer='json')
+        self.config.add_view(self.service_view, route_name='service', renderer='msgpack')
 
         self.config.add_view(self.hg_proxy(), route_name='hg_proxy')
         self.config.add_view(self.git_proxy(), route_name='git_proxy')
-        self.config.add_view(
-            self.vcs_view, route_name='vcs', renderer='msgpack',
-            custom_predicates=[self.is_vcs_view])
+        self.config.add_view(self.vcs_view, route_name='vcs', renderer='msgpack',
+                             vcs_view=self._remotes)
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
         self.config.add_view(self.git_stream(), route_name='stream_git')
 
-        def notfound(request):
-            return {'status': '404 NOT FOUND'}
-        self.config.add_notfound_view(notfound, renderer='json')
+        self.config.add_view_predicate('vcs_view', VCSViewPredicate)
+
+        self.config.add_notfound_view(not_found, renderer='json')
 
         self.config.add_view(self.handle_vcs_exception, context=Exception)
 
@@ -542,14 +559,6 @@ class HTTPApplication(object):
                 return app(environ, start_response)
 
             return _git_stream
-
-    def is_vcs_view(self, context, request):
-        """
-        View predicate that returns true if given backend is supported by
-        defined remotes.
-        """
-        backend = request.matchdict.get('backend')
-        return backend in self._remotes
 
     def handle_vcs_exception(self, exception, request):
         _vcs_kind = getattr(exception, '_vcs_kind', '')
