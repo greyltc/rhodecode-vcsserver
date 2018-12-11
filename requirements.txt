@@ -17,7 +17,7 @@ msgpack-python==0.5.6
 
 pastedeploy==2.0.1
 psutil==5.4.7
-pyramid==1.9.2
+pyramid==1.10.1
 pyramid-mako==1.0.2
 
 pygments==2.3.0
