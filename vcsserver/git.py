@@ -118,6 +118,15 @@ class GitRemote(object):
         repo = self._factory.repo(wire)
         repo[ref] = commit_id
 
+    def _remote_conf(self, config):
+        params = [
+            '-c', 'core.askpass=""',
+        ]
+        ssl_cert_dir = config.get('vcs_ssl_dir')
+        if ssl_cert_dir:
+            params.extend(['-c', 'http.sslCAinfo={}'.format(ssl_cert_dir)])
+        return params
+
     @reraise_safe_exceptions
     def add_object(self, wire, content):
         repo = self._factory.repo(wire)
@@ -456,11 +465,11 @@ class GitRemote(object):
         repo = self._factory.repo(wire)
         if refs and not isinstance(refs, (list, tuple)):
             refs = [refs]
-
+        config = self._wire_to_config(wire)
         # get all remote refs we'll use to fetch later
         output, __ = self.run_git_command(
             wire, ['ls-remote', url], fail_on_stderr=False,
-            _copts=['-c', 'core.askpass=""'],
+            _copts=self._remote_conf(config),
             extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
         remote_refs = collections.OrderedDict()
@@ -491,7 +500,7 @@ class GitRemote(object):
             _out, _err = self.run_git_command(
                 wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs,
                 fail_on_stderr=False,
-                _copts=['-c', 'core.askpass=""'],
+                _copts=self._remote_conf(config),
                 extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
         return remote_refs
@@ -500,11 +509,11 @@ class GitRemote(object):
     def sync_push(self, wire, url, refs=None):
         if not self.check_url(url, wire):
             return
-
+        config = self._wire_to_config(wire)
         repo = self._factory.repo(wire)
         self.run_git_command(
             wire, ['push', url, '--mirror'], fail_on_stderr=False,
-            _copts=['-c', 'core.askpass=""'],
+            _copts=self._remote_conf(config),
             extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
     @reraise_safe_exceptions
