@@ -302,11 +302,11 @@ self: super: {
     };
   };
   "markupsafe" = super.buildPythonPackage {
-    name = "markupsafe-1.0";
+    name = "markupsafe-1.1.0";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/4d/de/32d741db316d8fdb7680822dd37001ef7a448255de9699ab4bfcbdf4172b/MarkupSafe-1.0.tar.gz";
-      sha256 = "0rdn1s8x9ni7ss8rfiacj7x1085lx8mh2zdwqslnw8xc3l4nkgm6";
+      url = "https://files.pythonhosted.org/packages/ac/7e/1b4c2e05809a4414ebce0892fe1e32c14ace86ca7d50c70f00979ca9b3a3/MarkupSafe-1.1.0.tar.gz";
+      sha256 = "1lxirjypbdd3l9jl4vliilhfnhy7c7f2vlldqg1b0i74khn375sf";
     };
     meta = {
       license = [ pkgs.lib.licenses.bsdOriginal ];
@@ -360,26 +360,26 @@ self: super: {
     };
   };
   "pastedeploy" = super.buildPythonPackage {
-    name = "pastedeploy-1.5.2";
+    name = "pastedeploy-2.0.1";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/0f/90/8e20cdae206c543ea10793cbf4136eb9a8b3f417e04e40a29d72d9922cbd/PasteDeploy-1.5.2.tar.gz";
-      sha256 = "1jz3m4hq8v6hyhfjz9425nd3nvn52cvbfipdcd72krjmla4qz1fm";
+      url = "https://files.pythonhosted.org/packages/19/a0/5623701df7e2478a68a1b685d1a84518024eef994cde7e4da8449a31616f/PasteDeploy-2.0.1.tar.gz";
+      sha256 = "02imfbbx1mi2h546f3sr37m47dk9qizaqhzzlhx8bkzxa6fzn8yl";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
     };
   };
   "pathlib2" = super.buildPythonPackage {
-    name = "pathlib2-2.3.2";
+    name = "pathlib2-2.3.3";
     doCheck = false;
     propagatedBuildInputs = [
       self."six"
       self."scandir"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/db/a8/7d6439c1aec525ed70810abee5b7d7f3aa35347f59bc28343e8f62019aa2/pathlib2-2.3.2.tar.gz";
-      sha256 = "10yb0iv5x2hs631rcppkhbddx799d3h8pcwmkbh2a66ns3w71ccf";
+      url = "https://files.pythonhosted.org/packages/bf/d7/a2568f4596b75d2c6e2b4094a7e64f620decc7887f69a1f2811931ea15b9/pathlib2-2.3.3.tar.gz";
+      sha256 = "0hpp92vqqgcd8h92msm9slv161b1q160igjwnkf2ag6cx0c96695";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -513,24 +513,23 @@ self: super: {
     };
   };
   "pyramid" = super.buildPythonPackage {
-    name = "pyramid-1.9.2";
+    name = "pyramid-1.10.1";
     doCheck = false;
     propagatedBuildInputs = [
-      self."setuptools"
-      self."webob"
-      self."repoze.lru"
-      self."zope.interface"
-      self."zope.deprecation"
-      self."venusian"
-      self."translationstring"
-      self."pastedeploy"
+      self."hupper"
       self."plaster"
       self."plaster-pastedeploy"
-      self."hupper"
+      self."setuptools"
+      self."translationstring"
+      self."venusian"
+      self."webob"
+      self."zope.deprecation"
+      self."zope.interface"
+      self."repoze.lru"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/a0/c1/b321d07cfc4870541989ad131c86a1d593bfe802af0eca9718a0dadfb97a/pyramid-1.9.2.tar.gz";
-      sha256 = "09drsl0346nchgxp2j7sa5hlk7mkhfld9wvbd0wicacrp26a92fg";
+      url = "https://files.pythonhosted.org/packages/0a/3e/22e3ac9be1b70a01139adba8906ee4b8f628bb469fea3c52f6c97b73063c/pyramid-1.10.1.tar.gz";
+      sha256 = "1h5105nfh6rsrfjiyw20aavyibj36la3hajy6vh1fa77xb4y3hrp";
     };
     meta = {
       license = [ { fullName = "Repoze Public License"; } { fullName = "BSD-derived (http://www.repoze.org/LICENSE.txt)"; } ];
@@ -656,7 +655,7 @@ self: super: {
     };
   };
   "rhodecode-vcsserver" = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.15.1";
+    name = "rhodecode-vcsserver-4.16.0";
     buildInputs = [
       self."pytest"
       self."py"
@@ -667,9 +666,9 @@ self: super: {
       self."pytest-timeout"
       self."gprof2dot"
       self."mock"
-      self."webtest"
       self."cov-core"
       self."coverage"
+      self."webtest"
       self."configobj"
     ];
     doCheck = true;
@@ -718,9 +717,9 @@ self: super: {
       self."pytest-timeout"
       self."gprof2dot"
       self."mock"
-      self."webtest"
       self."cov-core"
       self."coverage"
+      self."webtest"
     ];
     src = ./.;
     meta = {
@@ -888,18 +887,18 @@ self: super: {
     };
   };
   "webob" = super.buildPythonPackage {
-    name = "webob-1.7.4";
+    name = "webob-1.8.4";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/75/34/731e23f52371852dfe7490a61644826ba7fe70fd52a377aaca0f4956ba7f/WebOb-1.7.4.tar.gz";
-      sha256 = "1na01ljg04z40il7vcrn8g29vaw7nvg1xvhk64cr4jys5wcay44d";
+      url = "https://files.pythonhosted.org/packages/e4/6c/99e322c3d4cc11d9060a67a9bf2f7c9c581f40988c11fffe89bb8c36bc5e/WebOb-1.8.4.tar.gz";
+      sha256 = "16cfg5y4n6sihz59vsmns2yqbfm0gfsn3l5xgz2g0pdhilaib0x4";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
     };
   };
   "webtest" = super.buildPythonPackage {
-    name = "webtest-2.0.29";
+    name = "webtest-2.0.32";
     doCheck = false;
     propagatedBuildInputs = [
       self."six"
@@ -908,8 +907,8 @@ self: super: {
       self."beautifulsoup4"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/94/de/8f94738be649997da99c47b104aa3c3984ecec51a1d8153ed09638253d56/WebTest-2.0.29.tar.gz";
-      sha256 = "0bcj1ica5lnmj5zbvk46x28kgphcsgh7sfnwjmn0cr94mhawrg6v";
+      url = "https://files.pythonhosted.org/packages/27/9f/9e74449d272ffbef4fb3012e6dbc53c0b24822d545e7a33a342f80131e59/WebTest-2.0.32.tar.gz";
+      sha256 = "0qp0nnbazzm4ibjiyqfcn6f230svk09i4g58zg2i9x1ga06h48a2";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
