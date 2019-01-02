@@ -335,14 +335,14 @@ self: super: {
     };
   };
   "more-itertools" = super.buildPythonPackage {
-    name = "more-itertools-4.3.0";
+    name = "more-itertools-5.0.0";
     doCheck = false;
     propagatedBuildInputs = [
       self."six"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/88/ff/6d485d7362f39880810278bdc906c13300db05485d9c65971dec1142da6a/more-itertools-4.3.0.tar.gz";
-      sha256 = "17h3na0rdh8xq30w4b9pizgkdxmm51896bxw600x84jflg9vaxn4";
+      url = "https://files.pythonhosted.org/packages/dd/26/30fc0d541d9fdf55faf5ba4b0fd68f81d5bd2447579224820ad525934178/more-itertools-5.0.0.tar.gz";
+      sha256 = "1r12cm6mcdwdzz7d47a6g4l437xsvapdlgyhqay3i2nrlv03da9q";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -669,6 +669,7 @@ self: super: {
       self."cov-core"
       self."coverage"
       self."webtest"
+      self."beautifulsoup4"
       self."configobj"
     ];
     doCheck = true;
@@ -720,6 +721,7 @@ self: super: {
       self."cov-core"
       self."coverage"
       self."webtest"
+      self."beautifulsoup4"
     ];
     src = ./.;
     meta = {
