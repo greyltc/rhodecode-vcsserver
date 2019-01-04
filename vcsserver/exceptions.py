@@ -37,6 +37,7 @@ def _make_exception(kind, org_exc, *args):
     exc = Exception(*args)
     exc._vcs_kind = kind
     exc._org_exc = org_exc
+    exc._org_exc_tb = ''
     return exc
 
 

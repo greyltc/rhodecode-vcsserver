@@ -362,8 +362,10 @@ class HTTPApplication(object):
 
             org_exc = getattr(e, '_org_exc', None)
             org_exc_name = None
+            org_exc_tb = ''
             if org_exc:
                 org_exc_name = org_exc.__class__.__name__
+                org_exc_tb = getattr(e, '_org_exc_tb', '')
                 # replace our "faked" exception with our org
                 exc_info[0] = org_exc.__class__
                 exc_info[1] = org_exc
@@ -383,6 +385,7 @@ class HTTPApplication(object):
                     'message': e.message,
                     'traceback': tb_info,
                     'org_exc': org_exc_name,
+                    'org_exc_tb': org_exc_tb,
                     'type': type_
                 }
             }
