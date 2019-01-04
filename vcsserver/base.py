@@ -84,8 +84,11 @@ def raise_from_original(new_type):
     Raise a new exception type with original args and traceback.
     """
     exc_type, exc_value, exc_traceback = sys.exc_info()
+    new_exc = new_type(*exc_value.args)
+    # store the original traceback into the new exc
+    new_exc._org_exc_tb = traceback.format_exc(exc_traceback)
 
     try:
-        raise new_type(*exc_value.args), None, exc_traceback
+        raise new_exc, None, exc_traceback
     finally:
         del exc_traceback
