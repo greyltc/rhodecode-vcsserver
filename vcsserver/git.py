@@ -25,6 +25,7 @@ import urllib
 import urllib2
 from functools import wraps
 
+import more_itertools
 from dulwich import index, objects
 from dulwich.client import HttpGitClient, LocalGitClient
 from dulwich.errors import (
@@ -495,13 +496,16 @@ class GitRemote(object):
                 fetch_refs.append('{}:{}'.format(ref, ref))
             elif not refs:
                 fetch_refs.append('{}:{}'.format(ref, ref))
-
+        log.debug('Finished obtaining fetch refs, total: %s', len(fetch_refs))
         if fetch_refs:
-            _out, _err = self.run_git_command(
-                wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs,
-                fail_on_stderr=False,
-                _copts=self._remote_conf(config),
-                extra_env={'GIT_TERMINAL_PROMPT': '0'})
+            for chunk in more_itertools.chunked(fetch_refs, 1024 * 4):
+                fetch_refs_chunks = list(chunk)
+                log.debug('Fetching %s refs from import url', len(fetch_refs_chunks))
+                _out, _err = self.run_git_command(
+                    wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs_chunks,
+                    fail_on_stderr=False,
+                    _copts=self._remote_conf(config),
+                    extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
         return remote_refs
 
