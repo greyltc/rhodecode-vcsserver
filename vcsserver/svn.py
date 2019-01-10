@@ -458,6 +458,16 @@ class SvnRemote(object):
         return install_svn_hooks(
             repo_path, executable=executable, force_create=force)
 
+    @reraise_safe_exceptions
+    def get_hooks_info(self, wire):
+        from vcsserver.hook_utils import (
+            get_svn_pre_hook_version, get_svn_post_hook_version)
+        repo_path = wire['path']
+        return {
+            'pre_version': get_svn_pre_hook_version(repo_path),
+            'post_version': get_svn_post_hook_version(repo_path),
+        }
+
 
 class SvnDiffer(object):
     """

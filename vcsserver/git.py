@@ -724,6 +724,16 @@ class GitRemote(object):
         repo = self._factory.repo(wire)
         return install_git_hooks(repo.path, repo.bare, force_create=force)
 
+    @reraise_safe_exceptions
+    def get_hooks_info(self, wire):
+        from vcsserver.hook_utils import (
+            get_git_pre_hook_version, get_git_post_hook_version)
+        repo = self._factory.repo(wire)
+        return {
+            'pre_version': get_git_pre_hook_version(repo.path, repo.bare),
+            'post_version': get_git_post_hook_version(repo.path, repo.bare),
+        }
+
 
 def str_to_dulwich(value):
     """
