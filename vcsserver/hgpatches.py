@@ -63,7 +63,7 @@ def _dynamic_capabilities_wrapper(lfproto, extensions):
 def patch_subrepo_type_mapping():
     from collections import defaultdict
     from hgcompat import subrepo
-    from exceptions import SubrepoMergeException
+    from vcsserver.exceptions import SubrepoMergeException
 
     class NoOpSubrepo(subrepo.abstractsubrepo):
 
