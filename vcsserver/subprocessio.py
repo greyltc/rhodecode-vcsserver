@@ -66,15 +66,17 @@ class StreamFeeder(Thread):
 
     def run(self):
         t = self.writeiface
-        if self.bytes:
-            os.write(t, self.bytes)
-        else:
-            s = self.source
-            b = s.read(4096)
-            while b:
-                os.write(t, b)
+        try:
+            if self.bytes:
+                os.write(t, self.bytes)
+            else:
+                s = self.source
                 b = s.read(4096)
-        os.close(t)
+                while b:
+                    os.write(t, b)
+                    b = s.read(4096)
+        finally:
+            os.close(t)
 
     @property
     def output(self):
@@ -436,6 +438,7 @@ class SubprocessIOChunker(object):
         self.process = _p
         self.output = bg_out
         self.error = bg_err
+        self.inputstream = inputstream
 
     def __iter__(self):
         return self
@@ -482,6 +485,10 @@ class SubprocessIOChunker(object):
             pass
         try:
             self.error.close()
+        except:
+            pass
+        try:
+            os.close(self.inputstream)
         except:
             pass
 

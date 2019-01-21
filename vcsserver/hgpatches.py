@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2018 RhodeCode GmbH
+# Copyright (C) 2014-2019 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ def _dynamic_capabilities_wrapper(lfproto, extensions):
 def patch_subrepo_type_mapping():
     from collections import defaultdict
     from hgcompat import subrepo
-    from exceptions import SubrepoMergeException
+    from vcsserver.exceptions import SubrepoMergeException
 
     class NoOpSubrepo(subrepo.abstractsubrepo):
 

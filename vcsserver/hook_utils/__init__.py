@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2018 RhodeCode GmbH
+# Copyright (C) 2014-2019 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,14 @@ import vcsserver
 log = logging.getLogger(__name__)
 
 
+def get_git_hooks_path(repo_path, bare):
+    hooks_path = os.path.join(repo_path, 'hooks')
+    if not bare:
+        hooks_path = os.path.join(repo_path, '.git', 'hooks')
+
+    return hooks_path
+
+
 def install_git_hooks(repo_path, bare, executable=None, force_create=False):
     """
     Creates a RhodeCode hook inside a git repository
@@ -38,9 +46,8 @@ def install_git_hooks(repo_path, bare, executable=None, force_create=False):
     :param force_create: Create even if same name hook exists
     """
     executable = executable or sys.executable
-    hooks_path = os.path.join(repo_path, 'hooks')
-    if not bare:
-        hooks_path = os.path.join(repo_path, '.git', 'hooks')
+    hooks_path = get_git_hooks_path(repo_path, bare)
+
     if not os.path.isdir(hooks_path):
         os.makedirs(hooks_path, mode=0o777)
 
@@ -78,6 +85,12 @@ def install_git_hooks(repo_path, bare, executable=None, force_create=False):
     return True
 
 
+def get_svn_hooks_path(repo_path):
+    hooks_path = os.path.join(repo_path, 'hooks')
+
+    return hooks_path
+
+
 def install_svn_hooks(repo_path, executable=None, force_create=False):
     """
     Creates RhodeCode hooks inside a svn repository
@@ -87,7 +100,7 @@ def install_svn_hooks(repo_path, executable=None, force_create=False):
     :param force_create: Create even if same name hook exists
     """
     executable = executable or sys.executable
-    hooks_path = os.path.join(repo_path, 'hooks')
+    hooks_path = get_svn_hooks_path(repo_path)
     if not os.path.isdir(hooks_path):
         os.makedirs(hooks_path, mode=0o777)
 
@@ -127,6 +140,19 @@ def install_svn_hooks(repo_path, executable=None, force_create=False):
     return True
 
 
+def get_version_from_hook(hook_path):
+    version = ''
+    hook_content = read_hook_content(hook_path)
+    matches = re.search(r'(?:RC_HOOK_VER)\s*=\s*(.*)', hook_content)
+    if matches:
+        try:
+            version = matches.groups()[0]
+            log.debug('got version %s from hooks.', version)
+        except Exception:
+            log.exception("Exception while reading the hook version.")
+    return version.replace("'", "")
+
+
 def check_rhodecode_hook(hook_path):
     """
     Check if the hook was created by RhodeCode
@@ -134,16 +160,11 @@ def check_rhodecode_hook(hook_path):
     if not os.path.exists(hook_path):
         return True
 
-    log.debug('hook exists, checking if it is from rhodecode')
-    hook_content = read_hook_content(hook_path)
-    matches = re.search(r'(?:RC_HOOK_VER)\s*=\s*(.*)', hook_content)
-    if matches:
-        try:
-            version = matches.groups()[0]
-            log.debug('got version %s from hooks.', version)
-            return True
-        except Exception:
-            log.exception("Exception while reading the hook version.")
+    log.debug('hook exists, checking if it is from RhodeCode')
+
+    version = get_version_from_hook(hook_path)
+    if version:
+        return True
 
     return False
 
@@ -152,3 +173,31 @@ def read_hook_content(hook_path):
     with open(hook_path, 'rb') as f:
         content = f.read()
     return content
+
+
+def get_git_pre_hook_version(repo_path, bare):
+    hooks_path = get_git_hooks_path(repo_path, bare)
+    _hook_file = os.path.join(hooks_path, 'pre-receive')
+    version = get_version_from_hook(_hook_file)
+    return version
+
+
+def get_git_post_hook_version(repo_path, bare):
+    hooks_path = get_git_hooks_path(repo_path, bare)
+    _hook_file = os.path.join(hooks_path, 'post-receive')
+    version = get_version_from_hook(_hook_file)
+    return version
+
+
+def get_svn_pre_hook_version(repo_path):
+    hooks_path = get_svn_hooks_path(repo_path)
+    _hook_file = os.path.join(hooks_path, 'pre-commit')
+    version = get_version_from_hook(_hook_file)
+    return version
+
+
+def get_svn_post_hook_version(repo_path):
+    hooks_path = get_svn_hooks_path(repo_path)
+    _hook_file = os.path.join(hooks_path, 'post-commit')
+    version = get_version_from_hook(_hook_file)
+    return version

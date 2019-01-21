@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2018 RhodeCode GmbH
+# Copyright (C) 2014-2019 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ def _make_exception(kind, org_exc, *args):
     exc = Exception(*args)
     exc._vcs_kind = kind
     exc._org_exc = org_exc
+    exc._org_exc_tb = ''
     return exc
 
 
