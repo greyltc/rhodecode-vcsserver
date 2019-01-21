@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2018 RhodeCode GmbH
+# Copyright (C) 2014-2019 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import urllib
 import urllib2
 from functools import wraps
 
+import more_itertools
 from dulwich import index, objects
 from dulwich.client import HttpGitClient, LocalGitClient
 from dulwich.errors import (
@@ -117,6 +118,15 @@ class GitRemote(object):
     def _assign_ref(self, wire, ref, commit_id):
         repo = self._factory.repo(wire)
         repo[ref] = commit_id
+
+    def _remote_conf(self, config):
+        params = [
+            '-c', 'core.askpass=""',
+        ]
+        ssl_cert_dir = config.get('vcs_ssl_dir')
+        if ssl_cert_dir:
+            params.extend(['-c', 'http.sslCAinfo={}'.format(ssl_cert_dir)])
+        return params
 
     @reraise_safe_exceptions
     def add_object(self, wire, content):
@@ -456,11 +466,11 @@ class GitRemote(object):
         repo = self._factory.repo(wire)
         if refs and not isinstance(refs, (list, tuple)):
             refs = [refs]
-
+        config = self._wire_to_config(wire)
         # get all remote refs we'll use to fetch later
         output, __ = self.run_git_command(
             wire, ['ls-remote', url], fail_on_stderr=False,
-            _copts=['-c', 'core.askpass=""'],
+            _copts=self._remote_conf(config),
             extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
         remote_refs = collections.OrderedDict()
@@ -486,13 +496,16 @@ class GitRemote(object):
                 fetch_refs.append('{}:{}'.format(ref, ref))
             elif not refs:
                 fetch_refs.append('{}:{}'.format(ref, ref))
-
+        log.debug('Finished obtaining fetch refs, total: %s', len(fetch_refs))
         if fetch_refs:
-            _out, _err = self.run_git_command(
-                wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs,
-                fail_on_stderr=False,
-                _copts=['-c', 'core.askpass=""'],
-                extra_env={'GIT_TERMINAL_PROMPT': '0'})
+            for chunk in more_itertools.chunked(fetch_refs, 1024 * 4):
+                fetch_refs_chunks = list(chunk)
+                log.debug('Fetching %s refs from import url', len(fetch_refs_chunks))
+                _out, _err = self.run_git_command(
+                    wire, ['fetch', url, '--force', '--prune', '--'] + fetch_refs_chunks,
+                    fail_on_stderr=False,
+                    _copts=self._remote_conf(config),
+                    extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
         return remote_refs
 
@@ -500,11 +513,11 @@ class GitRemote(object):
     def sync_push(self, wire, url, refs=None):
         if not self.check_url(url, wire):
             return
-
+        config = self._wire_to_config(wire)
         repo = self._factory.repo(wire)
         self.run_git_command(
             wire, ['push', url, '--mirror'], fail_on_stderr=False,
-            _copts=['-c', 'core.askpass=""'],
+            _copts=self._remote_conf(config),
             extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
     @reraise_safe_exceptions
@@ -710,6 +723,16 @@ class GitRemote(object):
         from vcsserver.hook_utils import install_git_hooks
         repo = self._factory.repo(wire)
         return install_git_hooks(repo.path, repo.bare, force_create=force)
+
+    @reraise_safe_exceptions
+    def get_hooks_info(self, wire):
+        from vcsserver.hook_utils import (
+            get_git_pre_hook_version, get_git_post_hook_version)
+        repo = self._factory.repo(wire)
+        return {
+            'pre_version': get_git_pre_hook_version(repo.path, repo.bare),
+            'post_version': get_git_post_hook_version(repo.path, repo.bare),
+        }
 
 
 def str_to_dulwich(value):

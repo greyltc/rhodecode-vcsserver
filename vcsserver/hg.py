@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2018 RhodeCode GmbH
+# Copyright (C) 2014-2019 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ from mercurial import commands
 from mercurial import unionrepo
 from mercurial import verify
 
+import vcsserver
 from vcsserver import exceptions
 from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
@@ -793,3 +794,10 @@ class HgRemote(object):
     def install_hooks(self, wire, force=False):
         # we don't need any special hooks for Mercurial
         pass
+
+    @reraise_safe_exceptions
+    def get_hooks_info(self, wire):
+        return {
+            'pre_version': vcsserver.__version__,
+            'post_version': vcsserver.__version__,
+        }
