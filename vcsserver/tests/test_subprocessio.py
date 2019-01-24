@@ -24,6 +24,29 @@ import pytest
 from vcsserver import subprocessio
 
 
+class KindaFilelike(object):  # pragma: no cover
+
+    def __init__(self, data, size):
+        chunks = size / len(data)
+
+        self.stream = self._get_stream(data, chunks)
+
+    def _get_stream(self, data, chunks):
+        for x in xrange(chunks):
+            yield data
+
+    def read(self, n):
+
+        buffer_stream = ''
+        for chunk in self.stream:
+            buffer_stream += chunk
+            if len(buffer_stream) >= n:
+                break
+
+        # self.stream = self.bytes[n:]
+        return buffer_stream
+
+
 @pytest.fixture(scope='module')
 def environ():
     """Delete coverage variables, as they make the tests fail."""
@@ -101,8 +124,9 @@ def test_output_with_no_input_does_not_fail(size, environ):
 
 @pytest.mark.parametrize('size', [1, 10 ** 5])
 def test_output_with_input(size, environ):
-    data = 'X' * size
-    inputstream = io.BytesIO(data)
+    data_len = size
+    inputstream = KindaFilelike('X', size)
+
     # This acts like the cat command.
     args = _get_python_args('shutil.copyfileobj(sys.stdin, sys.stdout)')
     output = ''.join(
@@ -111,14 +135,14 @@ def test_output_with_input(size, environ):
         )
     )
 
-    print("{} {}".format(len(data * size), len(output)))
-    assert output == data
+    assert len(output) == data_len
 
 
 @pytest.mark.parametrize('size', [1, 10 ** 5])
 def test_output_with_input_skipping_iterator(size, environ):
-    data = 'X' * size
-    inputstream = io.BytesIO(data)
+    data_len = size
+    inputstream = KindaFilelike('X', size)
+
     # This acts like the cat command.
     args = _get_python_args('shutil.copyfileobj(sys.stdin, sys.stdout)')
 
@@ -128,5 +152,4 @@ def test_output_with_input_skipping_iterator(size, environ):
     )
     output = ''.join(chunker.output)
 
-    print("{} {}".format(len(data * size), len(output)))
-    assert output == data
+    assert len(output) == data_len
