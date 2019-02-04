@@ -1,12 +1,20 @@
 # This file defines how to "build" for packaging.
 
-{ doCheck ? true
+{ pkgs ? import <nixpkgs> {}
+, system ? builtins.currentSystem
+, doCheck ? false
 }:
 
 let
   vcsserver = import ./default.nix {
     inherit
-      doCheck;
+      doCheck
+      system;
+
+    # disable checkPhase for build
+    checkPhase = ''
+    '';
+
   };
 
 in {

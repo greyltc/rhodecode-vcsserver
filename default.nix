@@ -5,14 +5,15 @@
 # "shell.nix" so that it does not have to clutter this file.
 
 args@
-{ pythonPackages ? "python27Packages"
+{ system ? builtins.currentSystem
+, pythonPackages ? "python27Packages"
 , pythonExternalOverrides ? self: super: {}
 , doCheck ? false
 , ...
 }:
 
 let
-  pkgs_ = (import <nixpkgs> {});
+  pkgs_ = args.pkgs or (import <nixpkgs> { inherit system; });
 in
 
 let
