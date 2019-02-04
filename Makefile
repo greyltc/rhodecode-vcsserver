@@ -1,5 +1,5 @@
 
-.PHONY: clean test test-clean test-only
+.PHONY: clean test test-clean test-only generate-pkgs
 
 
 clean:
@@ -16,3 +16,6 @@ test-clean:
 
 test-only:
 	PYTHONHASHSEED=random py.test -vv -r xw -p no:sugar --cov=vcsserver --cov-report=term-missing --cov-report=html vcsserver
+
+generate-pkgs:
+	nix-shell pkgs/shell-generate.nix --command "pip2nix generate --licenses"
