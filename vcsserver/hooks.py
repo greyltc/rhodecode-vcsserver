@@ -511,15 +511,14 @@ def git_pre_receive(unused_repo_path, revision_lines, env):
 
         type_ = push_ref['type']
         new_branch = push_ref['old_rev'] == empty_commit_id
-        if type_ == 'heads' and not new_branch:
+        delete_branch = push_ref['new_rev'] == empty_commit_id
+        if type_ == 'heads' and not (new_branch or delete_branch):
             old_rev = push_ref['old_rev']
             new_rev = push_ref['new_rev']
-            cmd = [settings.GIT_EXECUTABLE, 'rev-list',
-                   old_rev, '^{}'.format(new_rev)]
+            cmd = [settings.GIT_EXECUTABLE, 'rev-list', old_rev, '^{}'.format(new_rev)]
             stdout, stderr = subprocessio.run_command(
                 cmd, env=os.environ.copy())
-            # means we're having some non-reachable objects, this forced push
-            # was used
+            # means we're having some non-reachable objects, this forced push was used
             if stdout:
                 push_ref['pruned_sha'] = stdout.splitlines()
 
