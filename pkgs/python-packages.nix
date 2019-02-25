@@ -230,11 +230,11 @@ self: super: {
     };
   };
   "hupper" = super.buildPythonPackage {
-    name = "hupper-1.4.2";
+    name = "hupper-1.5";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/f1/75/1915dc7650b4867fa3049256e24ca8eddb5989998fcec788cf52b9812dfc/hupper-1.4.2.tar.gz";
-      sha256 = "16vb9fkiaakdpcp6pn56h3w0dwvm67bxq2k2dv4i382qhqwphdzb";
+      url = "https://files.pythonhosted.org/packages/89/f1/aace4ea69c1d79e243e48a81dcf1608c87e8c5a190e6ef80fae245d494ac/hupper-1.5.tar.gz";
+      sha256 = "02n6y2rvpacm2w3x089whj64j1x0qlkimkzw35r1g0mymmxicfk9";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -446,11 +446,11 @@ self: super: {
     };
   };
   "pluggy" = super.buildPythonPackage {
-    name = "pluggy-0.8.1";
+    name = "pluggy-0.9.0";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/38/e1/83b10c17688af7b2998fa5342fec58ecbd2a5a7499f31e606ae6640b71ac/pluggy-0.8.1.tar.gz";
-      sha256 = "05l6g42p9ilmabw0hlbiyxy6gyzjri41m5l11a8dzgvi77q35p4d";
+      url = "https://files.pythonhosted.org/packages/a7/8c/55c629849c64e665258d8976322dfdad171fa2f57117590662d8a67618a4/pluggy-0.9.0.tar.gz";
+      sha256 = "13yg2q0wgcb4l8lgdvcnzqa8db5lrw3nwn50lxjy1z5jkp7gkv0r";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -658,7 +658,7 @@ self: super: {
     };
   };
   "rhodecode-vcsserver" = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.16.0";
+    name = "rhodecode-vcsserver-4.17.0";
     buildInputs = [
       self."pytest"
       self."py"
