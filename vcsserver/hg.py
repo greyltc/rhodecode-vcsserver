@@ -33,7 +33,7 @@ from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
-    makepeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
+    makepeer, instance, match, memctx, exchange, memfilectx, nullrev,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
     RepoLookupError, InterventionRequired, RequirementError)
 
@@ -114,7 +114,7 @@ class MercurialFactory(RepoFactory):
 
     def _create_repo(self, wire, create):
         baseui = self._create_config(wire["config"])
-        return localrepository(baseui, wire["path"], create)
+        return instance(baseui, wire["path"], create)
 
 
 class HgRemote(object):
@@ -266,14 +266,14 @@ class HgRemote(object):
         ctx = repo[revision]
         return ctx.description()
 
-    @reraise_safe_exceptions
-    def ctx_diff(
-            self, wire, revision, git=True, ignore_whitespace=True, context=3):
-        repo = self._factory.repo(wire)
-        ctx = repo[revision]
-        result = ctx.diff(
-            git=git, ignore_whitespace=ignore_whitespace, context=context)
-        return list(result)
+    # @reraise_safe_exceptions
+    # def ctx_diff(
+    #         self, wire, revision, git=True, ignore_whitespace=True, context=3):
+    #     repo = self._factory.repo(wire)
+    #     ctx = repo[revision]
+    #     result = ctx.diff(
+    #         git=git, ignore_whitespace=ignore_whitespace, context=context)
+    #     return list(result)
 
     @reraise_safe_exceptions
     def ctx_files(self, wire, revision):
@@ -638,7 +638,7 @@ class HgRemote(object):
         # case when we want to compare two independent repositories
         if other_path and other_path != wire["path"]:
             baseui = self._factory._create_config(wire["config"])
-            repo = unionrepo.unionrepository(baseui, other_path, wire["path"])
+            repo = unionrepo.makeunionrepository(baseui, other_path, wire["path"])
         else:
             repo = self._factory.repo(wire)
         return list(repo.revs(rev_spec, *args))
