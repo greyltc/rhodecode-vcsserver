@@ -44,7 +44,7 @@ from mercurial.error import (
     LookupError, RepoError, RepoLookupError, Abort, InterventionRequired,
     RequirementError)
 from mercurial.hgweb import hgweb_mod
-from mercurial.localrepo import localrepository
+from mercurial.localrepo import instance
 from mercurial.match import match
 from mercurial.mdiff import diffopts
 from mercurial.node import bin, hex
