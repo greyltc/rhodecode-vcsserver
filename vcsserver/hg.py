@@ -20,6 +20,7 @@ import logging
 import stat
 import urllib
 import urllib2
+import traceback
 
 from hgext import largefiles, rebase
 from hgext.strip import strip as hgext_strip
@@ -31,11 +32,11 @@ import vcsserver
 from vcsserver import exceptions
 from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
-    archival, bin, clone, config as hgconfig, diffopts, hex,
+    archival, bin, clone, config as hgconfig, diffopts, hex, revsymbol,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
     makepeer, instance, match, memctx, exchange, memfilectx, nullrev,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
-    RepoLookupError, InterventionRequired, RequirementError)
+    RepoLookupError, ProgrammingError, InterventionRequired, RequirementError)
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ def make_ui_from_config(repo_config):
     baseui.setconfig('ui', 'quiet', 'true')
 
     baseui.setconfig('ui', 'paginate', 'never')
+    # for better Error reporting of Mercurial
+    baseui.setconfig('ui', 'message-output', 'stderr')
+
     # force mercurial to only use 1 thread, otherwise it may try to set a
     # signal in a non-main thread, thus generating a ValueError.
     baseui.setconfig('worker', 'numcpus', 1)
@@ -265,15 +269,6 @@ class HgRemote(object):
         repo = self._factory.repo(wire)
         ctx = repo[revision]
         return ctx.description()
-
-    # @reraise_safe_exceptions
-    # def ctx_diff(
-    #         self, wire, revision, git=True, ignore_whitespace=True, context=3):
-    #     repo = self._factory.repo(wire)
-    #     ctx = repo[revision]
-    #     result = ctx.diff(
-    #         git=git, ignore_whitespace=ignore_whitespace, context=context)
-    #     return list(result)
 
     @reraise_safe_exceptions
     def ctx_files(self, wire, revision):
@@ -490,8 +485,9 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def get_all_commit_ids(self, wire, name):
         repo = self._factory.repo(wire)
-        revs = repo.filtered(name).changelog.index
-        return map(lambda x: hex(x[7]), revs)[:-1]
+        repo = repo.filtered(name)
+        revs = map(lambda x: hex(x[7]), repo.changelog.index)
+        return revs
 
     @reraise_safe_exceptions
     def get_config_value(self, wire, section, name, untrusted=False):
@@ -544,22 +540,24 @@ class HgRemote(object):
 
         if isinstance(revision, int):
             # NOTE(marcink):
-            # since Mercurial doesn't support indexes properly
+            # since Mercurial doesn't support negative indexes properly
             # we need to shift accordingly by one to get proper index, e.g
             # repo[-1] => repo[-2]
             # repo[0]  => repo[-1]
-            # repo[1]  => repo[2] we also never call repo[0] because
-            # it's actually second commit
             if revision <= 0:
                 revision = revision + -1
-            else:
-                revision = revision + 1
-
         try:
-            ctx = repo[revision]
-        except RepoLookupError as e:
+            try:
+                ctx = repo[revision]
+            except ProgrammingError:
+                # we're unable to find the rev using a regular lookup, we fallback
+                # to slower, but backward compat revsymbol usage
+                ctx = revsymbol(repo, revision)
+        except (TypeError, RepoLookupError) as e:
+            e._org_exc_tb = traceback.format_exc()
             raise exceptions.LookupException(e)(revision)
         except LookupError as e:
+            e._org_exc_tb = traceback.format_exc()
             raise exceptions.LookupException(e)(e.name)
 
         if not both:
