@@ -61,3 +61,14 @@ from hgext import largefiles
 # those authnadlers are patched for python 2.6.5 bug an
 # infinit looping when given invalid resources
 from mercurial.url import httpbasicauthhandler, httpdigestauthhandler
+
+
+def get_ctx(repo, ref):
+    try:
+        ctx = repo[ref]
+    except ProgrammingError:
+        # we're unable to find the rev using a regular lookup, we fallback
+        # to slower, but backward compat revsymbol usage
+        ctx = revsymbol(repo, ref)
+
+    return ctx
