@@ -202,7 +202,15 @@ class HgRemote(object):
             self, wire, message, parents, commit_time, commit_timezone,
             user, files, extra, removed, updated):
 
-        def _filectxfn(_repo, memctx, path):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        publishing = baseui.configbool('phases', 'publish')
+        if publishing:
+            new_commit = 'public'
+        else:
+            new_commit = 'draft'
+
+        def _filectxfn(_repo, ctx, path):
             """
             Marks given path as added/changed/removed in a given _repo. This is
             for internal mercurial commit function.
@@ -218,7 +226,7 @@ class HgRemote(object):
                 if node['path'] == path:
                     return memfilectx(
                         _repo,
-                        changectx=memctx,
+                        changectx=ctx,
                         path=node['path'],
                         data=node['content'],
                         islink=False,
@@ -229,22 +237,22 @@ class HgRemote(object):
                 "Given path haven't been marked as added, "
                 "changed or removed (%s)" % path)
 
-        repo = self._factory.repo(wire)
+        with repo.ui.configoverride({('phases', 'new-commit'): new_commit}):
 
-        commit_ctx = memctx(
-            repo=repo,
-            parents=parents,
-            text=message,
-            files=files,
-            filectxfn=_filectxfn,
-            user=user,
-            date=(commit_time, commit_timezone),
-            extra=extra)
+            commit_ctx = memctx(
+                repo=repo,
+                parents=parents,
+                text=message,
+                files=files,
+                filectxfn=_filectxfn,
+                user=user,
+                date=(commit_time, commit_timezone),
+                extra=extra)
 
-        n = repo.commitctx(commit_ctx)
-        new_id = hex(n)
+            n = repo.commitctx(commit_ctx)
+            new_id = hex(n)
 
-        return new_id
+            return new_id
 
     @reraise_safe_exceptions
     def ctx_branch(self, wire, revision):
