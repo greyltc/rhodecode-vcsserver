@@ -32,11 +32,11 @@ import vcsserver
 from vcsserver import exceptions
 from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
-    archival, bin, clone, config as hgconfig, diffopts, hex, revsymbol,
+    archival, bin, clone, config as hgconfig, diffopts, hex, get_ctx,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
     makepeer, instance, match, memctx, exchange, memfilectx, nullrev,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
-    RepoLookupError, ProgrammingError, InterventionRequired, RequirementError)
+    RepoLookupError, InterventionRequired, RequirementError)
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +140,9 @@ class HgRemote(object):
             "hidden": self.ctx_hidden,
             "_file_paths": self.ctx_list,
         }
+
+    def _get_ctx(self, repo, ref):
+        return get_ctx(repo, ref)
 
     @reraise_safe_exceptions
     def discover_hg_version(self):
@@ -257,74 +260,74 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def ctx_branch(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.branch()
 
     @reraise_safe_exceptions
     def ctx_children(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return [child.rev() for child in ctx.children()]
 
     @reraise_safe_exceptions
     def ctx_date(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.date()
 
     @reraise_safe_exceptions
     def ctx_description(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.description()
 
     @reraise_safe_exceptions
     def ctx_files(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.files()
 
     @reraise_safe_exceptions
     def ctx_list(self, path, revision):
         repo = self._factory.repo(path)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return list(ctx)
 
     @reraise_safe_exceptions
     def ctx_parents(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return [parent.rev() for parent in ctx.parents()]
 
     @reraise_safe_exceptions
     def ctx_phase(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         # public=0, draft=1, secret=3
         return ctx.phase()
 
     @reraise_safe_exceptions
     def ctx_obsolete(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.obsolete()
 
     @reraise_safe_exceptions
     def ctx_hidden(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.hidden()
 
     @reraise_safe_exceptions
     def ctx_substate(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.substate
 
     @reraise_safe_exceptions
     def ctx_status(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         status = repo[ctx.p1().node()].status(other=ctx.node())
         # object of status (odd, custom named tuple in mercurial) is not
         # correctly serializable, we make it a list, as the underling
@@ -334,7 +337,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def ctx_user(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.user()
 
     @reraise_safe_exceptions
@@ -424,7 +427,7 @@ class HgRemote(object):
     def node_history(self, wire, revision, path, limit):
         repo = self._factory.repo(wire)
 
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
 
         def history_iter():
@@ -445,7 +448,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def node_history_untill(self, wire, revision, path, limit):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
 
         file_log = list(fctx.filelog())
@@ -458,7 +461,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def fctx_annotate(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
 
         result = []
@@ -472,21 +475,21 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def fctx_data(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
         return fctx.data()
 
     @reraise_safe_exceptions
     def fctx_flags(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
         return fctx.flags()
 
     @reraise_safe_exceptions
     def fctx_size(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
         return fctx.size()
 
@@ -555,12 +558,7 @@ class HgRemote(object):
             if revision <= 0:
                 revision = revision + -1
         try:
-            try:
-                ctx = repo[revision]
-            except ProgrammingError:
-                # we're unable to find the rev using a regular lookup, we fallback
-                # to slower, but backward compat revsymbol usage
-                ctx = revsymbol(repo, revision)
+            ctx = self._get_ctx(repo, revision)
         except (TypeError, RepoLookupError) as e:
             e._org_exc_tb = traceback.format_exc()
             raise exceptions.LookupException(e)(revision)
@@ -611,7 +609,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def revision(self, wire, rev):
         repo = self._factory.repo(wire)
-        ctx = repo[rev]
+        ctx = self._get_ctx(repo, rev)
         return ctx.rev()
 
     @reraise_safe_exceptions
@@ -652,7 +650,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def strip(self, wire, revision, update, backup):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         hgext_strip(
             repo.baseui, repo, ctx.node(), update=update, backup=backup)
 
@@ -675,7 +673,7 @@ class HgRemote(object):
     def tag(self, wire, name, revision, message, local, user,
             tag_time, tag_timezone):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         node = ctx.node()
 
         date = (tag_time, tag_timezone)
