@@ -26,6 +26,7 @@ import logging
 import traceback
 import tempfile
 
+from pyramid import compat
 
 log = logging.getLogger(__name__)
 
@@ -69,8 +70,25 @@ def get_exc_store():
 
 def _store_exception(exc_id, exc_info, prefix):
     exc_type, exc_value, exc_traceback = exc_info
+
     tb = ''.join(traceback.format_exception(
         exc_type, exc_value, exc_traceback, None))
+
+    detailed_tb = getattr(exc_value, '_org_exc_tb', None)
+
+    if detailed_tb:
+        if isinstance(detailed_tb, compat.string_types):
+            remote_tb = [detailed_tb]
+
+        tb += (
+            '\n+++ BEG SOURCE EXCEPTION +++\n\n'
+            '{}\n'
+            '+++ END SOURCE EXCEPTION +++\n'
+            ''.format('\n'.join(remote_tb))
+        )
+
+        # Avoid that remote_tb also appears in the frame
+        del remote_tb
 
     exc_type_name = exc_type.__name__
     exc_store_path = get_exc_store()
