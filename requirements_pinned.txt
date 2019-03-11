@@ -2,8 +2,10 @@
 
 atomicwrites==1.2.1
 attrs==18.2.0
+hupper==1.6
 pathlib2==2.3.3
 pygments==2.3.1
 psutil==5.5.1
+scandir==1.10.0
 setproctitle==1.1.10
 venusian==1.2.0
