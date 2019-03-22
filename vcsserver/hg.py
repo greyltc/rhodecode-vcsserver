@@ -792,8 +792,20 @@ class HgRemote(object):
         # setting the interactive flag to `False` mercurial doesn't prompt the
         # used but instead uses a default value.
         repo.ui.setconfig('ui', 'interactive', False)
-
         commands.merge(baseui, repo, rev=revision)
+
+    @reraise_safe_exceptions
+    def merge_state(self, wire):
+        repo = self._factory.repo(wire)
+        repo.ui.setconfig('ui', 'merge', 'internal:dump')
+
+        # In case of sub repositories are used mercurial prompts the user in
+        # case of merge conflicts or different sub repository sources. By
+        # setting the interactive flag to `False` mercurial doesn't prompt the
+        # used but instead uses a default value.
+        repo.ui.setconfig('ui', 'interactive', False)
+        ms = hg_merge.mergestate(repo)
+        return [x for x in ms.unresolved()]
 
     @reraise_safe_exceptions
     def commit(self, wire, message, username, close_branch=False):
@@ -801,6 +813,7 @@ class HgRemote(object):
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'username', username)
         commands.commit(baseui, repo, message=message, close_branch=close_branch)
+
 
     @reraise_safe_exceptions
     def rebase(self, wire, source=None, dest=None, abort=False):
