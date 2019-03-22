@@ -34,7 +34,7 @@ from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
     archival, bin, clone, config as hgconfig, diffopts, hex, get_ctx,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
-    makepeer, instance, match, memctx, exchange, memfilectx, nullrev,
+    makepeer, instance, match, memctx, exchange, memfilectx, nullrev, hg_merge,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
     RepoLookupError, InterventionRequired, RequirementError)
 
@@ -42,7 +42,29 @@ log = logging.getLogger(__name__)
 
 
 def make_ui_from_config(repo_config):
-    baseui = ui.ui()
+
+    class LoggingUI(ui.ui):
+        def status(self, *msg, **opts):
+            log.info(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).status(*msg, **opts)
+
+        def warn(self, *msg, **opts):
+            log.warn(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).warn(*msg, **opts)
+
+        def error(self, *msg, **opts):
+            log.error(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).error(*msg, **opts)
+
+        def note(self, *msg, **opts):
+            log.info(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).note(*msg, **opts)
+
+        def debug(self, *msg, **opts):
+            log.debug(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).debug(*msg, **opts)
+
+    baseui = LoggingUI()
 
     # clean the baseui object
     baseui._ocfg = hgconfig.config()
