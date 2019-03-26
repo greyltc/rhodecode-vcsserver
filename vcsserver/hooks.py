@@ -623,7 +623,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
 def _get_extras_from_txn_id(path, txn_id):
     extras = {}
     try:
-        cmd = ['svnlook', 'pget',
+        cmd = [settings.SVNLOOK_EXECUTABLE, 'pget',
                '-t', txn_id,
                '--revprop', path, 'rc-scm-extras']
         stdout, stderr = subprocessio.run_command(
@@ -638,7 +638,7 @@ def _get_extras_from_txn_id(path, txn_id):
 def _get_extras_from_commit_id(commit_id, path):
     extras = {}
     try:
-        cmd = ['svnlook', 'pget',
+        cmd = [settings.SVNLOOK_EXECUTABLE, 'pget',
                '-r', commit_id,
                '--revprop', path, 'rc-scm-extras']
         stdout, stderr = subprocessio.run_command(
@@ -664,7 +664,7 @@ def svn_pre_commit(repo_path, commit_data, env):
             return 0
 
     extras['hook_type'] = 'pre_commit'
-    extras['commit_ids'] = []
+    extras['commit_ids'] = [txn_id]
     extras['txn_id'] = txn_id
     extras['new_refs'] = {
         'total_commits': 1,
