@@ -448,6 +448,39 @@ class SvnRemote(object):
         return False
 
     @reraise_safe_exceptions
+    def run_svn_command(self, wire, cmd, **opts):
+        path = wire.get('path', None)
+
+        if path and os.path.isdir(path):
+            opts['cwd'] = path
+
+        safe_call = False
+        if '_safe' in opts:
+            safe_call = True
+
+        svnenv = os.environ.copy()
+        svnenv.update(opts.pop('extra_env', {}))
+
+        _opts = {'env': svnenv, 'shell': False}
+
+        try:
+            _opts.update(opts)
+            p = subprocessio.SubprocessIOChunker(cmd, **_opts)
+
+            return ''.join(p), ''.join(p.error)
+        except (EnvironmentError, OSError) as err:
+            cmd = ' '.join(cmd)  # human friendly CMD
+            tb_err = ("Couldn't run svn command (%s).\n"
+                      "Original error was:%s\n"
+                      "Call options:%s\n"
+                      % (cmd, err, _opts))
+            log.exception(tb_err)
+            if safe_call:
+                return '', err
+            else:
+                raise exceptions.VcsException()(tb_err)
+
+    @reraise_safe_exceptions
     def install_hooks(self, wire, force=False):
         from vcsserver.hook_utils import install_svn_hooks
         repo_path = wire['path']
