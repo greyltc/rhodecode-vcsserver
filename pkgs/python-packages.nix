@@ -446,11 +446,11 @@ self: super: {
     };
   };
   "pluggy" = super.buildPythonPackage {
-    name = "pluggy-0.9.0";
+    name = "pluggy-0.11.0";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/a7/8c/55c629849c64e665258d8976322dfdad171fa2f57117590662d8a67618a4/pluggy-0.9.0.tar.gz";
-      sha256 = "13yg2q0wgcb4l8lgdvcnzqa8db5lrw3nwn50lxjy1z5jkp7gkv0r";
+      url = "https://files.pythonhosted.org/packages/0d/a1/862ab336e8128fde20981d2c1aa8506693412daf5083b1911d539412676b/pluggy-0.11.0.tar.gz";
+      sha256 = "10511a54dvafw1jrk75mrhml53c7b7w4yaw7241696lc2hfvr895";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
@@ -748,11 +748,11 @@ self: super: {
     };
   };
   "setuptools" = super.buildPythonPackage {
-    name = "setuptools-41.0.0";
+    name = "setuptools-41.0.1";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/ed/69/c805067de1feedbb98c53174b0f2df44cc05e0e9ee73bb85eebc59e508c6/setuptools-41.0.0.zip";
-      sha256 = "1cfwy2g23qj3262ivj0b1182lgwz7bqqbka35rkqwypynra05lvr";
+      url = "https://files.pythonhosted.org/packages/1d/64/a18a487b4391a05b9c7f938b94a16d80305bf0369c6b0b9509e86165e1d3/setuptools-41.0.1.zip";
+      sha256 = "04sns22y2hhsrwfy1mha2lgslvpjsjsz8xws7h2rh5a7ylkd28m2";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
