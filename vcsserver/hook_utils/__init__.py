@@ -170,8 +170,10 @@ def check_rhodecode_hook(hook_path):
 
 
 def read_hook_content(hook_path):
-    with open(hook_path, 'rb') as f:
-        content = f.read()
+    content = ''
+    if os.path.isfile(hook_path):
+        with open(hook_path, 'rb') as f:
+            content = f.read()
     return content
 
 
