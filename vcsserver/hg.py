@@ -456,6 +456,10 @@ class HgRemote(object):
             limit_rev = fctx.rev()
             for obj in reversed(list(fctx.filelog())):
                 obj = fctx.filectx(obj)
+                ctx = obj.changectx()
+                if ctx.hidden() or ctx.obsolete():
+                    continue
+
                 if limit_rev >= obj.rev():
                     yield obj
 
