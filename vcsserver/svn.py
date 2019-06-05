@@ -139,6 +139,16 @@ class SvnRemote(object):
             svn_ver = None
         return svn_ver
 
+    @reraise_safe_exceptions
+    def is_empty(self, wire):
+        repo = self._factory.repo(wire)
+
+        try:
+            return self.lookup(wire, -1) == 0
+        except Exception:
+            log.exception("failed to read object_store")
+            return False
+
     def check_url(self, url, config_items):
         # this can throw exception if not installed, but we detect this
         from hgsubversion import svnrepo

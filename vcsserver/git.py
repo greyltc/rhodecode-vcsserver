@@ -129,6 +129,15 @@ class GitRemote(object):
         return params
 
     @reraise_safe_exceptions
+    def is_empty(self, wire):
+        repo = self._factory.repo(wire)
+        try:
+            return not repo.head()
+        except Exception:
+            log.exception("failed to read object_store")
+            return True
+
+    @reraise_safe_exceptions
     def add_object(self, wire, content):
         repo = self._factory.repo(wire)
         blob = objects.Blob()

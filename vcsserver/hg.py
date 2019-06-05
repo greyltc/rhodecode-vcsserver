@@ -172,6 +172,16 @@ class HgRemote(object):
         return util.version()
 
     @reraise_safe_exceptions
+    def is_empty(self, wire):
+        repo = self._factory.repo(wire)
+
+        try:
+            return len(repo) == 0
+        except Exception:
+            log.exception("failed to read object_store")
+            return False
+
+    @reraise_safe_exceptions
     def archive_repo(self, archive_path, mtime, file_info, kind):
         if kind == "tgz":
             archiver = archival.tarit(archive_path, mtime, "gz")
