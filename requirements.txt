@@ -1,7 +1,7 @@
 ## dependencies
 
 # our custom configobj
-https://code.rhodecode.com/upstream/configobj/archive/a11ff0a0bd4fbda9e3a91267e720f88329efb4a6.tar.gz?md5=9916c524ea11a6c418217af6b28d4b3c#egg=configobj==5.0.6
+https://code.rhodecode.com/upstream/configobj/artifacts/download/0-012de99a-b1e1-4f64-a5c0-07a98a41b324.tar.gz?md5=6a513f51fe04b2c18cf84c1395a7c626#egg=configobj==5.0.6
 
 dogpile.cache==0.7.1
 dogpile.core==0.4.1
