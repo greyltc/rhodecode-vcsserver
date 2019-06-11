@@ -566,7 +566,8 @@ class GitRemote(object):
         return {
             'id': obj.id,
             'type': obj.type_name,
-            'commit_id': commit_id
+            'commit_id': commit_id,
+            'idx': 0
         }
 
     @reraise_safe_exceptions
