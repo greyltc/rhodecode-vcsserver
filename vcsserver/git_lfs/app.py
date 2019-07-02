@@ -90,6 +90,8 @@ def lfs_objects_batch(request):
     repo = request.matchdict.get('repo')
     data = request.json
     operation = data.get('operation')
+    http_scheme = request.registry.git_lfs_http_scheme
+
     if operation not in ('download', 'upload'):
         log.debug('LFS: unsupported operation:%s', operation)
         return write_response_error(
@@ -114,8 +116,10 @@ def lfs_objects_batch(request):
 
         obj_data = {'oid': oid}
 
-        obj_href = request.route_url('lfs_objects_oid', repo=repo, oid=oid)
-        obj_verify_href = request.route_url('lfs_objects_verify', repo=repo)
+        obj_href = request.route_url('lfs_objects_oid', repo=repo, oid=oid, 
+                                     _scheme=http_scheme)
+        obj_verify_href = request.route_url('lfs_objects_verify', repo=repo,
+                                            _scheme=http_scheme)
         store = LFSOidStore(
             oid, repo, store_location=request.registry.git_lfs_store_path)
         handler = OidHandler(
@@ -274,11 +278,12 @@ def git_lfs_app(config):
     config.add_notfound_view(not_found, renderer='json')
 
 
-def create_app(git_lfs_enabled, git_lfs_store_path):
+def create_app(git_lfs_enabled, git_lfs_store_path, git_lfs_http_scheme):
     config = Configurator()
     if git_lfs_enabled:
         config.include(git_lfs_app)
         config.registry.git_lfs_store_path = git_lfs_store_path
+        config.registry.git_lfs_http_scheme = git_lfs_http_scheme
     else:
         # not found handler for API, reporting disabled LFS support
         config.add_notfound_view(lfs_disabled, renderer='json')
