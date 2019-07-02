@@ -26,7 +26,17 @@ from vcsserver.git_lfs.app import create_app
 @pytest.fixture(scope='function')
 def git_lfs_app(tmpdir):
     custom_app = WebObTestApp(create_app(
-        git_lfs_enabled=True, git_lfs_store_path=str(tmpdir)))
+        git_lfs_enabled=True, git_lfs_store_path=str(tmpdir),
+        git_lfs_http_scheme='http'))
+    custom_app._store = str(tmpdir)
+    return custom_app
+
+
+@pytest.fixture(scope='function')
+def git_lfs_https_app(tmpdir):
+    custom_app = WebObTestApp(create_app(
+        git_lfs_enabled=True, git_lfs_store_path=str(tmpdir),
+        git_lfs_http_scheme='https'))
     custom_app._store = str(tmpdir)
     return custom_app
 
@@ -58,7 +68,7 @@ class TestLFSApplication(object):
         assert json.loads(response.text) == {
             u'message': u'GIT LFS locking api not supported'}
 
-    def test_app_batch_api_missing_auth(self, git_lfs_app,):
+    def test_app_batch_api_missing_auth(self, git_lfs_app):
         git_lfs_app.post_json(
             '/repo/info/lfs/objects/batch', params={}, status=403)
 
@@ -155,8 +165,31 @@ class TestLFSApplication(object):
         assert json.loads(response.text) == {
             'objects': expected_objects, 'transfer': 'basic'}
 
+    def test_app_batch_api_upload_for_https(self, git_lfs_https_app, http_auth):
+        params = {'operation': 'upload',
+                  'objects': [{'oid': '123', 'size': '1024'}]}
+        response = git_lfs_https_app.post_json(
+            '/repo/info/lfs/objects/batch', params=params,
+            extra_environ=http_auth)
+        expected_objects = [
+            {u'authenticated': True,
+             u'actions': {
+                 u'upload': {
+                     u'header': {u'Authorization': u'Basic XXXXX',
+                                 u'Transfer-Encoding': u'chunked'},
+                     u'href': u'https://localhost/repo/info/lfs/objects/123'},
+                 u'verify': {
+                     u'header': {u'Authorization': u'Basic XXXXX'},
+                     u'href': u'https://localhost/repo/info/lfs/verify'}
+             },
+             u'oid': u'123',
+             u'size': u'1024'}
+        ]
+        assert json.loads(response.text) == {
+            'objects': expected_objects, 'transfer': 'basic'}
+
     def test_app_verify_api_missing_data(self, git_lfs_app):
-        params = {'oid': 'missing',}
+        params = {'oid': 'missing'}
         response = git_lfs_app.post_json(
             '/repo/info/lfs/verify', params=params,
             status=400)
