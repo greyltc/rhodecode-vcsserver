@@ -139,6 +139,16 @@ class SvnRemote(object):
             svn_ver = None
         return svn_ver
 
+    @reraise_safe_exceptions
+    def is_empty(self, wire):
+        repo = self._factory.repo(wire)
+
+        try:
+            return self.lookup(wire, -1) == 0
+        except Exception:
+            log.exception("failed to read object_store")
+            return False
+
     def check_url(self, url, config_items):
         # this can throw exception if not installed, but we detect this
         from hgsubversion import svnrepo
@@ -446,6 +456,39 @@ class SvnRemote(object):
     @reraise_safe_exceptions
     def is_large_file(self, wire, path):
         return False
+
+    @reraise_safe_exceptions
+    def run_svn_command(self, wire, cmd, **opts):
+        path = wire.get('path', None)
+
+        if path and os.path.isdir(path):
+            opts['cwd'] = path
+
+        safe_call = False
+        if '_safe' in opts:
+            safe_call = True
+
+        svnenv = os.environ.copy()
+        svnenv.update(opts.pop('extra_env', {}))
+
+        _opts = {'env': svnenv, 'shell': False}
+
+        try:
+            _opts.update(opts)
+            p = subprocessio.SubprocessIOChunker(cmd, **_opts)
+
+            return ''.join(p), ''.join(p.error)
+        except (EnvironmentError, OSError) as err:
+            cmd = ' '.join(cmd)  # human friendly CMD
+            tb_err = ("Couldn't run svn command (%s).\n"
+                      "Original error was:%s\n"
+                      "Call options:%s\n"
+                      % (cmd, err, _opts))
+            log.exception(tb_err)
+            if safe_call:
+                return '', err
+            else:
+                raise exceptions.VcsException()(tb_err)
 
     @reraise_safe_exceptions
     def install_hooks(self, wire, force=False):

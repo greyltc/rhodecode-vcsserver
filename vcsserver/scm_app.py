@@ -218,8 +218,8 @@ class GitLFSHandler(object):
         self.git_path = git_path
         self.update_server_info = update_server_info
 
-    def get_app(self, git_lfs_enabled, git_lfs_store_path):
-        app = git_lfs.create_app(git_lfs_enabled, git_lfs_store_path)
+    def get_app(self, git_lfs_enabled, git_lfs_store_path, git_lfs_http_scheme):
+        app = git_lfs.create_app(git_lfs_enabled, git_lfs_store_path, git_lfs_http_scheme)
         return app
 
 
@@ -228,7 +228,8 @@ def create_git_lfs_wsgi_app(repo_path, repo_name, config):
     update_server_info = config.pop('git_update_server_info')
     git_lfs_enabled = config.pop('git_lfs_enabled')
     git_lfs_store_path = config.pop('git_lfs_store_path')
+    git_lfs_http_scheme = config.pop('git_lfs_http_scheme', 'http')
     app = GitLFSHandler(
         repo_path, repo_name, git_path, update_server_info, config)
 
-    return app.get_app(git_lfs_enabled, git_lfs_store_path)
+    return app.get_app(git_lfs_enabled, git_lfs_store_path, git_lfs_http_scheme)

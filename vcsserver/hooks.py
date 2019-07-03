@@ -33,6 +33,7 @@ import mercurial.node
 import simplejson as json
 
 from vcsserver import exceptions, subprocessio, settings
+from vcsserver.hgcompat import get_ctx
 
 log = logging.getLogger(__name__)
 
@@ -177,11 +178,11 @@ def _rev_range_hash(repo, node, check_heads=False):
 
     commits = []
     revs = []
-    start = repo[node].rev()
+    start = get_ctx(repo, node).rev()
     end = len(repo)
     for rev in range(start, end):
         revs.append(rev)
-        ctx = repo[rev]
+        ctx = get_ctx(repo, rev)
         commit_id = mercurial.node.hex(ctx.node())
         branch = ctx.branch()
         commits.append((commit_id, branch))
@@ -204,12 +205,12 @@ def _check_heads(repo, start, end, commits):
                 parents.add(p)
 
     for p in parents:
-        branch = repo[p].branch()
+        branch = get_ctx(repo, p).branch()
         # The heads descending from that parent, on the same branch
         parent_heads = set([p])
         reachable = set([p])
         for x in xrange(p + 1, end):
-            if repo[x].branch() != branch:
+            if get_ctx(repo, x).branch() != branch:
                 continue
             for pp in changelog.parentrevs(x):
                 if pp in reachable:
@@ -385,7 +386,7 @@ def post_push_ssh(ui, repo, node, **kwargs):
 def key_push(ui, repo, **kwargs):
     if kwargs['new'] != '0' and kwargs['namespace'] == 'bookmarks':
         # store new bookmarks in our UI object propagated later to post_push
-        ui._rc_pushkey_branches = repo[kwargs['key']].bookmarks()
+        ui._rc_pushkey_branches = get_ctx(repo, kwargs['key']).bookmarks()
     return
 
 
@@ -622,7 +623,7 @@ def git_post_receive(unused_repo_path, revision_lines, env):
 def _get_extras_from_txn_id(path, txn_id):
     extras = {}
     try:
-        cmd = ['svnlook', 'pget',
+        cmd = [settings.SVNLOOK_EXECUTABLE, 'pget',
                '-t', txn_id,
                '--revprop', path, 'rc-scm-extras']
         stdout, stderr = subprocessio.run_command(
@@ -637,7 +638,7 @@ def _get_extras_from_txn_id(path, txn_id):
 def _get_extras_from_commit_id(commit_id, path):
     extras = {}
     try:
-        cmd = ['svnlook', 'pget',
+        cmd = [settings.SVNLOOK_EXECUTABLE, 'pget',
                '-r', commit_id,
                '--revprop', path, 'rc-scm-extras']
         stdout, stderr = subprocessio.run_command(
@@ -663,7 +664,7 @@ def svn_pre_commit(repo_path, commit_data, env):
             return 0
 
     extras['hook_type'] = 'pre_commit'
-    extras['commit_ids'] = []
+    extras['commit_ids'] = [txn_id]
     extras['txn_id'] = txn_id
     extras['new_refs'] = {
         'total_commits': 1,

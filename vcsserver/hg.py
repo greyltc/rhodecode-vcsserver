@@ -20,6 +20,7 @@ import logging
 import stat
 import urllib
 import urllib2
+import traceback
 
 from hgext import largefiles, rebase
 from hgext.strip import strip as hgext_strip
@@ -31,9 +32,9 @@ import vcsserver
 from vcsserver import exceptions
 from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
 from vcsserver.hgcompat import (
-    archival, bin, clone, config as hgconfig, diffopts, hex,
+    archival, bin, clone, config as hgconfig, diffopts, hex, get_ctx,
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler,
-    makepeer, localrepository, match, memctx, exchange, memfilectx, nullrev,
+    makepeer, instance, match, memctx, exchange, memfilectx, nullrev, hg_merge,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
     RepoLookupError, InterventionRequired, RequirementError)
 
@@ -41,7 +42,29 @@ log = logging.getLogger(__name__)
 
 
 def make_ui_from_config(repo_config):
-    baseui = ui.ui()
+
+    class LoggingUI(ui.ui):
+        def status(self, *msg, **opts):
+            log.info(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).status(*msg, **opts)
+
+        def warn(self, *msg, **opts):
+            log.warn(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).warn(*msg, **opts)
+
+        def error(self, *msg, **opts):
+            log.error(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).error(*msg, **opts)
+
+        def note(self, *msg, **opts):
+            log.info(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).note(*msg, **opts)
+
+        def debug(self, *msg, **opts):
+            log.debug(' '.join(msg).rstrip('\n'))
+            super(LoggingUI, self).debug(*msg, **opts)
+
+    baseui = LoggingUI()
 
     # clean the baseui object
     baseui._ocfg = hgconfig.config()
@@ -55,6 +78,9 @@ def make_ui_from_config(repo_config):
     baseui.setconfig('ui', 'quiet', 'true')
 
     baseui.setconfig('ui', 'paginate', 'never')
+    # for better Error reporting of Mercurial
+    baseui.setconfig('ui', 'message-output', 'stderr')
+
     # force mercurial to only use 1 thread, otherwise it may try to set a
     # signal in a non-main thread, thus generating a ValueError.
     baseui.setconfig('worker', 'numcpus', 1)
@@ -114,7 +140,7 @@ class MercurialFactory(RepoFactory):
 
     def _create_repo(self, wire, create):
         baseui = self._create_config(wire["config"])
-        return localrepository(baseui, wire["path"], create)
+        return instance(baseui, wire["path"], create)
 
 
 class HgRemote(object):
@@ -137,10 +163,23 @@ class HgRemote(object):
             "_file_paths": self.ctx_list,
         }
 
+    def _get_ctx(self, repo, ref):
+        return get_ctx(repo, ref)
+
     @reraise_safe_exceptions
     def discover_hg_version(self):
         from mercurial import util
         return util.version()
+
+    @reraise_safe_exceptions
+    def is_empty(self, wire):
+        repo = self._factory.repo(wire)
+
+        try:
+            return len(repo) == 0
+        except Exception:
+            log.exception("failed to read object_store")
+            return False
 
     @reraise_safe_exceptions
     def archive_repo(self, archive_path, mtime, file_info, kind):
@@ -198,7 +237,15 @@ class HgRemote(object):
             self, wire, message, parents, commit_time, commit_timezone,
             user, files, extra, removed, updated):
 
-        def _filectxfn(_repo, memctx, path):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        publishing = baseui.configbool('phases', 'publish')
+        if publishing:
+            new_commit = 'public'
+        else:
+            new_commit = 'draft'
+
+        def _filectxfn(_repo, ctx, path):
             """
             Marks given path as added/changed/removed in a given _repo. This is
             for internal mercurial commit function.
@@ -214,7 +261,7 @@ class HgRemote(object):
                 if node['path'] == path:
                     return memfilectx(
                         _repo,
-                        changectx=memctx,
+                        changectx=ctx,
                         path=node['path'],
                         data=node['content'],
                         islink=False,
@@ -225,103 +272,94 @@ class HgRemote(object):
                 "Given path haven't been marked as added, "
                 "changed or removed (%s)" % path)
 
-        repo = self._factory.repo(wire)
+        with repo.ui.configoverride({('phases', 'new-commit'): new_commit}):
 
-        commit_ctx = memctx(
-            repo=repo,
-            parents=parents,
-            text=message,
-            files=files,
-            filectxfn=_filectxfn,
-            user=user,
-            date=(commit_time, commit_timezone),
-            extra=extra)
+            commit_ctx = memctx(
+                repo=repo,
+                parents=parents,
+                text=message,
+                files=files,
+                filectxfn=_filectxfn,
+                user=user,
+                date=(commit_time, commit_timezone),
+                extra=extra)
 
-        n = repo.commitctx(commit_ctx)
-        new_id = hex(n)
+            n = repo.commitctx(commit_ctx)
+            new_id = hex(n)
 
-        return new_id
+            return new_id
 
     @reraise_safe_exceptions
     def ctx_branch(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.branch()
 
     @reraise_safe_exceptions
     def ctx_children(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return [child.rev() for child in ctx.children()]
 
     @reraise_safe_exceptions
     def ctx_date(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.date()
 
     @reraise_safe_exceptions
     def ctx_description(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.description()
-
-    @reraise_safe_exceptions
-    def ctx_diff(
-            self, wire, revision, git=True, ignore_whitespace=True, context=3):
-        repo = self._factory.repo(wire)
-        ctx = repo[revision]
-        result = ctx.diff(
-            git=git, ignore_whitespace=ignore_whitespace, context=context)
-        return list(result)
 
     @reraise_safe_exceptions
     def ctx_files(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.files()
 
     @reraise_safe_exceptions
     def ctx_list(self, path, revision):
         repo = self._factory.repo(path)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return list(ctx)
 
     @reraise_safe_exceptions
     def ctx_parents(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return [parent.rev() for parent in ctx.parents()]
 
     @reraise_safe_exceptions
     def ctx_phase(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         # public=0, draft=1, secret=3
         return ctx.phase()
 
     @reraise_safe_exceptions
     def ctx_obsolete(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.obsolete()
 
     @reraise_safe_exceptions
     def ctx_hidden(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.hidden()
 
     @reraise_safe_exceptions
     def ctx_substate(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.substate
 
     @reraise_safe_exceptions
     def ctx_status(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         status = repo[ctx.p1().node()].status(other=ctx.node())
         # object of status (odd, custom named tuple in mercurial) is not
         # correctly serializable, we make it a list, as the underling
@@ -331,7 +369,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def ctx_user(self, wire, revision):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         return ctx.user()
 
     @reraise_safe_exceptions
@@ -421,13 +459,17 @@ class HgRemote(object):
     def node_history(self, wire, revision, path, limit):
         repo = self._factory.repo(wire)
 
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
 
         def history_iter():
             limit_rev = fctx.rev()
             for obj in reversed(list(fctx.filelog())):
                 obj = fctx.filectx(obj)
+                ctx = obj.changectx()
+                if ctx.hidden() or ctx.obsolete():
+                    continue
+
                 if limit_rev >= obj.rev():
                     yield obj
 
@@ -442,7 +484,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def node_history_untill(self, wire, revision, path, limit):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
 
         file_log = list(fctx.filelog())
@@ -455,7 +497,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def fctx_annotate(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
 
         result = []
@@ -469,29 +511,30 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def fctx_data(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
         return fctx.data()
 
     @reraise_safe_exceptions
     def fctx_flags(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
         return fctx.flags()
 
     @reraise_safe_exceptions
     def fctx_size(self, wire, revision, path):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         fctx = ctx.filectx(path)
         return fctx.size()
 
     @reraise_safe_exceptions
     def get_all_commit_ids(self, wire, name):
         repo = self._factory.repo(wire)
-        revs = repo.filtered(name).changelog.index
-        return map(lambda x: hex(x[7]), revs)[:-1]
+        repo = repo.filtered(name)
+        revs = map(lambda x: hex(x[7]), repo.changelog.index)
+        return revs
 
     @reraise_safe_exceptions
     def get_config_value(self, wire, section, name, untrusted=False):
@@ -544,22 +587,19 @@ class HgRemote(object):
 
         if isinstance(revision, int):
             # NOTE(marcink):
-            # since Mercurial doesn't support indexes properly
+            # since Mercurial doesn't support negative indexes properly
             # we need to shift accordingly by one to get proper index, e.g
             # repo[-1] => repo[-2]
             # repo[0]  => repo[-1]
-            # repo[1]  => repo[2] we also never call repo[0] because
-            # it's actually second commit
             if revision <= 0:
                 revision = revision + -1
-            else:
-                revision = revision + 1
-
         try:
-            ctx = repo[revision]
-        except RepoLookupError as e:
+            ctx = self._get_ctx(repo, revision)
+        except (TypeError, RepoLookupError) as e:
+            e._org_exc_tb = traceback.format_exc()
             raise exceptions.LookupException(e)(revision)
         except LookupError as e:
+            e._org_exc_tb = traceback.format_exc()
             raise exceptions.LookupException(e)(e.name)
 
         if not both:
@@ -605,7 +645,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def revision(self, wire, rev):
         repo = self._factory.repo(wire)
-        ctx = repo[rev]
+        ctx = self._get_ctx(repo, rev)
         return ctx.rev()
 
     @reraise_safe_exceptions
@@ -638,7 +678,7 @@ class HgRemote(object):
         # case when we want to compare two independent repositories
         if other_path and other_path != wire["path"]:
             baseui = self._factory._create_config(wire["config"])
-            repo = unionrepo.unionrepository(baseui, other_path, wire["path"])
+            repo = unionrepo.makeunionrepository(baseui, other_path, wire["path"])
         else:
             repo = self._factory.repo(wire)
         return list(repo.revs(rev_spec, *args))
@@ -646,7 +686,7 @@ class HgRemote(object):
     @reraise_safe_exceptions
     def strip(self, wire, revision, update, backup):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         hgext_strip(
             repo.baseui, repo, ctx.node(), update=update, backup=backup)
 
@@ -669,7 +709,7 @@ class HgRemote(object):
     def tag(self, wire, name, revision, message, local, user,
             tag_time, tag_timezone):
         repo = self._factory.repo(wire)
-        ctx = repo[revision]
+        ctx = self._get_ctx(repo, revision)
         node = ctx.node()
 
         date = (tag_time, tag_timezone)
@@ -766,8 +806,20 @@ class HgRemote(object):
         # setting the interactive flag to `False` mercurial doesn't prompt the
         # used but instead uses a default value.
         repo.ui.setconfig('ui', 'interactive', False)
-
         commands.merge(baseui, repo, rev=revision)
+
+    @reraise_safe_exceptions
+    def merge_state(self, wire):
+        repo = self._factory.repo(wire)
+        repo.ui.setconfig('ui', 'merge', 'internal:dump')
+
+        # In case of sub repositories are used mercurial prompts the user in
+        # case of merge conflicts or different sub repository sources. By
+        # setting the interactive flag to `False` mercurial doesn't prompt the
+        # used but instead uses a default value.
+        repo.ui.setconfig('ui', 'interactive', False)
+        ms = hg_merge.mergestate(repo)
+        return [x for x in ms.unresolved()]
 
     @reraise_safe_exceptions
     def commit(self, wire, message, username, close_branch=False):
@@ -775,6 +827,7 @@ class HgRemote(object):
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'username', username)
         commands.commit(baseui, repo, message=message, close_branch=close_branch)
+
 
     @reraise_safe_exceptions
     def rebase(self, wire, source=None, dest=None, abort=False):
