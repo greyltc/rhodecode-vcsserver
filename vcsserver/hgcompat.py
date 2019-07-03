@@ -42,9 +42,9 @@ from mercurial.commands import clone, nullid, pull
 from mercurial.context import memctx, memfilectx
 from mercurial.error import (
     LookupError, RepoError, RepoLookupError, Abort, InterventionRequired,
-    RequirementError)
+    RequirementError, ProgrammingError)
 from mercurial.hgweb import hgweb_mod
-from mercurial.localrepo import localrepository
+from mercurial.localrepo import instance
 from mercurial.match import match
 from mercurial.mdiff import diffopts
 from mercurial.node import bin, hex
@@ -53,7 +53,7 @@ from mercurial.discovery import findcommonoutgoing
 from mercurial.hg import peer
 from mercurial.httppeer import makepeer
 from mercurial.util import url as hg_url
-from mercurial.scmutil import revrange
+from mercurial.scmutil import revrange, revsymbol
 from mercurial.node import nullrev
 from mercurial import exchange
 from hgext import largefiles
@@ -61,3 +61,14 @@ from hgext import largefiles
 # those authnadlers are patched for python 2.6.5 bug an
 # infinit looping when given invalid resources
 from mercurial.url import httpbasicauthhandler, httpdigestauthhandler
+
+
+def get_ctx(repo, ref):
+    try:
+        ctx = repo[ref]
+    except ProgrammingError:
+        # we're unable to find the rev using a regular lookup, we fallback
+        # to slower, but backward compat revsymbol usage
+        ctx = revsymbol(repo, ref)
+
+    return ctx

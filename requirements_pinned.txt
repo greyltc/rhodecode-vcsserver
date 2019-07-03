@@ -1,0 +1,12 @@
+# contains not directly required libraries we want to pin the version.
+
+atomicwrites==1.2.1
+attrs==18.2.0
+hupper==1.6.1
+pathlib2==2.3.4
+pygments==2.4.2
+psutil==5.5.1
+pluggy==0.11.0
+scandir==1.10.0
+setproctitle==1.1.10
+venusian==1.2.0
