@@ -2,10 +2,10 @@ self: super: {
 
   # bump GIT version
   git = super.lib.overrideDerivation super.git (oldAttrs: {
-    name = "git-2.19.2";
+    name = "git-2.22.0";
     src = self.fetchurl {
-      url = "https://www.kernel.org/pub/software/scm/git/git-2.19.2.tar.xz";
-      sha256 = "1scbggzghkzzfqg4ky3qh7h9w87c3zya4ls5disz7dbx56is7sgw";
+      url = "https://www.kernel.org/pub/software/scm/git/git-2.22.0.tar.xz";
+      sha256 = "17zj6jwx3s6bybd290f1mj5iym1r64560rmnf0p63x4akxclp7hm";
     };
 
     # patches come from: https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/version-management/git-and-tools/git
