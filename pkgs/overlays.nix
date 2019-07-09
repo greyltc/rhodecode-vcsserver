@@ -1,4 +1,5 @@
 self: super: {
+
   # bump GIT version
   git = super.lib.overrideDerivation super.git (oldAttrs: {
     name = "git-2.19.2";
@@ -15,6 +16,29 @@ self: super: {
       ./patches/git/git-send-email-honor-PATH.patch
       ./patches/git/installCheck-path.patch
     ];
+
+  });
+
+  libgit2rc = super.lib.overrideDerivation super.libgit2 (oldAttrs: {
+    name = "libgit2-0.28.2";
+    version = "0.28.2";
+
+    src = self.fetchFromGitHub {
+        owner = "libgit2";
+        repo = "libgit2";
+        rev = "v0.28.2";
+        sha256 = "0cm8fvs05rj0baigs2133q5a0sm3pa234y8h6hmwhl2bz9xq3k4b";
+    };
+
+    cmakeFlags = [ "-DTHREADSAFE=ON" "-DUSE_HTTPS=no"];
+
+    buildInputs = [
+        super.zlib
+        super.libssh2
+        super.openssl
+        super.curl
+    ];
+
 
   });
 
@@ -41,7 +65,7 @@ self: super: {
         " --with-utf8proc=internal"
       ];
 
-
   });
+
 
 }
