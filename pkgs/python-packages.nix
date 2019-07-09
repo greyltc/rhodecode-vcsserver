@@ -48,6 +48,20 @@ self: super: {
       license = [ pkgs.lib.licenses.mit ];
     };
   };
+  "cffi" = super.buildPythonPackage {
+    name = "cffi-1.12.3";
+    doCheck = false;
+    propagatedBuildInputs = [
+      self."pycparser"
+    ];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/93/1a/ab8c62b5838722f29f3daffcc8d4bd61844aa9b5f437341cc890ceee483b/cffi-1.12.3.tar.gz";
+      sha256 = "0x075521fxwv0mfp4cqzk7lvmw4n94bjw601qkcv314z5s182704";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.mit ];
+    };
+  };
   "configobj" = super.buildPythonPackage {
     name = "configobj-5.0.6";
     doCheck = false;
@@ -504,6 +518,32 @@ self: super: {
       license = [ pkgs.lib.licenses.mit ];
     };
   };
+  "pycparser" = super.buildPythonPackage {
+    name = "pycparser-2.19";
+    doCheck = false;
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/68/9e/49196946aee219aead1290e00d1e7fdeab8567783e83e1b9ab5585e6206a/pycparser-2.19.tar.gz";
+      sha256 = "1cr5dcj9628lkz1qlwq3fv97c25363qppkmcayqvd05dpy573259";
+    };
+    meta = {
+      license = [ pkgs.lib.licenses.bsdOriginal ];
+    };
+  };
+  "pygit2" = super.buildPythonPackage {
+    name = "pygit2-0.28.2";
+    doCheck = false;
+    propagatedBuildInputs = [
+      self."cffi"
+      self."six"
+    ];
+    src = fetchurl {
+      url = "https://files.pythonhosted.org/packages/4c/64/88c2a4eb2d22ca1982b364f41ff5da42d61de791d7eb68140e7f8f7eb721/pygit2-0.28.2.tar.gz";
+      sha256 = "11kzj5mjkspvplnpdb6bj8dcj6rgmkk986k8hjcklyg5yaxkz32d";
+    };
+    meta = {
+      license = [ { fullName = "GPLv2 with linking exception"; } ];
+    };
+  };
   "pygments" = super.buildPythonPackage {
     name = "pygments-2.4.2";
     doCheck = false;
@@ -691,6 +731,7 @@ self: super: {
       self."pastedeploy"
       self."pyramid"
       self."pyramid-mako"
+      self."pygit2"
       self."repoze.lru"
       self."simplejson"
       self."subprocess32"

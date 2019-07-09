@@ -23,6 +23,7 @@ pkgs.stdenv.mkDerivation {
     pythonPackages.pip-tools
     pkgs.apr
     pkgs.aprutil
+    pkgs.libffi
   ];
 
   shellHook = ''
