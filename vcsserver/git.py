@@ -160,13 +160,10 @@ class GitRemote(object):
     def is_empty(self, wire):
         repo = self._factory.repo_libgit2(wire)
 
-        # NOTE(marcink): old solution as an alternative
-        # try:
-        #     return not repo.head.name
-        # except Exception:
-        #     return True
-
-        return repo.is_empty
+        try:
+            return not repo.head.name
+        except Exception:
+            return True
 
     @reraise_safe_exceptions
     def add_object(self, wire, content):
@@ -227,13 +224,18 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def is_large_file(self, wire, sha):
-        repo = self._factory.repo(wire)
-        blob = repo[sha]
-        return self._parse_lfs_pointer(blob.as_raw_string())
+        repo_init = self._factory.repo_libgit2(wire)
+
+        with repo_init as repo:
+            blob = repo[sha]
+            if blob.is_binary:
+                return {}
+
+            return self._parse_lfs_pointer(blob.data)
 
     @reraise_safe_exceptions
     def in_largefiles_store(self, wire, oid):
-        repo = self._factory.repo(wire)
+        repo = self._factory.repo_libgit2(wire)
         conf = self._wire_to_config(wire)
 
         store_location = conf.get('vcs_git_lfs_store_location')
@@ -247,7 +249,7 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def store_path(self, wire, oid):
-        repo = self._factory.repo(wire)
+        repo = self._factory.repo_libgit2(wire)
         conf = self._wire_to_config(wire)
 
         store_location = conf.get('vcs_git_lfs_store_location')
@@ -725,11 +727,27 @@ class GitRemote(object):
         return list(result)
 
     @reraise_safe_exceptions
+    def tree_and_type_for_path(self, wire, commit_id, path):
+        repo_init = self._factory.repo_libgit2(wire)
+
+        with repo_init as repo:
+            commit = repo[commit_id]
+            try:
+                tree = commit.tree[path]
+            except KeyError:
+                return None, None, None
+
+            return tree.id.hex, tree.type, tree.filemode
+
+    @reraise_safe_exceptions
     def tree_items(self, wire, tree_id):
         repo_init = self._factory.repo_libgit2(wire)
 
         with repo_init as repo:
-            tree = repo[tree_id]
+            try:
+                tree = repo[tree_id]
+            except KeyError:
+                raise ObjectMissing('No tree with id: {}'.format(tree_id))
 
             result = []
             for item in tree:
