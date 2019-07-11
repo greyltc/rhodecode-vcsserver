@@ -98,6 +98,7 @@ def make_ui_from_config(repo_config):
 
 def reraise_safe_exceptions(func):
     """Decorator for converting mercurial exceptions to something neutral."""
+
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -141,6 +142,23 @@ class MercurialFactory(RepoFactory):
     def _create_repo(self, wire, create):
         baseui = self._create_config(wire["config"])
         return instance(baseui, wire["path"], create)
+
+    def repo(self, wire, create=False):
+        """
+        Get a repository instance for the given path.
+        """
+        region = self._cache_region
+        context = wire.get('context', None)
+        repo_path = wire.get('path', '')
+        context_uid = '{}'.format(context)
+        cache = wire.get('cache', True)
+        cache_on = context and cache
+
+        @region.conditional_cache_on_arguments(condition=cache_on)
+        def create_new_repo(_repo_type, _repo_path, _context_uid):
+            return self._create_repo(wire, create)
+
+        return create_new_repo(self.repo_type, repo_path, context_uid)
 
 
 class HgRemote(object):

@@ -99,14 +99,9 @@ class TestGitFetch(object):
             mock_repo().get_refs.assert_called_once_with()
             assert remote_refs == sample_refs
 
-    def test_remove_ref(self):
-        ref_to_remove = 'refs/tags/v0.1.9'
-        self.mock_repo.refs = SAMPLE_REFS.copy()
-        self.remote_git.remove_ref(None, ref_to_remove)
-        assert ref_to_remove not in self.mock_repo.refs
-
 
 class TestReraiseSafeExceptions(object):
+
     def test_method_decorated_with_reraise_safe_exceptions(self):
         factory = Mock()
         git_remote = git.GitRemote(factory)

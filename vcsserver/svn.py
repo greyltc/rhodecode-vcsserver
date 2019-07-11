@@ -97,9 +97,6 @@ class SubversionFactory(RepoFactory):
     def repo(self, wire, create=False, compatible_version=None):
         """
         Get a repository instance for the given path.
-
-        Uses internally the low level beaker API since the decorators introduce
-        significant overhead.
         """
         region = self._cache_region
         context = wire.get('context', None)
