@@ -354,6 +354,7 @@ class HTTPApplication(object):
 
         log.debug('method called:%s with kwargs:%s context_uid: %s',
                   method, kwargs, context_uid)
+
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
