@@ -600,14 +600,19 @@ class GitRemote(object):
     def get_object(self, wire, sha):
         repo = self._factory.repo_libgit2(wire)
 
+        missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
         try:
             commit = repo.revparse_single(sha)
         except (KeyError, ValueError) as e:
-            msg = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
-            raise exceptions.LookupException(e)(msg)
+            raise exceptions.LookupException(e)(missing_commit_err)
 
         if isinstance(commit, pygit2.Tag):
             commit = repo.get(commit.target)
+
+        # check for dangling commit
+        branches = [x for x in repo.branches.with_commit(commit.hex)]
+        if not branches:
+            raise exceptions.LookupException(None)(missing_commit_err)
 
         commit_id = commit.hex
         type_id = commit.type
