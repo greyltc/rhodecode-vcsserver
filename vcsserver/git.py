@@ -158,32 +158,36 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def is_empty(self, wire):
-        repo = self._factory.repo_libgit2(wire)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
 
-        try:
-            has_head = repo.head.name
-            if has_head:
-                return False
+            try:
+                has_head = repo.head.name
+                if has_head:
+                    return False
 
-            # NOTE(marcink): check again using more expensive method
-            return repo.is_empty
-        except Exception:
-            pass
+                # NOTE(marcink): check again using more expensive method
+                return repo.is_empty
+            except Exception:
+                pass
 
-        return True
+            return True
 
     @reraise_safe_exceptions
     def add_object(self, wire, content):
-        repo = self._factory.repo(wire)
-        blob = objects.Blob()
-        blob.set_raw_string(content)
-        repo.object_store.add_object(blob)
-        return blob.id
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            blob = objects.Blob()
+            blob.set_raw_string(content)
+            repo.object_store.add_object(blob)
+            return blob.id
 
     @reraise_safe_exceptions
     def assert_correct_path(self, wire):
         try:
-            self._factory.repo_libgit2(wire)
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                pass
         except pygit2.GitError:
             path = wire.get('path')
             tb = traceback.format_exc()
@@ -194,8 +198,9 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def bare(self, wire):
-        repo = self._factory.repo_libgit2(wire)
-        return repo.is_bare
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            return repo.is_bare
 
     @reraise_safe_exceptions
     def blob_as_pretty_string(self, wire, sha):
@@ -232,7 +237,6 @@ class GitRemote(object):
     @reraise_safe_exceptions
     def is_large_file(self, wire, sha):
         repo_init = self._factory.repo_libgit2(wire)
-
         with repo_init as repo:
             blob = repo[sha]
             if blob.is_binary:
@@ -242,12 +246,14 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def in_largefiles_store(self, wire, oid):
-        repo = self._factory.repo_libgit2(wire)
         conf = self._wire_to_config(wire)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            repo_name = repo.path
 
         store_location = conf.get('vcs_git_lfs_store_location')
         if store_location:
-            repo_name = repo.path
+
             store = LFSOidStore(
                 oid=oid, repo=repo_name, store_location=store_location)
             return store.has_oid()
@@ -256,12 +262,13 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def store_path(self, wire, oid):
-        repo = self._factory.repo_libgit2(wire)
         conf = self._wire_to_config(wire)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            repo_name = repo.path
 
         store_location = conf.get('vcs_git_lfs_store_location')
         if store_location:
-            repo_name = repo.path
             store = LFSOidStore(
                 oid=oid, repo=repo_name, store_location=store_location)
             return store.oid_path
@@ -605,51 +612,53 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def get_object(self, wire, sha):
-        repo = self._factory.repo_libgit2(wire)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
 
-        missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
-        try:
-            commit = repo.revparse_single(sha)
-        except (KeyError, ValueError) as e:
-            raise exceptions.LookupException(e)(missing_commit_err)
+            missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
+            try:
+                commit = repo.revparse_single(sha)
+            except (KeyError, ValueError) as e:
+                raise exceptions.LookupException(e)(missing_commit_err)
 
-        if isinstance(commit, pygit2.Tag):
-            commit = repo.get(commit.target)
+            if isinstance(commit, pygit2.Tag):
+                commit = repo.get(commit.target)
 
-        # check for dangling commit
-        branches = [x for x in repo.branches.with_commit(commit.hex)]
-        if not branches:
-            raise exceptions.LookupException(None)(missing_commit_err)
+            # check for dangling commit
+            branches = [x for x in repo.branches.with_commit(commit.hex)]
+            if not branches:
+                raise exceptions.LookupException(None)(missing_commit_err)
 
-        commit_id = commit.hex
-        type_id = commit.type
+            commit_id = commit.hex
+            type_id = commit.type
 
-        return {
-            'id': commit_id,
-            'type': self._type_id_to_name(type_id),
-            'commit_id': commit_id,
-            'idx': 0
-        }
+            return {
+                'id': commit_id,
+                'type': self._type_id_to_name(type_id),
+                'commit_id': commit_id,
+                'idx': 0
+            }
 
     @reraise_safe_exceptions
     def get_refs(self, wire):
-        repo = self._factory.repo_libgit2(wire)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            result = {}
+            for ref in repo.references:
+                peeled_sha = repo.lookup_reference(ref).peel()
+                result[ref] = peeled_sha.hex
 
-        result = {}
-        for ref in repo.references:
-            peeled_sha = repo.lookup_reference(ref).peel()
-            result[ref] = peeled_sha.hex
-
-        return result
+            return result
 
     @reraise_safe_exceptions
     def head(self, wire, show_exc=True):
-        repo = self._factory.repo_libgit2(wire)
-        try:
-            return repo.head.peel().hex
-        except Exception:
-            if show_exc:
-                raise
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            try:
+                return repo.head.peel().hex
+            except Exception:
+                if show_exc:
+                    raise
 
     @reraise_safe_exceptions
     def init(self, wire):
@@ -663,71 +672,80 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def revision(self, wire, rev):
-        repo = self._factory.repo_libgit2(wire)
-        commit = repo[rev]
-        obj_data = {
-            'id': commit.id.hex,
-        }
-        # tree objects itself don't have tree_id attribute
-        if hasattr(commit, 'tree_id'):
-            obj_data['tree'] = commit.tree_id.hex
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            commit = repo[rev]
+            obj_data = {
+                'id': commit.id.hex,
+            }
+            # tree objects itself don't have tree_id attribute
+            if hasattr(commit, 'tree_id'):
+                obj_data['tree'] = commit.tree_id.hex
 
-        return obj_data
+            return obj_data
 
     @reraise_safe_exceptions
     def date(self, wire, rev):
-        repo = self._factory.repo_libgit2(wire)
-        commit = repo[rev]
-        # TODO(marcink): check dulwich difference of offset vs timezone
-        return [commit.commit_time, commit.commit_time_offset]
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            commit = repo[rev]
+            # TODO(marcink): check dulwich difference of offset vs timezone
+            return [commit.commit_time, commit.commit_time_offset]
 
     @reraise_safe_exceptions
     def author(self, wire, rev):
-        repo = self._factory.repo_libgit2(wire)
-        commit = repo[rev]
-        if commit.author.email:
-            return u"{} <{}>".format(commit.author.name, commit.author.email)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            commit = repo[rev]
+            if commit.author.email:
+                return u"{} <{}>".format(commit.author.name, commit.author.email)
 
-        return u"{}".format(commit.author.raw_name)
+            return u"{}".format(commit.author.raw_name)
 
     @reraise_safe_exceptions
     def message(self, wire, rev):
-        repo = self._factory.repo_libgit2(wire)
-        commit = repo[rev]
-        return commit.message
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            commit = repo[rev]
+            return commit.message
 
     @reraise_safe_exceptions
     def parents(self, wire, rev):
-        repo = self._factory.repo_libgit2(wire)
-        commit = repo[rev]
-        return [x.hex for x in commit.parent_ids]
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            commit = repo[rev]
+            return [x.hex for x in commit.parent_ids]
 
     @reraise_safe_exceptions
     def set_refs(self, wire, key, value):
-        repo = self._factory.repo_libgit2(wire)
-        repo.references.create(key, value, force=True)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            repo.references.create(key, value, force=True)
 
     @reraise_safe_exceptions
     def create_branch(self, wire, branch_name, commit_id, force=False):
-        repo = self._factory.repo_libgit2(wire)
-        commit = repo[commit_id]
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            commit = repo[commit_id]
 
-        if force:
-            repo.branches.local.create(branch_name, commit, force=force)
-        elif not repo.branches.get(branch_name):
-            # create only if that branch isn't existing
-            repo.branches.local.create(branch_name, commit, force=force)
+            if force:
+                repo.branches.local.create(branch_name, commit, force=force)
+            elif not repo.branches.get(branch_name):
+                # create only if that branch isn't existing
+                repo.branches.local.create(branch_name, commit, force=force)
 
     @reraise_safe_exceptions
     def remove_ref(self, wire, key):
-        repo = self._factory.repo_libgit2(wire)
-        repo.references.delete(key)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            repo.references.delete(key)
 
     @reraise_safe_exceptions
     def tag_remove(self, wire, tag_name):
-        repo = self._factory.repo_libgit2(wire)
-        key = 'refs/tags/{}'.format(tag_name)
-        repo.references.delete(key)
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            key = 'refs/tags/{}'.format(tag_name)
+            repo.references.delete(key)
 
     @reraise_safe_exceptions
     def tree_changes(self, wire, source_id, target_id):
