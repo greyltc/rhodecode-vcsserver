@@ -161,9 +161,16 @@ class GitRemote(object):
         repo = self._factory.repo_libgit2(wire)
 
         try:
-            return not repo.head.name
+            has_head = repo.head.name
+            if has_head:
+                return False
+
+            # NOTE(marcink): check again using more expensive method
+            return repo.is_empty
         except Exception:
-            return True
+            pass
+
+        return True
 
     @reraise_safe_exceptions
     def add_object(self, wire, content):
@@ -783,8 +790,6 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def get_all_commit_ids(self, wire):
-        if self.is_empty(wire):
-            return []
 
         cmd = ['rev-list', '--reverse', '--date-order', '--branches', '--tags']
         try:
