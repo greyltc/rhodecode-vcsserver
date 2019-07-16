@@ -352,8 +352,8 @@ class HTTPApplication(object):
                 pass
             args.insert(0, wire)
 
-        log.debug('method called:%s with kwargs:%s context_uid: %s',
-                  method, kwargs, context_uid)
+        log.debug('method called:%s with args:%s kwargs:%s context_uid: %s',
+                  method, args[1:], kwargs, context_uid)
 
         try:
             resp = getattr(remote, method)(*args, **kwargs)
