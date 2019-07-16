@@ -22,10 +22,19 @@ register_backend(
     "dogpile.cache.rc.memory_lru", "vcsserver.lib.rc_cache.backends",
     "LRUMemoryBackend")
 
+register_backend(
+    "dogpile.cache.rc.file_namespace", "vcsserver.lib.rc_cache.backends",
+    "FileNamespaceBackend")
+
+register_backend(
+    "dogpile.cache.rc.redis", "vcsserver.lib.rc_cache.backends",
+    "RedisPickleBackend")
+
+
 log = logging.getLogger(__name__)
 
 from . import region_meta
-from .util import key_generator, get_default_cache_settings, make_region
+from .utils import (get_default_cache_settings, key_generator, make_region)
 
 
 def configure_dogpile_cache(settings):

@@ -19,9 +19,11 @@ import os
 import logging
 import functools
 
-from vcsserver.utils import safe_str, sha1
 from dogpile.cache import CacheRegion
 from dogpile.cache.util import compat
+
+from vcsserver.utils import safe_str, sha1
+
 
 log = logging.getLogger(__name__)
 
@@ -92,6 +94,7 @@ class RhodeCodeCacheRegion(CacheRegion):
             decorate.get = get
             decorate.original = fn
             decorate.key_generator = key_generator
+            decorate.__wrapped__ = fn
 
             return decorate
 
@@ -110,7 +113,7 @@ def get_default_cache_settings(settings, prefixes=None):
             if key.startswith(prefix):
                 name = key.split(prefix)[1].strip()
                 val = settings[key]
-                if isinstance(val, basestring):
+                if isinstance(val, compat.string_types):
                     val = val.strip()
                 cache_settings[name] = val
     return cache_settings
