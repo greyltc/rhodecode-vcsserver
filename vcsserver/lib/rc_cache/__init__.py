@@ -30,6 +30,10 @@ register_backend(
     "dogpile.cache.rc.redis", "vcsserver.lib.rc_cache.backends",
     "RedisPickleBackend")
 
+register_backend(
+    "dogpile.cache.rc.redis_msgpack", "vcsserver.lib.rc_cache.backends",
+    "RedisMsgPackBackend")
+
 
 log = logging.getLogger(__name__)
 
