@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+
 import collections
 import logging
 import os
@@ -39,7 +40,7 @@ from dulwich.server import update_server_info
 
 from vcsserver import exceptions, settings, subprocessio
 from vcsserver.utils import safe_str
-from vcsserver.base import RepoFactory, obfuscate_qs, raise_from_original
+from vcsserver.base import RepoFactory, obfuscate_qs
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
 from vcsserver.git_lfs.lib import LFSOidStore
@@ -47,8 +48,17 @@ from vcsserver.git_lfs.lib import LFSOidStore
 DIR_STAT = stat.S_IFDIR
 FILE_MODE = stat.S_IFMT
 GIT_LINK = objects.S_IFGITLINK
+PEELED_REF_MARKER = '^{}'
+
 
 log = logging.getLogger(__name__)
+
+
+def str_to_dulwich(value):
+    """
+    Dulwich 0.10.1a requires `unicode` objects to be passed in.
+    """
+    return value.decode(settings.WIRE_ENCODING)
 
 
 def reraise_safe_exceptions(func):
@@ -111,19 +121,7 @@ class GitFactory(RepoFactory):
         """
         Get a repository instance for the given path.
         """
-        region = self._cache_region
-        context = wire.get('context', None)
-        repo_path = wire.get('path', '')
-        context_uid = '{}'.format(context)
-        cache = wire.get('cache', True)
-        cache_on = context and cache
-
-        @region.conditional_cache_on_arguments(condition=cache_on)
-        def create_new_repo(_repo_type, _repo_path, _context_uid, _use_libgit2):
-            return self._create_repo(wire, create, use_libgit2)
-
-        repo = create_new_repo(self.repo_type, repo_path, context_uid, use_libgit2)
-        return repo
+        return self._create_repo(wire, create, use_libgit2)
 
     def repo_libgit2(self, wire):
         return self.repo(wire, use_libgit2=True)
@@ -133,14 +131,15 @@ class GitRemote(object):
 
     def __init__(self, factory):
         self._factory = factory
-        self.peeled_ref_marker = '^{}'
         self._bulk_methods = {
             "date": self.date,
             "author": self.author,
+            "branch": self.branch,
             "message": self.message,
             "parents": self.parents,
             "_commit": self.revision,
         }
+        self.region = self._factory._cache_region
 
     def _wire_to_config(self, wire):
         if 'config' in wire:
@@ -155,6 +154,23 @@ class GitRemote(object):
         if ssl_cert_dir:
             params.extend(['-c', 'http.sslCAinfo={}'.format(ssl_cert_dir)])
         return params
+
+    def _cache_on(self, wire):
+        context = wire.get('context', '')
+        context_uid = '{}'.format(context)
+        repo_id = wire.get('repo_id', '')
+        cache = wire.get('cache', True)
+        cache_on = context and cache
+        return cache_on, context_uid, repo_id
+
+    @reraise_safe_exceptions
+    def discover_git_version(self):
+        stdout, _ = self.run_git_command(
+            {}, ['--version'], _bare=True, _safe=True)
+        prefix = 'git version'
+        if stdout.startswith(prefix):
+            stdout = stdout[len(prefix):]
+        return stdout.strip()
 
     @reraise_safe_exceptions
     def is_empty(self, wire):
@@ -184,17 +200,21 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def assert_correct_path(self, wire):
-        try:
-            repo_init = self._factory.repo_libgit2(wire)
-            with repo_init as repo:
-                pass
-        except pygit2.GitError:
-            path = wire.get('path')
-            tb = traceback.format_exc()
-            log.debug("Invalid Git path `%s`, tb: %s", path, tb)
-            return False
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _assert_correct_path(_context_uid, _repo_id):
+            try:
+                repo_init = self._factory.repo_libgit2(wire)
+                with repo_init as repo:
+                    pass
+            except pygit2.GitError:
+                path = wire.get('path')
+                tb = traceback.format_exc()
+                log.debug("Invalid Git path `%s`, tb: %s", path, tb)
+                return False
 
-        return True
+            return True
+        return _assert_correct_path(context_uid, repo_id)
 
     @reraise_safe_exceptions
     def bare(self, wire):
@@ -212,10 +232,16 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def blob_raw_length(self, wire, sha):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            blob = repo[sha]
-            return blob.size
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _blob_raw_length(_context_uid, _repo_id, _sha):
+
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                blob = repo[sha]
+                return blob.size
+
+        return _blob_raw_length(context_uid, repo_id, sha)
 
     def _parse_lfs_pointer(self, raw_content):
 
@@ -236,13 +262,19 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def is_large_file(self, wire, sha):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            blob = repo[sha]
-            if blob.is_binary:
-                return {}
 
-            return self._parse_lfs_pointer(blob.data)
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _is_large_file(_context_uid, _repo_id, _sha):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                blob = repo[sha]
+                if blob.is_binary:
+                    return {}
+
+                return self._parse_lfs_pointer(blob.data)
+
+        return _is_large_file(context_uid, repo_id, sha)
 
     @reraise_safe_exceptions
     def in_largefiles_store(self, wire, oid):
@@ -276,15 +308,21 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def bulk_request(self, wire, rev, pre_load):
-        result = {}
-        for attr in pre_load:
-            try:
-                method = self._bulk_methods[attr]
-                args = [wire, rev]
-                result[attr] = method(*args)
-            except KeyError as e:
-                raise exceptions.VcsException(e)("Unknown bulk attribute: %s" % attr)
-        return result
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _bulk_request(_context_uid, _repo_id, _rev, _pre_load):
+            result = {}
+            for attr in pre_load:
+                try:
+                    method = self._bulk_methods[attr]
+                    args = [wire, rev]
+                    result[attr] = method(*args)
+                except KeyError as e:
+                    raise exceptions.VcsException(e)(
+                        "Unknown bulk attribute: %s" % attr)
+            return result
+
+        return _bulk_request(context_uid, repo_id, rev, sorted(pre_load))
 
     def _build_opener(self, url):
         handlers = []
@@ -370,6 +408,34 @@ class GitRemote(object):
             repo["HEAD"] = remote_refs["HEAD"]
             index.build_index_from_tree(repo.path, repo.index_path(),
                                         repo.object_store, repo["HEAD"].tree)
+
+    @reraise_safe_exceptions
+    def branch(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        cache_on = False
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _branch(_context_uid, _repo_id, _commit_id):
+            regex = re.compile('^refs/heads')
+
+            def filter_with(ref):
+                return regex.match(ref[0]) and ref[1] == _commit_id
+
+            branches = filter(filter_with, self.get_refs(wire).items())
+            return [x[0].split('refs/heads/')[-1] for x in branches]
+
+        return _branch(context_uid, repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def commit_branches(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _commit_branches(_context_uid, _repo_id, _commit_id):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                branches = [x for x in repo.branches.with_commit(_commit_id)]
+                return branches
+
+        return _commit_branches(context_uid, repo_id, commit_id)
 
     # TODO: this is quite complex, check if that can be simplified
     @reraise_safe_exceptions
@@ -510,7 +576,7 @@ class GitRemote(object):
             # that contains a tag object, so that we would end up with
             # a peeled ref at this point.
             for k in remote_refs:
-                if k.endswith(self.peeled_ref_marker):
+                if k.endswith(PEELED_REF_MARKER):
                     log.debug("Skipping peeled reference %s", k)
                     continue
                 repo[k] = remote_refs[k]
@@ -547,7 +613,7 @@ class GitRemote(object):
             if ref in remote_refs:
                 # duplicate, skip
                 continue
-            if ref.endswith(self.peeled_ref_marker):
+            if ref.endswith(PEELED_REF_MARKER):
                 log.debug("Skipping peeled reference %s", ref)
                 continue
             # don't sync HEAD
@@ -579,7 +645,7 @@ class GitRemote(object):
         if not self.check_url(url, wire):
             return
         config = self._wire_to_config(wire)
-        repo = self._factory.repo(wire)
+        self._factory.repo(wire)
         self.run_git_command(
             wire, ['push', url, '--mirror'], fail_on_stderr=False,
             _copts=self._remote_conf(config),
@@ -612,53 +678,80 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def get_object(self, wire, sha):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
 
-            missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
-            try:
-                commit = repo.revparse_single(sha)
-            except (KeyError, ValueError) as e:
-                raise exceptions.LookupException(e)(missing_commit_err)
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_object(_context_uid, _repo_id, _sha):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
 
-            if isinstance(commit, pygit2.Tag):
-                commit = repo.get(commit.target)
+                missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
+                try:
+                    commit = repo.revparse_single(sha)
+                except (KeyError, ValueError) as e:
+                    raise exceptions.LookupException(e)(missing_commit_err)
 
-            # check for dangling commit
-            branches = [x for x in repo.branches.with_commit(commit.hex)]
-            if not branches:
-                raise exceptions.LookupException(None)(missing_commit_err)
+                if isinstance(commit, pygit2.Tag):
+                    commit = repo.get(commit.target)
 
-            commit_id = commit.hex
-            type_id = commit.type
+                # check for dangling commit
+                branches = [x for x in repo.branches.with_commit(commit.hex)]
+                if not branches:
+                    raise exceptions.LookupException(None)(missing_commit_err)
 
-            return {
-                'id': commit_id,
-                'type': self._type_id_to_name(type_id),
-                'commit_id': commit_id,
-                'idx': 0
-            }
+                commit_id = commit.hex
+                type_id = commit.type
+
+                return {
+                    'id': commit_id,
+                    'type': self._type_id_to_name(type_id),
+                    'commit_id': commit_id,
+                    'idx': 0
+                }
+
+        return _get_object(context_uid, repo_id, sha)
 
     @reraise_safe_exceptions
     def get_refs(self, wire):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            result = {}
-            for ref in repo.references:
-                peeled_sha = repo.lookup_reference(ref).peel()
-                result[ref] = peeled_sha.hex
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_refs(_context_uid, _repo_id):
 
-            return result
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                regex = re.compile('^refs/(heads|tags)/')
+                return {x.name: x.target.hex for x in
+                        filter(lambda ref: regex.match(ref.name) ,repo.listall_reference_objects())}
+
+        return _get_refs(context_uid, repo_id)
+
+    @reraise_safe_exceptions
+    def get_branch_pointers(self, wire):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_branch_pointers(_context_uid, _repo_id):
+
+            repo_init = self._factory.repo_libgit2(wire)
+            regex = re.compile('^refs/heads')
+            with repo_init as repo:
+                branches = filter(lambda ref: regex.match(ref.name), repo.listall_reference_objects())
+                return {x.target.hex: x.shorthand for x in branches}
+
+        return _get_branch_pointers(context_uid, repo_id)
 
     @reraise_safe_exceptions
     def head(self, wire, show_exc=True):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            try:
-                return repo.head.peel().hex
-            except Exception:
-                if show_exc:
-                    raise
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _head(_context_uid, _repo_id, _show_exc):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                try:
+                    return repo.head.peel().hex
+                except Exception:
+                    if show_exc:
+                        raise
+        return _head(context_uid, repo_id, show_exc)
 
     @reraise_safe_exceptions
     def init(self, wire):
@@ -672,17 +765,22 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def revision(self, wire, rev):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            commit = repo[rev]
-            obj_data = {
-                'id': commit.id.hex,
-            }
-            # tree objects itself don't have tree_id attribute
-            if hasattr(commit, 'tree_id'):
-                obj_data['tree'] = commit.tree_id.hex
 
-            return obj_data
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _revision(_context_uid, _repo_id, _rev):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                commit = repo[rev]
+                obj_data = {
+                    'id': commit.id.hex,
+                }
+                # tree objects itself don't have tree_id attribute
+                if hasattr(commit, 'tree_id'):
+                    obj_data['tree'] = commit.tree_id.hex
+
+                return obj_data
+        return _revision(context_uid, repo_id, rev)
 
     @reraise_safe_exceptions
     def date(self, wire, rev):
@@ -711,10 +809,14 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def parents(self, wire, rev):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            commit = repo[rev]
-            return [x.hex for x in commit.parent_ids]
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _parents(_context_uid, _repo_id, _rev):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                commit = repo[rev]
+                return [x.hex for x in commit.parent_ids]
+        return _parents(context_uid, repo_id, rev)
 
     @reraise_safe_exceptions
     def set_refs(self, wire, key, value):
@@ -758,39 +860,49 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def tree_and_type_for_path(self, wire, commit_id, path):
-        repo_init = self._factory.repo_libgit2(wire)
 
-        with repo_init as repo:
-            commit = repo[commit_id]
-            try:
-                tree = commit.tree[path]
-            except KeyError:
-                return None, None, None
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _tree_and_type_for_path(_context_uid, _repo_id, _commit_id, _path):
+            repo_init = self._factory.repo_libgit2(wire)
 
-            return tree.id.hex, tree.type, tree.filemode
+            with repo_init as repo:
+                commit = repo[commit_id]
+                try:
+                    tree = commit.tree[path]
+                except KeyError:
+                    return None, None, None
+
+                return tree.id.hex, tree.type, tree.filemode
+        return _tree_and_type_for_path(context_uid, repo_id, commit_id, path)
 
     @reraise_safe_exceptions
     def tree_items(self, wire, tree_id):
-        repo_init = self._factory.repo_libgit2(wire)
 
-        with repo_init as repo:
-            try:
-                tree = repo[tree_id]
-            except KeyError:
-                raise ObjectMissing('No tree with id: {}'.format(tree_id))
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _tree_items(_context_uid, _repo_id, _tree_id):
 
-            result = []
-            for item in tree:
-                item_sha = item.hex
-                item_mode = item.filemode
-                item_type = item.type
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                try:
+                    tree = repo[tree_id]
+                except KeyError:
+                    raise ObjectMissing('No tree with id: {}'.format(tree_id))
 
-                if item_type == 'commit':
-                    # NOTE(marcink): submodules we translate to 'link' for backward compat
-                    item_type = 'link'
+                result = []
+                for item in tree:
+                    item_sha = item.hex
+                    item_mode = item.filemode
+                    item_type = item.type
 
-                result.append((item.name, item_mode, item_sha, item_type))
-            return result
+                    if item_type == 'commit':
+                        # NOTE(marcink): submodules we translate to 'link' for backward compat
+                        item_type = 'link'
+
+                    result.append((item.name, item_mode, item_sha, item_type))
+                return result
+        return _tree_items(context_uid, repo_id, tree_id)
 
     @reraise_safe_exceptions
     def update_server_info(self, wire):
@@ -798,24 +910,20 @@ class GitRemote(object):
         update_server_info(repo)
 
     @reraise_safe_exceptions
-    def discover_git_version(self):
-        stdout, _ = self.run_git_command(
-            {}, ['--version'], _bare=True, _safe=True)
-        prefix = 'git version'
-        if stdout.startswith(prefix):
-            stdout = stdout[len(prefix):]
-        return stdout.strip()
-
-    @reraise_safe_exceptions
     def get_all_commit_ids(self, wire):
 
-        cmd = ['rev-list', '--reverse', '--date-order', '--branches', '--tags']
-        try:
-            output, __ = self.run_git_command(wire, cmd)
-            return output.splitlines()
-        except Exception:
-            # Can be raised for empty repositories
-            return []
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_all_commit_ids(_context_uid, _repo_id):
+
+            cmd = ['rev-list', '--reverse', '--date-order', '--branches', '--tags']
+            try:
+                output, __ = self.run_git_command(wire, cmd)
+                return output.splitlines()
+            except Exception:
+                # Can be raised for empty repositories
+                return []
+        return _get_all_commit_ids(context_uid, repo_id)
 
     @reraise_safe_exceptions
     def run_git_command(self, wire, cmd, **opts):
@@ -870,22 +978,17 @@ class GitRemote(object):
     @reraise_safe_exceptions
     def install_hooks(self, wire, force=False):
         from vcsserver.hook_utils import install_git_hooks
-        repo = self._factory.repo(wire)
-        return install_git_hooks(repo.path, repo.bare, force_create=force)
+        bare = self.bare(wire)
+        path = wire['path']
+        return install_git_hooks(path, bare, force_create=force)
 
     @reraise_safe_exceptions
     def get_hooks_info(self, wire):
         from vcsserver.hook_utils import (
             get_git_pre_hook_version, get_git_post_hook_version)
-        repo = self._factory.repo(wire)
+        bare = self.bare(wire)
+        path = wire['path']
         return {
-            'pre_version': get_git_pre_hook_version(repo.path, repo.bare),
-            'post_version': get_git_post_hook_version(repo.path, repo.bare),
+            'pre_version': get_git_pre_hook_version(path, bare),
+            'post_version': get_git_post_hook_version(path, bare),
         }
-
-
-def str_to_dulwich(value):
-    """
-    Dulwich 0.10.1a requires `unicode` objects to be passed in.
-    """
-    return value.decode(settings.WIRE_ENCODING)

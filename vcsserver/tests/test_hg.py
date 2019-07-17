@@ -26,36 +26,17 @@ from mock import Mock, MagicMock, patch
 from vcsserver import exceptions, hg, hgcompat
 
 
-class TestHGLookup(object):
-    def setup(self):
-        self.mock_repo = MagicMock()
-        self.mock_repo.__getitem__.side_effect = LookupError(
-            'revision_or_commit_id', 'index', 'message')
-        factory = Mock()
-        factory.repo = Mock(return_value=self.mock_repo)
-        self.remote_hg = hg.HgRemote(factory)
-
-    def test_fail_lookup_hg(self):
-        with pytest.raises(Exception) as exc_info:
-            self.remote_hg.lookup(
-                wire=None, revision='revision_or_commit_id', both=True)
-
-        assert exc_info.value._vcs_kind == 'lookup'
-        assert 'revision_or_commit_id' in exc_info.value.args
-
-
 class TestDiff(object):
     def test_raising_safe_exception_when_lookup_failed(self):
-        repo = Mock()
+
         factory = Mock()
-        factory.repo = Mock(return_value=repo)
         hg_remote = hg.HgRemote(factory)
         with patch('mercurial.patch.diff') as diff_mock:
             diff_mock.side_effect = LookupError(
                 'deadbeef', 'index', 'message')
             with pytest.raises(Exception) as exc_info:
                 hg_remote.diff(
-                    wire=None, rev1='deadbeef', rev2='deadbee1',
+                    wire={}, rev1='deadbeef', rev2='deadbee1',
                     file_filter=None, opt_git=True, opt_ignorews=True,
                     context=3)
             assert type(exc_info.value) == Exception
