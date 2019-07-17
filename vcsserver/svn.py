@@ -98,19 +98,7 @@ class SubversionFactory(RepoFactory):
         """
         Get a repository instance for the given path.
         """
-        region = self._cache_region
-        context = wire.get('context', None)
-        repo_path = wire.get('path', '')
-        context_uid = '{}'.format(context)
-        cache = wire.get('cache', True)
-        cache_on = context and cache
-
-        @region.conditional_cache_on_arguments(condition=cache_on)
-        def create_new_repo(_repo_type, _repo_path, _context_uid, compatible_version_id):
-            return self._create_repo(wire, create, compatible_version)
-
-        return create_new_repo(self.repo_type, repo_path, context_uid,
-                               compatible_version)
+        return self._create_repo(wire, create, compatible_version)
 
 
 NODE_TYPE_MAPPING = {
@@ -126,6 +114,15 @@ class SvnRemote(object):
         # TODO: Remove once we do not use internal Mercurial objects anymore
         # for subversion
         self._hg_factory = hg_factory
+        self.region = self._factory._cache_region
+
+    def _cache_on(self, wire):
+        context = wire.get('context', '')
+        context_uid = '{}'.format(context)
+        repo_id = wire.get('repo_id', '')
+        cache = wire.get('cache', True)
+        cache_on = context and cache
+        return cache_on, context_uid, repo_id
 
     @reraise_safe_exceptions
     def discover_svn_version(self):
@@ -138,7 +135,6 @@ class SvnRemote(object):
 
     @reraise_safe_exceptions
     def is_empty(self, wire):
-        repo = self._factory.repo(wire)
 
         try:
             return self.lookup(wire, -1) == 0
@@ -216,9 +212,14 @@ class SvnRemote(object):
         return start_rev, end_rev
 
     def revision_properties(self, wire, revision):
-        repo = self._factory.repo(wire)
-        fs_ptr = svn.repos.fs(repo)
-        return svn.fs.revision_proplist(fs_ptr, revision)
+
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _revision_properties(_context_uid, _repo_id, _revision):
+            repo = self._factory.repo(wire)
+            fs_ptr = svn.repos.fs(repo)
+            return svn.fs.revision_proplist(fs_ptr, revision)
+        return _revision_properties(context_uid, repo_id, revision)
 
     def revision_changes(self, wire, revision):
 
@@ -264,22 +265,27 @@ class SvnRemote(object):
         }
         return changes
 
+    @reraise_safe_exceptions
     def node_history(self, wire, path, revision, limit):
-        cross_copies = False
-        repo = self._factory.repo(wire)
-        fsobj = svn.repos.fs(repo)
-        rev_root = svn.fs.revision_root(fsobj, revision)
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _assert_correct_path(_context_uid, _repo_id, _path, _revision, _limit):
+            cross_copies = False
+            repo = self._factory.repo(wire)
+            fsobj = svn.repos.fs(repo)
+            rev_root = svn.fs.revision_root(fsobj, revision)
 
-        history_revisions = []
-        history = svn.fs.node_history(rev_root, path)
-        history = svn.fs.history_prev(history, cross_copies)
-        while history:
-            __, node_revision = svn.fs.history_location(history)
-            history_revisions.append(node_revision)
-            if limit and len(history_revisions) >= limit:
-                break
+            history_revisions = []
+            history = svn.fs.node_history(rev_root, path)
             history = svn.fs.history_prev(history, cross_copies)
-        return history_revisions
+            while history:
+                __, node_revision = svn.fs.history_location(history)
+                history_revisions.append(node_revision)
+                if limit and len(history_revisions) >= limit:
+                    break
+                history = svn.fs.history_prev(history, cross_copies)
+            return history_revisions
+        return _assert_correct_path(context_uid, repo_id, path, revision, limit)
 
     def node_properties(self, wire, path, revision):
         repo = self._factory.repo(wire)
@@ -314,27 +320,37 @@ class SvnRemote(object):
 
         return annotations
 
-    def get_node_type(self, wire, path, rev=None):
-        repo = self._factory.repo(wire)
-        fs_ptr = svn.repos.fs(repo)
-        if rev is None:
-            rev = svn.fs.youngest_rev(fs_ptr)
-        root = svn.fs.revision_root(fs_ptr, rev)
-        node = svn.fs.check_path(root, path)
-        return NODE_TYPE_MAPPING.get(node, None)
+    def get_node_type(self, wire, path, revision=None):
+
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_node_type(_context_uid, _repo_id, _path, _revision):
+            repo = self._factory.repo(wire)
+            fs_ptr = svn.repos.fs(repo)
+            if _revision is None:
+                _revision = svn.fs.youngest_rev(fs_ptr)
+            root = svn.fs.revision_root(fs_ptr, _revision)
+            node = svn.fs.check_path(root, path)
+            return NODE_TYPE_MAPPING.get(node, None)
+        return _get_node_type(context_uid, repo_id, path, revision)
 
     def get_nodes(self, wire, path, revision=None):
-        repo = self._factory.repo(wire)
-        fsobj = svn.repos.fs(repo)
-        if revision is None:
-            revision = svn.fs.youngest_rev(fsobj)
-        root = svn.fs.revision_root(fsobj, revision)
-        entries = svn.fs.dir_entries(root, path)
-        result = []
-        for entry_path, entry_info in entries.iteritems():
-            result.append(
-                (entry_path, NODE_TYPE_MAPPING.get(entry_info.kind, None)))
-        return result
+
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_nodes(_context_uid, _repo_id, _path, _revision):
+            repo = self._factory.repo(wire)
+            fsobj = svn.repos.fs(repo)
+            if _revision is None:
+                _revision = svn.fs.youngest_rev(fsobj)
+            root = svn.fs.revision_root(fsobj, _revision)
+            entries = svn.fs.dir_entries(root, path)
+            result = []
+            for entry_path, entry_info in entries.iteritems():
+                result.append(
+                    (entry_path, NODE_TYPE_MAPPING.get(entry_info.kind, None)))
+            return result
+        return _get_nodes(context_uid, repo_id, path, revision)
 
     def get_file_content(self, wire, path, rev=None):
         repo = self._factory.repo(wire)
@@ -346,13 +362,18 @@ class SvnRemote(object):
         return content.read()
 
     def get_file_size(self, wire, path, revision=None):
-        repo = self._factory.repo(wire)
-        fsobj = svn.repos.fs(repo)
-        if revision is None:
-            revision = svn.fs.youngest_revision(fsobj)
-        root = svn.fs.revision_root(fsobj, revision)
-        size = svn.fs.file_length(root, path)
-        return size
+
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _get_file_size(_context_uid, _repo_id, _path, _revision):
+            repo = self._factory.repo(wire)
+            fsobj = svn.repos.fs(repo)
+            if _revision is None:
+                _revision = svn.fs.youngest_revision(fsobj)
+            root = svn.fs.revision_root(fsobj, _revision)
+            size = svn.fs.file_length(root, path)
+            return size
+        return _get_file_size(context_uid, repo_id, path, revision)
 
     def create_repository(self, wire, compatible_version=None):
         log.info('Creating Subversion repository in path "%s"', wire['path'])

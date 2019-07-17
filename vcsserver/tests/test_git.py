@@ -61,7 +61,7 @@ class TestGitFetch(object):
 
         with patch('dulwich.client.LocalGitClient.fetch') as mock_fetch:
             mock_fetch.side_effect = side_effect
-            self.remote_git.pull(wire=None, url='/tmp/', apply_refs=False)
+            self.remote_git.pull(wire={}, url='/tmp/', apply_refs=False)
             determine_wants = self.mock_repo.object_store.determine_wants_all
             determine_wants.assert_called_once_with(SAMPLE_REFS)
 
@@ -79,7 +79,7 @@ class TestGitFetch(object):
         with patch('dulwich.client.LocalGitClient.fetch') as mock_fetch:
             mock_fetch.side_effect = side_effect
             self.remote_git.pull(
-                wire=None, url='/tmp/', apply_refs=False,
+                wire={}, url='/tmp/', apply_refs=False,
                 refs=selected_refs.keys())
             determine_wants = self.mock_repo.object_store.determine_wants_all
             assert determine_wants.call_count == 0
@@ -95,7 +95,7 @@ class TestGitFetch(object):
 
         with patch('vcsserver.git.Repo', create=False) as mock_repo:
             mock_repo().get_refs.return_value = sample_refs
-            remote_refs = remote_git.get_remote_refs(wire=None, url=url)
+            remote_refs = remote_git.get_remote_refs(wire={}, url=url)
             mock_repo().get_refs.assert_called_once_with()
             assert remote_refs == sample_refs
 
