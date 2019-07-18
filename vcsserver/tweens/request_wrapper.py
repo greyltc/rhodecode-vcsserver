@@ -32,6 +32,10 @@ def get_access_path(request):
     return environ.get('PATH_INFO')
 
 
+def get_user_agent(environ):
+    return environ.get('HTTP_USER_AGENT')
+
+
 class RequestWrapperTween(object):
     def __init__(self, handler, registry):
         self.handler = handler
@@ -45,14 +49,16 @@ class RequestWrapperTween(object):
             response = self.handler(request)
         finally:
             end = time.time()
-
-            log.info('IP: %s Request to path: `%s` time: %.4fs',
-                     '127.0.0.1', safe_str(get_access_path(request)), end - start)
+            total = end - start
+            log.info(
+                'IP: %s %s Request to %s time: %.4fs [%s]',
+                '127.0.0.1', request.environ.get('REQUEST_METHOD'),
+                safe_str(get_access_path(request)), total, get_user_agent(request.environ))
 
         return response
 
 
 def includeme(config):
     config.add_tween(
-        'vcsserver.tweens.RequestWrapperTween',
+        'vcsserver.tweens.request_wrapper.RequestWrapperTween',
     )
