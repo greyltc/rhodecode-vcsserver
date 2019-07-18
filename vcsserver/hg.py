@@ -385,22 +385,34 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def ctx_phase(self, wire, revision):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        # public=0, draft=1, secret=3
-        return ctx.phase()
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _ctx_phase(_context_uid, _repo_path, _revision):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            # public=0, draft=1, secret=3
+            return ctx.phase()
+        return _ctx_phase(context_uid, repo_id, revision)
 
     @reraise_safe_exceptions
     def ctx_obsolete(self, wire, revision):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        return ctx.obsolete()
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _ctx_obsolete(_context_uid, _repo_path, _revision):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            return ctx.obsolete()
+        return _ctx_obsolete(context_uid, repo_id, revision)
 
     @reraise_safe_exceptions
     def ctx_hidden(self, wire, revision):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        return ctx.hidden()
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _ctx_hidden(_context_uid, _repo_path, _revision):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            return ctx.hidden()
+        return _ctx_hidden(context_uid, repo_id, revision)
 
     @reraise_safe_exceptions
     def ctx_substate(self, wire, revision):
@@ -507,42 +519,52 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def node_history(self, wire, revision, path, limit):
-        repo = self._factory.repo(wire)
 
-        ctx = self._get_ctx(repo, revision)
-        fctx = ctx.filectx(path)
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _node_history(_context_uid, _repo_path, _revision, _path, _limit):
+            repo = self._factory.repo(wire)
 
-        def history_iter():
-            limit_rev = fctx.rev()
-            for obj in reversed(list(fctx.filelog())):
-                obj = fctx.filectx(obj)
-                ctx = obj.changectx()
-                if ctx.hidden() or ctx.obsolete():
-                    continue
+            ctx = self._get_ctx(repo, revision)
+            fctx = ctx.filectx(path)
 
-                if limit_rev >= obj.rev():
-                    yield obj
+            def history_iter():
+                limit_rev = fctx.rev()
+                for obj in reversed(list(fctx.filelog())):
+                    obj = fctx.filectx(obj)
+                    ctx = obj.changectx()
+                    if ctx.hidden() or ctx.obsolete():
+                        continue
 
-        history = []
-        for cnt, obj in enumerate(history_iter()):
-            if limit and cnt >= limit:
-                break
-            history.append(hex(obj.node()))
+                    if limit_rev >= obj.rev():
+                        yield obj
 
-        return [x for x in history]
+            history = []
+            for cnt, obj in enumerate(history_iter()):
+                if limit and cnt >= limit:
+                    break
+                history.append(hex(obj.node()))
+
+            return [x for x in history]
+        return _node_history(context_uid, repo_id, revision, path, limit)
 
     @reraise_safe_exceptions
     def node_history_untill(self, wire, revision, path, limit):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        fctx = ctx.filectx(path)
 
-        file_log = list(fctx.filelog())
-        if limit:
-            # Limit to the last n items
-            file_log = file_log[-limit:]
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _meth(_context_uid, _repo_path):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            fctx = ctx.filectx(path)
 
-        return [hex(fctx.filectx(cs).node()) for cs in reversed(file_log)]
+            file_log = list(fctx.filelog())
+            if limit:
+                # Limit to the last n items
+                file_log = file_log[-limit:]
+
+            return [hex(fctx.filectx(cs).node()) for cs in reversed(file_log)]
+        return _meth(context_uid, repo_id, revision, path, limit)
 
     @reraise_safe_exceptions
     def fctx_annotate(self, wire, revision, path):
@@ -567,17 +589,27 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def fctx_flags(self, wire, revision, path):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        fctx = ctx.filectx(path)
-        return fctx.flags()
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _fctx_flags(_context_uid, _repo_path, _revision, _path):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            fctx = ctx.filectx(path)
+            return fctx.flags()
+
+        return _fctx_flags(context_uid, repo_id, revision, path)
 
     @reraise_safe_exceptions
     def fctx_size(self, wire, revision, path):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        fctx = ctx.filectx(path)
-        return fctx.size()
+
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _fctx_size(_context_uid, _repo_path, _revision, _path):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            fctx = ctx.filectx(path)
+            return fctx.size()
+        return _fctx_size(context_uid, repo_id, revision, path)
 
     @reraise_safe_exceptions
     def get_all_commit_ids(self, wire, name):
