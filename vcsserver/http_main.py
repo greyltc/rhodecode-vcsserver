@@ -329,7 +329,7 @@ class HTTPApplication(object):
         self.config.add_view(self.handle_vcs_exception, context=Exception)
 
         self.config.add_tween(
-            'vcsserver.tweens.RequestWrapperTween',
+            'vcsserver.tweens.request_wrapper.RequestWrapperTween',
         )
 
     def wsgi_app(self):
