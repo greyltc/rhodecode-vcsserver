@@ -232,8 +232,8 @@ class HTTPApplication(object):
         self.global_config = global_config
         self.config.include('vcsserver.lib.rc_cache')
 
-        locale = settings.get('locale', '') or 'en_US.UTF-8'
-        vcs = VCS(locale=locale, cache_config=settings)
+        settings_locale = settings.get('locale', '') or 'en_US.UTF-8'
+        vcs = VCS(locale=settings_locale, cache_config=settings)
         self._remotes = {
             'hg': vcs._hg_remote,
             'git': vcs._git_remote,
@@ -444,14 +444,13 @@ class HTTPApplication(object):
 
     def _msgpack_renderer_factory(self, info):
         def _render(value, system):
-            value = msgpack.packb(value)
             request = system.get('request')
             if request is not None:
                 response = request.response
                 ct = response.content_type
                 if ct == response.default_content_type:
                     response.content_type = 'application/x-msgpack'
-            return value
+            return msgpack.packb(value)
         return _render
 
     def set_env_from_config(self, environ, config):
