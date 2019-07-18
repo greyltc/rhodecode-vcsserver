@@ -352,8 +352,17 @@ class HTTPApplication(object):
                 pass
             args.insert(0, wire)
 
-        log.debug('method called:%s with args:%s kwargs:%s context_uid: %s',
-                  method, args[1:], kwargs, context_uid)
+        # NOTE(marcink): trading complexity for slight performance
+        if log.isEnabledFor(logging.DEBUG):
+            no_args_methods = [
+                'archive_repo'
+            ]
+            if method in no_args_methods:
+                call_args = ''
+            else:
+                call_args = args[1:]
+            log.debug('method called:%s with args:%s kwargs:%s context_uid: %s',
+                      method, call_args, kwargs, context_uid)
 
         try:
             resp = getattr(remote, method)(*args, **kwargs)
