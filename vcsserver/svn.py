@@ -215,11 +215,11 @@ class SvnRemote(object):
 
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _revision_properties(_context_uid, _repo_id, _revision):
+        def _revision_properties(_repo_id, _revision):
             repo = self._factory.repo(wire)
             fs_ptr = svn.repos.fs(repo)
             return svn.fs.revision_proplist(fs_ptr, revision)
-        return _revision_properties(context_uid, repo_id, revision)
+        return _revision_properties(repo_id, revision)
 
     def revision_changes(self, wire, revision):
 
@@ -288,10 +288,14 @@ class SvnRemote(object):
         return _assert_correct_path(context_uid, repo_id, path, revision, limit)
 
     def node_properties(self, wire, path, revision):
-        repo = self._factory.repo(wire)
-        fsobj = svn.repos.fs(repo)
-        rev_root = svn.fs.revision_root(fsobj, revision)
-        return svn.fs.node_proplist(rev_root, path)
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _node_properties(_repo_id, _path, _revision):
+            repo = self._factory.repo(wire)
+            fsobj = svn.repos.fs(repo)
+            rev_root = svn.fs.revision_root(fsobj, revision)
+            return svn.fs.node_proplist(rev_root, path)
+        return _node_properties(repo_id, path, revision)
 
     def file_annotate(self, wire, path, revision):
         abs_path = 'file://' + urllib.pathname2url(
@@ -324,7 +328,7 @@ class SvnRemote(object):
 
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _get_node_type(_context_uid, _repo_id, _path, _revision):
+        def _get_node_type(_repo_id, _path, _revision):
             repo = self._factory.repo(wire)
             fs_ptr = svn.repos.fs(repo)
             if _revision is None:
@@ -332,13 +336,13 @@ class SvnRemote(object):
             root = svn.fs.revision_root(fs_ptr, _revision)
             node = svn.fs.check_path(root, path)
             return NODE_TYPE_MAPPING.get(node, None)
-        return _get_node_type(context_uid, repo_id, path, revision)
+        return _get_node_type(repo_id, path, revision)
 
     def get_nodes(self, wire, path, revision=None):
 
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _get_nodes(_context_uid, _repo_id, _path, _revision):
+        def _get_nodes(_repo_id, _path, _revision):
             repo = self._factory.repo(wire)
             fsobj = svn.repos.fs(repo)
             if _revision is None:
@@ -350,7 +354,7 @@ class SvnRemote(object):
                 result.append(
                     (entry_path, NODE_TYPE_MAPPING.get(entry_info.kind, None)))
             return result
-        return _get_nodes(context_uid, repo_id, path, revision)
+        return _get_nodes(repo_id, path, revision)
 
     def get_file_content(self, wire, path, rev=None):
         repo = self._factory.repo(wire)
@@ -365,7 +369,7 @@ class SvnRemote(object):
 
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _get_file_size(_context_uid, _repo_id, _path, _revision):
+        def _get_file_size(_repo_id, _path, _revision):
             repo = self._factory.repo(wire)
             fsobj = svn.repos.fs(repo)
             if _revision is None:
@@ -373,7 +377,7 @@ class SvnRemote(object):
             root = svn.fs.revision_root(fsobj, _revision)
             size = svn.fs.file_length(root, path)
             return size
-        return _get_file_size(context_uid, repo_id, path, revision)
+        return _get_file_size(repo_id, path, revision)
 
     def create_repository(self, wire, compatible_version=None):
         log.info('Creating Subversion repository in path "%s"', wire['path'])
@@ -689,7 +693,6 @@ class SvnDiffer(object):
         content = svn.core.Stream(
             svn.fs.file_contents(fs_root, node_path)).read()
         return content.splitlines(True)
-
 
 
 class DiffChangeEditor(svn.delta.Editor):
