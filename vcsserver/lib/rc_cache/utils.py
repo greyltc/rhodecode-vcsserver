@@ -60,6 +60,7 @@ class RhodeCodeCacheRegion(CacheRegion):
 
                 @functools.wraps(fn)
                 def creator():
+                    log.debug('Calling cached fn:%s', fn)
                     return fn(*arg, **kw)
 
                 if not condition:
