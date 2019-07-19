@@ -36,7 +36,7 @@ class TestDiff(object):
                 'deadbeef', 'index', 'message')
             with pytest.raises(Exception) as exc_info:
                 hg_remote.diff(
-                    wire={}, rev1='deadbeef', rev2='deadbee1',
+                    wire={}, commit_id_1='deadbeef', commit_id_2='deadbee1',
                     file_filter=None, opt_git=True, opt_ignorews=True,
                     context=3)
             assert type(exc_info.value) == Exception

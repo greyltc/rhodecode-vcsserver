@@ -241,99 +241,41 @@ class HgRemote(object):
         return _branches(context_uid, repo_id, normal, closed)
 
     @reraise_safe_exceptions
-    def bulk_request(self, wire, rev, pre_load):
+    def bulk_request(self, wire, commit_id, pre_load):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _bulk_request(_context_uid, _repo_id, _rev, _pre_load):
+        def _bulk_request(_repo_id, _commit_id, _pre_load):
             result = {}
             for attr in pre_load:
                 try:
                     method = self._bulk_methods[attr]
-                    result[attr] = method(wire, rev)
+                    result[attr] = method(wire, commit_id)
                 except KeyError as e:
                     raise exceptions.VcsException(e)(
                         'Unknown bulk attribute: "%s"' % attr)
             return result
 
-        return _bulk_request(context_uid, repo_id, rev, sorted(pre_load))
+        return _bulk_request(repo_id, commit_id, sorted(pre_load))
 
     @reraise_safe_exceptions
-    def clone(self, wire, source, dest, update_after_clone=False, hooks=True):
-        baseui = self._factory._create_config(wire["config"], hooks=hooks)
-        clone(baseui, source, dest, noupdate=not update_after_clone)
-
-    @reraise_safe_exceptions
-    def commitctx(self, wire, message, parents, commit_time, commit_timezone,
-                  user, files, extra, removed, updated):
-
-        repo = self._factory.repo(wire)
-        baseui = self._factory._create_config(wire['config'])
-        publishing = baseui.configbool('phases', 'publish')
-        if publishing:
-            new_commit = 'public'
-        else:
-            new_commit = 'draft'
-
-        def _filectxfn(_repo, ctx, path):
-            """
-            Marks given path as added/changed/removed in a given _repo. This is
-            for internal mercurial commit function.
-            """
-
-            # check if this path is removed
-            if path in removed:
-                # returning None is a way to mark node for removal
-                return None
-
-            # check if this path is added
-            for node in updated:
-                if node['path'] == path:
-                    return memfilectx(
-                        _repo,
-                        changectx=ctx,
-                        path=node['path'],
-                        data=node['content'],
-                        islink=False,
-                        isexec=bool(node['mode'] & stat.S_IXUSR),
-                        copysource=False)
-
-            raise exceptions.AbortException()(
-                "Given path haven't been marked as added, "
-                "changed or removed (%s)" % path)
-
-        with repo.ui.configoverride({('phases', 'new-commit'): new_commit}):
-
-            commit_ctx = memctx(
-                repo=repo,
-                parents=parents,
-                text=message,
-                files=files,
-                filectxfn=_filectxfn,
-                user=user,
-                date=(commit_time, commit_timezone),
-                extra=extra)
-
-            n = repo.commitctx(commit_ctx)
-            new_id = hex(n)
-
-            return new_id
-
-    @reraise_safe_exceptions
-    def ctx_branch(self, wire, revision):
-
+    def ctx_branch(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_branch(_context_uid, _repo_id, _revision):
+        def _ctx_branch(_repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             return ctx.branch()
-        return _ctx_branch(context_uid, repo_id, revision)
+        return _ctx_branch(repo_id, commit_id)
 
     @reraise_safe_exceptions
-    def ctx_date(self, wire, revision):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        return ctx.date()
+    def ctx_date(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _ctx_date(_repo_id, _commit_id):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, commit_id)
+            return ctx.date()
+        return _ctx_date(repo_id, commit_id)
 
     @reraise_safe_exceptions
     def ctx_description(self, wire, revision):
@@ -342,16 +284,15 @@ class HgRemote(object):
         return ctx.description()
 
     @reraise_safe_exceptions
-    def ctx_files(self, wire, revision):
-
+    def ctx_files(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_files(_context_uid, _repo_id, _revision):
+        def _ctx_files(_repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             return ctx.files()
 
-        return _ctx_files(context_uid, repo_id, revision)
+        return _ctx_files(repo_id, commit_id)
 
     @reraise_safe_exceptions
     def ctx_list(self, path, revision):
@@ -360,59 +301,59 @@ class HgRemote(object):
         return list(ctx)
 
     @reraise_safe_exceptions
-    def ctx_parents(self, wire, revision):
+    def ctx_parents(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_parents(_context_uid, _repo_id, _revision):
+        def _ctx_parents(_repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             return [parent.rev() for parent in ctx.parents()
                     if not (parent.hidden() or parent.obsolete())]
 
-        return _ctx_parents(context_uid, repo_id, revision)
+        return _ctx_parents(repo_id, commit_id)
 
     @reraise_safe_exceptions
-    def ctx_children(self, wire, revision):
+    def ctx_children(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_children(_context_uid, _repo_id, _revision):
+        def _ctx_children(_repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             return [child.rev() for child in ctx.children()
                     if not (child.hidden() or child.obsolete())]
 
-        return _ctx_children(context_uid, repo_id, revision)
+        return _ctx_children(repo_id, commit_id)
 
     @reraise_safe_exceptions
-    def ctx_phase(self, wire, revision):
+    def ctx_phase(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_phase(_context_uid, _repo_path, _revision):
+        def _ctx_phase(_context_uid, _repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             # public=0, draft=1, secret=3
             return ctx.phase()
-        return _ctx_phase(context_uid, repo_id, revision)
+        return _ctx_phase(context_uid, repo_id, commit_id)
 
     @reraise_safe_exceptions
-    def ctx_obsolete(self, wire, revision):
+    def ctx_obsolete(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_obsolete(_context_uid, _repo_path, _revision):
+        def _ctx_obsolete(_context_uid, _repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             return ctx.obsolete()
-        return _ctx_obsolete(context_uid, repo_id, revision)
+        return _ctx_obsolete(context_uid, repo_id, commit_id)
 
     @reraise_safe_exceptions
-    def ctx_hidden(self, wire, revision):
+    def ctx_hidden(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _ctx_hidden(_context_uid, _repo_path, _revision):
+        def _ctx_hidden(_context_uid, _repo_id, _commit_id):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             return ctx.hidden()
-        return _ctx_hidden(context_uid, repo_id, revision)
+        return _ctx_hidden(context_uid, repo_id, commit_id)
 
     @reraise_safe_exceptions
     def ctx_substate(self, wire, revision):
@@ -502,7 +443,7 @@ class HgRemote(object):
         return True
 
     @reraise_safe_exceptions
-    def diff(self, wire, rev1, rev2, file_filter, opt_git, opt_ignorews, context):
+    def diff(self, wire, commit_id_1, commit_id_2, file_filter, opt_git, opt_ignorews, context):
         repo = self._factory.repo(wire)
 
         if file_filter:
@@ -513,16 +454,15 @@ class HgRemote(object):
 
         try:
             return "".join(patch.diff(
-                repo, node1=rev1, node2=rev2, match=match_filter, opts=opts))
+                repo, node1=commit_id_1, node2=commit_id_2, match=match_filter, opts=opts))
         except RepoLookupError as e:
             raise exceptions.LookupException(e)()
 
     @reraise_safe_exceptions
     def node_history(self, wire, revision, path, limit):
-
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _node_history(_context_uid, _repo_path, _revision, _path, _limit):
+        def _node_history(_context_uid, _repo_id, _revision, _path, _limit):
             repo = self._factory.repo(wire)
 
             ctx = self._get_ctx(repo, revision)
@@ -550,10 +490,9 @@ class HgRemote(object):
 
     @reraise_safe_exceptions
     def node_history_untill(self, wire, revision, path, limit):
-
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _meth(_context_uid, _repo_path):
+        def _node_history_until(_context_uid, _repo_id):
             repo = self._factory.repo(wire)
             ctx = self._get_ctx(repo, revision)
             fctx = ctx.filectx(path)
@@ -564,7 +503,7 @@ class HgRemote(object):
                 file_log = file_log[-limit:]
 
             return [hex(fctx.filectx(cs).node()) for cs in reversed(file_log)]
-        return _meth(context_uid, repo_id, revision, path, limit)
+        return _node_history_until(context_uid, repo_id, revision, path, limit)
 
     @reraise_safe_exceptions
     def fctx_annotate(self, wire, revision, path):
@@ -588,28 +527,27 @@ class HgRemote(object):
         return fctx.data()
 
     @reraise_safe_exceptions
-    def fctx_flags(self, wire, revision, path):
+    def fctx_flags(self, wire, commit_id, path):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _fctx_flags(_context_uid, _repo_path, _revision, _path):
+        def _fctx_flags(_repo_id, _commit_id, _path):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             fctx = ctx.filectx(path)
             return fctx.flags()
 
-        return _fctx_flags(context_uid, repo_id, revision, path)
+        return _fctx_flags(repo_id, commit_id, path)
 
     @reraise_safe_exceptions
-    def fctx_size(self, wire, revision, path):
-
+    def fctx_size(self, wire, commit_id, path):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _fctx_size(_context_uid, _repo_path, _revision, _path):
+        def _fctx_size(_repo_id, _revision, _path):
             repo = self._factory.repo(wire)
-            ctx = self._get_ctx(repo, revision)
+            ctx = self._get_ctx(repo, commit_id)
             fctx = ctx.filectx(path)
             return fctx.size()
-        return _fctx_size(context_uid, repo_id, revision, path)
+        return _fctx_size(repo_id, commit_id, path)
 
     @reraise_safe_exceptions
     def get_all_commit_ids(self, wire, name):
@@ -626,16 +564,6 @@ class HgRemote(object):
     def get_config_value(self, wire, section, name, untrusted=False):
         repo = self._factory.repo(wire)
         return repo.ui.config(section, name, untrusted=untrusted)
-
-    @reraise_safe_exceptions
-    def get_config_bool(self, wire, section, name, untrusted=False):
-        repo = self._factory.repo(wire)
-        return repo.ui.configbool(section, name, untrusted=untrusted)
-
-    @reraise_safe_exceptions
-    def get_config_list(self, wire, section, name, untrusted=False):
-        repo = self._factory.repo(wire)
-        return repo.ui.configlist(section, name, untrusted=untrusted)
 
     @reraise_safe_exceptions
     def is_large_file(self, wire, path):
@@ -705,22 +633,6 @@ class HgRemote(object):
         return _lookup(context_uid, repo_id, revision, both)
 
     @reraise_safe_exceptions
-    def pull(self, wire, url, commit_ids=None):
-        repo = self._factory.repo(wire)
-        # Disable any prompts for this repo
-        repo.ui.setconfig('ui', 'interactive', 'off', '-y')
-
-        remote = peer(repo, {}, url)
-        # Disable any prompts for this remote
-        remote.ui.setconfig('ui', 'interactive', 'off', '-y')
-
-        if commit_ids:
-            commit_ids = [bin(commit_id) for commit_id in commit_ids]
-
-        return exchange.pull(
-            repo, remote, heads=commit_ids, force=None).cgresult
-
-    @reraise_safe_exceptions
     def sync_push(self, wire, url):
         if not self.check_url(url, wire['config']):
             return
@@ -785,13 +697,6 @@ class HgRemote(object):
         return list(repo.revs(rev_spec, *args))
 
     @reraise_safe_exceptions
-    def strip(self, wire, revision, update, backup):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        hgext_strip(
-            repo.baseui, repo, ctx.node(), update=update, backup=backup)
-
-    @reraise_safe_exceptions
     def verify(self, wire,):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
@@ -805,20 +710,6 @@ class HgRemote(object):
         repo.ui = baseui
         verify.verify(repo)
         return output.getvalue()
-
-    @reraise_safe_exceptions
-    def tag(self, wire, name, revision, message, local, user, tag_time, tag_timezone):
-        repo = self._factory.repo(wire)
-        ctx = self._get_ctx(repo, revision)
-        node = ctx.node()
-
-        date = (tag_time, tag_timezone)
-        try:
-            hg_tag.tag(repo, name, node, message, local, user, date)
-        except Abort as e:
-            log.exception("Tag operation aborted")
-            # Exception can contain unicode which we convert
-            raise exceptions.AbortException(e)(repr(e))
 
     @reraise_safe_exceptions
     def tags(self, wire):
@@ -849,23 +740,6 @@ class HgRemote(object):
         return output.getvalue()
 
     @reraise_safe_exceptions
-    def pull_cmd(self, wire, source, bookmark=None, branch=None, revision=None, hooks=True):
-        repo = self._factory.repo(wire)
-        baseui = self._factory._create_config(wire['config'], hooks=hooks)
-
-        # Mercurial internally has a lot of logic that checks ONLY if
-        # option is defined, we just pass those if they are defined then
-        opts = {}
-        if bookmark:
-            opts['bookmark'] = bookmark
-        if branch:
-            opts['branch'] = branch
-        if revision:
-            opts['rev'] = revision
-
-        commands.pull(baseui, repo, source, **opts)
-
-    @reraise_safe_exceptions
     def heads(self, wire, branch=None):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
@@ -892,11 +766,111 @@ class HgRemote(object):
         return hex(a)
 
     @reraise_safe_exceptions
+    def clone(self, wire, source, dest, update_after_clone=False, hooks=True):
+        baseui = self._factory._create_config(wire["config"], hooks=hooks)
+        clone(baseui, source, dest, noupdate=not update_after_clone)
+
+    @reraise_safe_exceptions
+    def commitctx(self, wire, message, parents, commit_time, commit_timezone, user, files, extra, removed, updated):
+
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        publishing = baseui.configbool('phases', 'publish')
+        if publishing:
+            new_commit = 'public'
+        else:
+            new_commit = 'draft'
+
+        def _filectxfn(_repo, ctx, path):
+            """
+            Marks given path as added/changed/removed in a given _repo. This is
+            for internal mercurial commit function.
+            """
+
+            # check if this path is removed
+            if path in removed:
+                # returning None is a way to mark node for removal
+                return None
+
+            # check if this path is added
+            for node in updated:
+                if node['path'] == path:
+                    return memfilectx(
+                        _repo,
+                        changectx=ctx,
+                        path=node['path'],
+                        data=node['content'],
+                        islink=False,
+                        isexec=bool(node['mode'] & stat.S_IXUSR),
+                        copysource=False)
+
+            raise exceptions.AbortException()(
+                "Given path haven't been marked as added, "
+                "changed or removed (%s)" % path)
+
+        with repo.ui.configoverride({('phases', 'new-commit'): new_commit}):
+
+            commit_ctx = memctx(
+                repo=repo,
+                parents=parents,
+                text=message,
+                files=files,
+                filectxfn=_filectxfn,
+                user=user,
+                date=(commit_time, commit_timezone),
+                extra=extra)
+
+            n = repo.commitctx(commit_ctx)
+            new_id = hex(n)
+
+            return new_id
+
+    @reraise_safe_exceptions
+    def pull(self, wire, url, commit_ids=None):
+        repo = self._factory.repo(wire)
+        # Disable any prompts for this repo
+        repo.ui.setconfig('ui', 'interactive', 'off', '-y')
+
+        remote = peer(repo, {}, url)
+        # Disable any prompts for this remote
+        remote.ui.setconfig('ui', 'interactive', 'off', '-y')
+
+        if commit_ids:
+            commit_ids = [bin(commit_id) for commit_id in commit_ids]
+
+        return exchange.pull(
+            repo, remote, heads=commit_ids, force=None).cgresult
+
+    @reraise_safe_exceptions
+    def pull_cmd(self, wire, source, bookmark=None, branch=None, revision=None, hooks=True):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'], hooks=hooks)
+
+        # Mercurial internally has a lot of logic that checks ONLY if
+        # option is defined, we just pass those if they are defined then
+        opts = {}
+        if bookmark:
+            opts['bookmark'] = bookmark
+        if branch:
+            opts['branch'] = branch
+        if revision:
+            opts['rev'] = revision
+
+        commands.pull(baseui, repo, source, **opts)
+
+    @reraise_safe_exceptions
     def push(self, wire, revisions, dest_path, hooks=True, push_branches=False):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'], hooks=hooks)
         commands.push(baseui, repo, dest=dest_path, rev=revisions,
                       new_branch=push_branches)
+
+    @reraise_safe_exceptions
+    def strip(self, wire, revision, update, backup):
+        repo = self._factory.repo(wire)
+        ctx = self._get_ctx(repo, revision)
+        hgext_strip(
+            repo.baseui, repo, ctx.node(), update=update, backup=backup)
 
     @reraise_safe_exceptions
     def merge(self, wire, revision):
@@ -938,6 +912,20 @@ class HgRemote(object):
         repo.ui.setconfig('ui', 'merge', 'internal:dump')
         rebase.rebase(
             baseui, repo, base=source, dest=dest, abort=abort, keep=not abort)
+
+    @reraise_safe_exceptions
+    def tag(self, wire, name, revision, message, local, user, tag_time, tag_timezone):
+        repo = self._factory.repo(wire)
+        ctx = self._get_ctx(repo, revision)
+        node = ctx.node()
+
+        date = (tag_time, tag_timezone)
+        try:
+            hg_tag.tag(repo, name, node, message, local, user, date)
+        except Abort as e:
+            log.exception("Tag operation aborted")
+            # Exception can contain unicode which we convert
+            raise exceptions.AbortException(e)(repr(e))
 
     @reraise_safe_exceptions
     def bookmark(self, wire, bookmark, revision=None):

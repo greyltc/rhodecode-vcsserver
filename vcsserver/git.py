@@ -39,7 +39,7 @@ from dulwich.repo import Repo as DulwichRepo
 from dulwich.server import update_server_info
 
 from vcsserver import exceptions, settings, subprocessio
-from vcsserver.utils import safe_str
+from vcsserver.utils import safe_str, safe_int
 from vcsserver.base import RepoFactory, obfuscate_qs
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
@@ -128,6 +128,7 @@ class GitFactory(RepoFactory):
 
 
 class GitRemote(object):
+    EMPTY_COMMIT = '0' * 40
 
     def __init__(self, factory):
         self._factory = factory
@@ -190,15 +191,6 @@ class GitRemote(object):
             return True
 
     @reraise_safe_exceptions
-    def add_object(self, wire, content):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            blob = objects.Blob()
-            blob.set_raw_string(content)
-            repo.object_store.add_object(blob)
-            return blob.id
-
-    @reraise_safe_exceptions
     def assert_correct_path(self, wire):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
@@ -234,14 +226,14 @@ class GitRemote(object):
     def blob_raw_length(self, wire, sha):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _blob_raw_length(_context_uid, _repo_id, _sha):
+        def _blob_raw_length(_repo_id, _sha):
 
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
                 blob = repo[sha]
                 return blob.size
 
-        return _blob_raw_length(context_uid, repo_id, sha)
+        return _blob_raw_length(repo_id, sha)
 
     def _parse_lfs_pointer(self, raw_content):
 
@@ -261,20 +253,20 @@ class GitRemote(object):
         return {}
 
     @reraise_safe_exceptions
-    def is_large_file(self, wire, sha):
+    def is_large_file(self, wire, commit_id):
 
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _is_large_file(_context_uid, _repo_id, _sha):
+        def _is_large_file(_repo_id, _sha):
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
-                blob = repo[sha]
+                blob = repo[commit_id]
                 if blob.is_binary:
                     return {}
 
                 return self._parse_lfs_pointer(blob.data)
 
-        return _is_large_file(context_uid, repo_id, sha)
+        return _is_large_file(repo_id, commit_id)
 
     @reraise_safe_exceptions
     def in_largefiles_store(self, wire, oid):
@@ -310,7 +302,7 @@ class GitRemote(object):
     def bulk_request(self, wire, rev, pre_load):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _bulk_request(_context_uid, _repo_id, _rev, _pre_load):
+        def _bulk_request(_repo_id, _rev, _pre_load):
             result = {}
             for attr in pre_load:
                 try:
@@ -322,7 +314,7 @@ class GitRemote(object):
                         "Unknown bulk attribute: %s" % attr)
             return result
 
-        return _bulk_request(context_uid, repo_id, rev, sorted(pre_load))
+        return _bulk_request(repo_id, rev, sorted(pre_load))
 
     def _build_opener(self, url):
         handlers = []
@@ -436,6 +428,15 @@ class GitRemote(object):
                 return branches
 
         return _commit_branches(context_uid, repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def add_object(self, wire, content):
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            blob = objects.Blob()
+            blob.set_raw_string(content)
+            repo.object_store.add_object(blob)
+            return blob.id
 
     # TODO: this is quite complex, check if that can be simplified
     @reraise_safe_exceptions
@@ -783,40 +784,70 @@ class GitRemote(object):
         return _revision(context_uid, repo_id, rev)
 
     @reraise_safe_exceptions
-    def date(self, wire, rev):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            commit = repo[rev]
-            # TODO(marcink): check dulwich difference of offset vs timezone
-            return [commit.commit_time, commit.commit_time_offset]
-
-    @reraise_safe_exceptions
-    def author(self, wire, rev):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            commit = repo[rev]
-            if commit.author.email:
-                return u"{} <{}>".format(commit.author.name, commit.author.email)
-
-            return u"{}".format(commit.author.raw_name)
-
-    @reraise_safe_exceptions
-    def message(self, wire, rev):
-        repo_init = self._factory.repo_libgit2(wire)
-        with repo_init as repo:
-            commit = repo[rev]
-            return commit.message
-
-    @reraise_safe_exceptions
-    def parents(self, wire, rev):
+    def date(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _parents(_context_uid, _repo_id, _rev):
+        def _date(_repo_id, _commit_id):
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
-                commit = repo[rev]
+                commit = repo[commit_id]
+                # TODO(marcink): check dulwich difference of offset vs timezone
+                return [commit.commit_time, commit.commit_time_offset]
+        return _date(repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def author(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _author(_repo_id, _commit_id):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                commit = repo[commit_id]
+                if commit.author.email:
+                    return u"{} <{}>".format(commit.author.name, commit.author.email)
+
+                return u"{}".format(commit.author.raw_name)
+        return _author(repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def message(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _message(_repo_id, _commit_id):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                commit = repo[commit_id]
+                return commit.message
+        return _message(repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def parents(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _parents(_repo_id, _commit_id):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                commit = repo[commit_id]
                 return [x.hex for x in commit.parent_ids]
-        return _parents(context_uid, repo_id, rev)
+        return _parents(repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def children(self, wire, commit_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _children(_repo_id, _commit_id):
+            output, __ = self.run_git_command(
+                wire, ['rev-list', '--all', '--children'])
+
+            child_ids = []
+            pat = re.compile(r'^%s' % commit_id)
+            for l in output.splitlines():
+                if pat.match(l):
+                    found_ids = l.split(' ')[1:]
+                    child_ids.extend(found_ids)
+
+            return child_ids
+        return _children(repo_id, commit_id)
 
     @reraise_safe_exceptions
     def set_refs(self, wire, key, value):
@@ -878,10 +909,9 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def tree_items(self, wire, tree_id):
-
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _tree_items(_context_uid, _repo_id, _tree_id):
+        def _tree_items(_repo_id, _tree_id):
 
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
@@ -902,7 +932,75 @@ class GitRemote(object):
 
                     result.append((item.name, item_mode, item_sha, item_type))
                 return result
-        return _tree_items(context_uid, repo_id, tree_id)
+        return _tree_items(repo_id, tree_id)
+
+    @reraise_safe_exceptions
+    def diff(self, wire, commit_id_1, commit_id_2, file_filter, opt_ignorews, context):
+
+        flags = [
+            '-U%s' % context, '--full-index', '--binary', '-p',
+            '-M', '--abbrev=40']
+
+        if opt_ignorews:
+            flags.append('-w')
+
+        if commit_id_1 == self.EMPTY_COMMIT:
+            cmd = ['show'] + flags + [commit_id_2]
+        else:
+            cmd = ['diff'] + flags + [commit_id_1, commit_id_2]
+
+        if file_filter:
+            cmd.extend(['--', file_filter])
+
+        diff, __ = self.run_git_command(wire, cmd)
+        # If we used 'show' command, strip first few lines (until actual diff
+        # starts)
+        if commit_id_1 == self.EMPTY_COMMIT:
+            lines = diff.splitlines()
+            x = 0
+            for line in lines:
+                if line.startswith('diff'):
+                    break
+                x += 1
+            # Append new line just like 'diff' command do
+            diff = '\n'.join(lines[x:]) + '\n'
+        return diff
+
+    @reraise_safe_exceptions
+    def node_history(self, wire, commit_id, path, limit):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _node_history(_context_uid, _repo_id, _commit_id, _path, _limit):
+            # optimize for n==1, rev-list is much faster for that use-case
+            if limit == 1:
+                cmd = ['rev-list', '-1', commit_id, '--', path]
+            else:
+                cmd = ['log']
+                if limit:
+                    cmd.extend(['-n', str(safe_int(limit, 0))])
+                cmd.extend(['--pretty=format: %H', '-s', commit_id, '--', path])
+
+            output, __ = self.run_git_command(wire, cmd)
+            commit_ids = re.findall(r'[0-9a-fA-F]{40}', output)
+
+            return [x for x in commit_ids]
+        return _node_history(context_uid, repo_id, commit_id, path, limit)
+
+    @reraise_safe_exceptions
+    def node_annotate(self, wire, commit_id, path):
+
+        cmd = ['blame', '-l', '--root', '-r', commit_id, '--', path]
+        # -l     ==> outputs long shas (and we need all 40 characters)
+        # --root ==> doesn't put '^' character for boundaries
+        # -r commit_id ==> blames for the given commit
+        output, __ = self.run_git_command(wire, cmd)
+
+        result = []
+        for i, blame_line in enumerate(output.split('\n')[:-1]):
+            line_no = i + 1
+            commit_id, line = re.split(r' ', blame_line, 1)
+            result.append((line_no, commit_id, line))
+        return result
 
     @reraise_safe_exceptions
     def update_server_info(self, wire):
