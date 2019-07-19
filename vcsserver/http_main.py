@@ -361,8 +361,10 @@ class HTTPApplication(object):
                 call_args = ''
             else:
                 call_args = args[1:]
-            log.debug('method called:%s with args:%s kwargs:%s context_uid: %s',
-                      method, call_args, kwargs, context_uid)
+
+            repo_state_uid = wire.get('repo_state_uid') if wire else None
+            log.debug('method called:%s with args:%s kwargs:%s context_uid: %s, repo_state_uid:%s',
+                      method, call_args, kwargs, context_uid, repo_state_uid)
 
         try:
             resp = getattr(remote, method)(*args, **kwargs)
