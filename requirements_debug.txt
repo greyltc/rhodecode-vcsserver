@@ -1,0 +1,8 @@
+## special libraries we could extend the requirements.txt file with to add some
+## custom libraries useful for debug and memory tracing
+
+## uncomment inclusion of this file in requirements.txt run make generate-pkgs and nix-shell
+
+objgraph
+memory-profiler
+pympler
