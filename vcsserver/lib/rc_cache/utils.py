@@ -60,15 +60,16 @@ class RhodeCodeCacheRegion(CacheRegion):
 
                 @functools.wraps(fn)
                 def creator():
-                    log.debug('Calling cached fn:%s', fn)
                     return fn(*arg, **kw)
 
                 if not condition:
+                    log.debug('Calling un-cached func:%s', fn)
                     return creator()
 
                 timeout = expiration_time() if expiration_time_is_callable \
                     else expiration_time
 
+                log.debug('Calling cached fn:%s', fn)
                 return self.get_or_create(key, creator, timeout, should_cache_fn)
 
             def invalidate(*arg, **kw):
