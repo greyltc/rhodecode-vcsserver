@@ -44,6 +44,7 @@ from vcsserver.base import RepoFactory, obfuscate_qs
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
 from vcsserver.git_lfs.lib import LFSOidStore
+from vcsserver.vcs_base import RemoteBase
 
 DIR_STAT = stat.S_IFDIR
 FILE_MODE = stat.S_IFMT
@@ -127,8 +128,7 @@ class GitFactory(RepoFactory):
         return self.repo(wire, use_libgit2=True)
 
 
-class GitRemote(object):
-    EMPTY_COMMIT = '0' * 40
+class GitRemote(RemoteBase):
 
     def __init__(self, factory):
         self._factory = factory
@@ -155,14 +155,6 @@ class GitRemote(object):
         if ssl_cert_dir:
             params.extend(['-c', 'http.sslCAinfo={}'.format(ssl_cert_dir)])
         return params
-
-    def _cache_on(self, wire):
-        context = wire.get('context', '')
-        context_uid = '{}'.format(context)
-        repo_id = wire.get('repo_id', '')
-        cache = wire.get('cache', True)
-        cache_on = context and cache
-        return cache_on, context_uid, repo_id
 
     @reraise_safe_exceptions
     def discover_git_version(self):
@@ -404,7 +396,6 @@ class GitRemote(object):
     @reraise_safe_exceptions
     def branch(self, wire, commit_id):
         cache_on, context_uid, repo_id = self._cache_on(wire)
-        cache_on = False
         @self.region.conditional_cache_on_arguments(condition=cache_on)
         def _branch(_context_uid, _repo_id, _commit_id):
             regex = re.compile('^refs/heads')

@@ -37,6 +37,7 @@ from vcsserver.hgcompat import (
     makepeer, instance, match, memctx, exchange, memfilectx, nullrev, hg_merge,
     patch, peer, revrange, ui, hg_tag, Abort, LookupError, RepoError,
     RepoLookupError, InterventionRequired, RequirementError)
+from vcsserver.vcs_base import RemoteBase
 
 log = logging.getLogger(__name__)
 
@@ -150,7 +151,7 @@ class MercurialFactory(RepoFactory):
         return self._create_repo(wire, create)
 
 
-class HgRemote(object):
+class HgRemote(RemoteBase):
 
     def __init__(self, factory):
         self._factory = factory
@@ -172,14 +173,6 @@ class HgRemote(object):
 
     def _get_ctx(self, repo, ref):
         return get_ctx(repo, ref)
-
-    def _cache_on(self, wire):
-        context = wire.get('context', '')
-        context_uid = '{}'.format(context)
-        repo_id = wire.get('repo_id', '')
-        cache = wire.get('cache', True)
-        cache_on = context and cache
-        return cache_on, context_uid, repo_id
 
     @reraise_safe_exceptions
     def discover_hg_version(self):
