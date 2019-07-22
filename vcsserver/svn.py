@@ -36,6 +36,7 @@ import svn.repos
 
 from vcsserver import svn_diff, exceptions, subprocessio, settings
 from vcsserver.base import RepoFactory, raise_from_original
+from vcsserver.vcs_base import RemoteBase
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ NODE_TYPE_MAPPING = {
 }
 
 
-class SvnRemote(object):
+class SvnRemote(RemoteBase):
 
     def __init__(self, factory, hg_factory=None):
         self._factory = factory
@@ -115,14 +116,6 @@ class SvnRemote(object):
         # for subversion
         self._hg_factory = hg_factory
         self.region = self._factory._cache_region
-
-    def _cache_on(self, wire):
-        context = wire.get('context', '')
-        context_uid = '{}'.format(context)
-        repo_id = wire.get('repo_id', '')
-        cache = wire.get('cache', True)
-        cache_on = context and cache
-        return cache_on, context_uid, repo_id
 
     @reraise_safe_exceptions
     def discover_svn_version(self):
