@@ -43,3 +43,6 @@ ipython==5.1.0
 
 ## test related requirements
 -r requirements_test.txt
+
+## uncomment to add the debug libraries
+#-r requirements_debug.txt
