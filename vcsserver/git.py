@@ -679,7 +679,6 @@ class GitRemote(object):
 
     @reraise_safe_exceptions
     def get_object(self, wire, sha):
-
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
         def _get_object(_context_uid, _repo_id, _sha):
@@ -692,13 +691,16 @@ class GitRemote(object):
                 except (KeyError, ValueError) as e:
                     raise exceptions.LookupException(e)(missing_commit_err)
 
+                is_tag = False
                 if isinstance(commit, pygit2.Tag):
                     commit = repo.get(commit.target)
+                    is_tag = True
 
-                # check for dangling commit
-                branches = [x for x in repo.branches.with_commit(commit.hex)]
-                if not branches:
-                    raise exceptions.LookupException(None)(missing_commit_err)
+                if not is_tag:
+                    # check for dangling commit
+                    branches = [x for x in repo.branches.with_commit(commit.hex)]
+                    if not branches:
+                        raise exceptions.LookupException(None)(missing_commit_err)
 
                 commit_id = commit.hex
                 type_id = commit.type
