@@ -140,7 +140,6 @@ class GitRemote(RemoteBase):
             "parents": self.parents,
             "_commit": self.revision,
         }
-        self.region = self._factory._cache_region
 
     def _wire_to_config(self, wire):
         if 'config' in wire:

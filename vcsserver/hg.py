@@ -169,7 +169,6 @@ class HgRemote(RemoteBase):
             "hidden": self.ctx_hidden,
             "_file_paths": self.ctx_list,
         }
-        self.region = self._factory._cache_region
 
     def _get_ctx(self, repo, ref):
         return get_ctx(repo, ref)
@@ -652,6 +651,7 @@ class HgRemote(RemoteBase):
     @reraise_safe_exceptions
     def rev_range(self, wire, commit_filter):
         cache_on, context_uid, repo_id = self._cache_on(wire)
+
         @self.region.conditional_cache_on_arguments(condition=cache_on)
         def _rev_range(_context_uid, _repo_id, _filter):
             repo = self._factory.repo(wire)

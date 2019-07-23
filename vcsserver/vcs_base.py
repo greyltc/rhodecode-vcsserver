@@ -19,6 +19,10 @@
 class RemoteBase(object):
     EMPTY_COMMIT = '0' * 40
 
+    @property
+    def region(self):
+        return self._factory._cache_region
+
     def _cache_on(self, wire):
         context = wire.get('context', '')
         context_uid = '{}'.format(context)

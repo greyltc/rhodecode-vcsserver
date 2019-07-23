@@ -115,7 +115,6 @@ class SvnRemote(RemoteBase):
         # TODO: Remove once we do not use internal Mercurial objects anymore
         # for subversion
         self._hg_factory = hg_factory
-        self.region = self._factory._cache_region
 
     @reraise_safe_exceptions
     def discover_svn_version(self):
