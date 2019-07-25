@@ -930,11 +930,11 @@ class GitRemote(RemoteBase):
     def diff(self, wire, commit_id_1, commit_id_2, file_filter, opt_ignorews, context):
 
         flags = [
-            '-U%s' % context, '--full-index', '--binary', '-p',
-            '-M', '--abbrev=40']
+            '-U%s' % context, '--full-index', '--binary', '--patch',
+            '--find-renames', '--abbrev=40']
 
         if opt_ignorews:
-            flags.append('-w')
+            flags.append('--ignore-all-space')
 
         if commit_id_1 == self.EMPTY_COMMIT:
             cmd = ['show'] + flags + [commit_id_2]
@@ -956,6 +956,7 @@ class GitRemote(RemoteBase):
                 x += 1
             # Append new line just like 'diff' command do
             diff = '\n'.join(lines[x:]) + '\n'
+
         return diff
 
     @reraise_safe_exceptions
