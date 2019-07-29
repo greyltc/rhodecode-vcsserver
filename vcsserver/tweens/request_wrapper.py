@@ -57,8 +57,9 @@ class RequestWrapperTween(object):
                 safe_str(get_access_path(request)), total, get_user_agent(request.environ))
 
         if self.gc_max_requests and count % self.gc_max_requests == 0:
-            log.info('Performing gc.collect now')
-            gc.collect()
+            log.debug('Performing gc.collect now')
+            gc_count = gc.collect()
+            log.debug('gc collection freed %s objects', gc_count)
 
         return response
 
