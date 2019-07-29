@@ -15,8 +15,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-
-
+import gc
 import time
 import logging
 
@@ -40,6 +39,7 @@ class RequestWrapperTween(object):
     def __init__(self, handler, registry):
         self.handler = handler
         self.registry = registry
+        self.gc_max_requests = 25
 
         # one-time configuration code goes here
 
@@ -55,6 +55,10 @@ class RequestWrapperTween(object):
                 'Req[%4s] IP: %s %s Request to %s time: %.4fs [%s]',
                 count, '127.0.0.1', request.environ.get('REQUEST_METHOD'),
                 safe_str(get_access_path(request)), total, get_user_agent(request.environ))
+
+        if self.gc_max_requests and count % self.gc_max_requests == 0:
+            log.info('Performing gc.collect now')
+            gc.collect()
 
         return response
 
