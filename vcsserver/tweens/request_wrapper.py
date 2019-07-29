@@ -50,9 +50,10 @@ class RequestWrapperTween(object):
         finally:
             end = time.time()
             total = end - start
+            count = request.request_count()
             log.info(
-                'IP: %s %s Request to %s time: %.4fs [%s]',
-                '127.0.0.1', request.environ.get('REQUEST_METHOD'),
+                'Req[%4s] IP: %s %s Request to %s time: %.4fs [%s]',
+                count, '127.0.0.1', request.environ.get('REQUEST_METHOD'),
                 safe_str(get_access_path(request)), total, get_user_agent(request.environ))
 
         return response
