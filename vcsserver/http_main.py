@@ -331,6 +331,9 @@ class HTTPApplication(object):
         self.config.add_tween(
             'vcsserver.tweens.request_wrapper.RequestWrapperTween',
         )
+        self.config.add_request_method(
+            'vcsserver.lib.request_counter.get_request_counter',
+            'request_count')
 
     def wsgi_app(self):
         return self.config.make_wsgi_app()
