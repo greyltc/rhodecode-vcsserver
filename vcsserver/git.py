@@ -927,11 +927,20 @@ class GitRemote(RemoteBase):
         return _tree_items(repo_id, tree_id)
 
     @reraise_safe_exceptions
-    def diff(self, wire, commit_id_1, commit_id_2, file_filter, opt_ignorews, context):
+    def diff_2(self, wire, commit_id_1, commit_id_2, file_filter, opt_ignorews, context):
+        """
+        Old version that uses subprocess to call diff
+        """
 
         flags = [
-            '-U%s' % context, '--full-index', '--binary', '--patch',
-            '--find-renames', '--abbrev=40']
+            '-U%s' % context, '--patch',
+            '--binary',
+            '--find-renames',
+            '--no-indent-heuristic',
+            # '--indent-heuristic',
+            #'--full-index',
+            #'--abbrev=40'
+        ]
 
         if opt_ignorews:
             flags.append('--ignore-all-space')
@@ -956,8 +965,37 @@ class GitRemote(RemoteBase):
                 x += 1
             # Append new line just like 'diff' command do
             diff = '\n'.join(lines[x:]) + '\n'
-
         return diff
+
+    @reraise_safe_exceptions
+    def diff(self, wire, commit_id_1, commit_id_2, file_filter, opt_ignorews, context):
+        repo_init = self._factory.repo_libgit2(wire)
+        with repo_init as repo:
+            swap = True
+            flags = 0
+            flags |= pygit2.GIT_DIFF_SHOW_BINARY
+
+            if opt_ignorews:
+                flags |= pygit2.GIT_DIFF_IGNORE_WHITESPACE
+
+            if commit_id_1 == self.EMPTY_COMMIT:
+                comm1 = repo[commit_id_2]
+                diff_obj = comm1.tree.diff_to_tree(
+                    flags=flags, context_lines=context, swap=swap)
+
+            else:
+                comm1 = repo[commit_id_2]
+                comm2 = repo[commit_id_1]
+                diff_obj = comm1.tree.diff_to_tree(
+                    comm2.tree, flags=flags, context_lines=context, swap=swap)
+
+            diff_obj.find_similar(flags=pygit2.GIT_DIFF_FIND_RENAMES)
+
+            if file_filter:
+                for p in diff_obj:
+                    if p.delta.old_file.path == file_filter:
+                        return p.patch
+            return diff_obj.patch
 
     @reraise_safe_exceptions
     def node_history(self, wire, commit_id, path, limit):
