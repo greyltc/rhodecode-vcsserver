@@ -996,6 +996,8 @@ class GitRemote(RemoteBase):
                 for p in diff_obj:
                     if p.delta.old_file.path == file_filter:
                         return p.patch or ''
+                # fo matching path == no diff
+                return ''
             return diff_obj.patch or ''
 
     @reraise_safe_exceptions
