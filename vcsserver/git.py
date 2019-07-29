@@ -988,14 +988,15 @@ class GitRemote(RemoteBase):
                 comm2 = repo[commit_id_1]
                 diff_obj = comm1.tree.diff_to_tree(
                     comm2.tree, flags=flags, context_lines=context, swap=swap)
-
-            diff_obj.find_similar(flags=pygit2.GIT_DIFF_FIND_RENAMES)
+            similar_flags = 0
+            similar_flags |= pygit2.GIT_DIFF_FIND_RENAMES
+            diff_obj.find_similar(flags=similar_flags)
 
             if file_filter:
                 for p in diff_obj:
                     if p.delta.old_file.path == file_filter:
-                        return p.patch
-            return diff_obj.patch
+                        return p.patch or ''
+            return diff_obj.patch or ''
 
     @reraise_safe_exceptions
     def node_history(self, wire, commit_id, path, limit):
