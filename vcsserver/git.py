@@ -783,8 +783,15 @@ class GitRemote(RemoteBase):
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
                 commit = repo[commit_id]
+
+                if hasattr(commit, 'commit_time'):
+                    commit_time, commit_time_offset = commit.commit_time, commit.commit_time_offset
+                else:
+                    commit = commit.get_object()
+                    commit_time, commit_time_offset = commit.commit_time, commit.commit_time_offset
+
                 # TODO(marcink): check dulwich difference of offset vs timezone
-                return [commit.commit_time, commit.commit_time_offset]
+                return [commit_time, commit_time_offset]
         return _date(repo_id, commit_id)
 
     @reraise_safe_exceptions
@@ -795,10 +802,16 @@ class GitRemote(RemoteBase):
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
                 commit = repo[commit_id]
-                if commit.author.email:
-                    return u"{} <{}>".format(commit.author.name, commit.author.email)
 
-                return u"{}".format(commit.author.raw_name)
+                if hasattr(commit, 'author'):
+                    author = commit.author
+                else:
+                    author = commit.get_object().author
+
+                if author.email:
+                    return u"{} <{}>".format(author.name, author.email)
+
+                return u"{}".format(author.raw_name)
         return _author(repo_id, commit_id)
 
     @reraise_safe_exceptions
@@ -820,7 +833,12 @@ class GitRemote(RemoteBase):
             repo_init = self._factory.repo_libgit2(wire)
             with repo_init as repo:
                 commit = repo[commit_id]
-                return [x.hex for x in commit.parent_ids]
+                if hasattr(commit, 'parent_ids'):
+                    parent_ids = commit.parent_ids
+                else:
+                    parent_ids = commit.get_object().parent_ids
+
+                return [x.hex for x in parent_ids]
         return _parents(repo_id, commit_id)
 
     @reraise_safe_exceptions
