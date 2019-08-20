@@ -692,10 +692,20 @@ class GitRemote(RemoteBase):
                     commit = repo.get(commit.target)
                     is_tag = True
 
-                if not is_tag:
+                check_dangling = True
+                if is_tag:
+                    check_dangling = False
+
+                # we used a reference and it parsed means we're not having a dangling commit
+                if sha != commit.hex:
+                    check_dangling = False
+
+                if check_dangling:
                     # check for dangling commit
-                    branches = [x for x in repo.branches.with_commit(commit.hex)]
-                    if not branches:
+                    for branch in repo.branches.with_commit(commit.hex):
+                        if branch:
+                            break
+                    else:
                         raise exceptions.LookupException(None)(missing_commit_err)
 
                 commit_id = commit.hex
