@@ -584,14 +584,19 @@ class GitRemote(RemoteBase):
         return remote_refs
 
     @reraise_safe_exceptions
-    def sync_fetch(self, wire, url, refs=None):
+    def sync_fetch(self, wire, url, refs=None, all_refs=False):
         repo = self._factory.repo(wire)
         if refs and not isinstance(refs, (list, tuple)):
             refs = [refs]
+
         config = self._wire_to_config(wire)
         # get all remote refs we'll use to fetch later
+        cmd = ['ls-remote']
+        if not all_refs:
+            cmd += ['--heads', '--tags']
+        cmd += [url]
         output, __ = self.run_git_command(
-            wire, ['ls-remote', url], fail_on_stderr=False,
+            wire, cmd, fail_on_stderr=False,
             _copts=self._remote_conf(config),
             extra_env={'GIT_TERMINAL_PROMPT': '0'})
 
@@ -619,6 +624,7 @@ class GitRemote(RemoteBase):
             elif not refs:
                 fetch_refs.append('{}:{}'.format(ref, ref))
         log.debug('Finished obtaining fetch refs, total: %s', len(fetch_refs))
+
         if fetch_refs:
             for chunk in more_itertools.chunked(fetch_refs, 1024 * 4):
                 fetch_refs_chunks = list(chunk)
