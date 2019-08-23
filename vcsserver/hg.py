@@ -567,6 +567,19 @@ class HgRemote(RemoteBase):
         return _is_large_file(context_uid, repo_id, path)
 
     @reraise_safe_exceptions
+    def is_binary(self, wire, revision, path):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _is_binary(_repo_id, _sha, _path):
+            repo = self._factory.repo(wire)
+            ctx = self._get_ctx(repo, revision)
+            fctx = ctx.filectx(path)
+            return fctx.isbinary()
+
+        return _is_binary(repo_id, revision, path)
+
+    @reraise_safe_exceptions
     def in_largefiles_store(self, wire, sha):
         repo = self._factory.repo(wire)
         return largefiles.lfutil.instore(repo, sha)
