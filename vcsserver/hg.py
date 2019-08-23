@@ -558,13 +558,13 @@ class HgRemote(RemoteBase):
         return repo.ui.config(section, name, untrusted=untrusted)
 
     @reraise_safe_exceptions
-    def is_large_file(self, wire, path):
+    def is_large_file(self, wire, commit_id, path):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
-        def _is_large_file(_context_uid, _repo_id, _path):
+        def _is_large_file(_context_uid, _repo_id, _commit_id, _path):
             return largefiles.lfutil.isstandin(path)
 
-        return _is_large_file(context_uid, repo_id, path)
+        return _is_large_file(context_uid, repo_id, commit_id, path)
 
     @reraise_safe_exceptions
     def is_binary(self, wire, revision, path):
