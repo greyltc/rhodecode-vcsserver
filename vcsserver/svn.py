@@ -472,6 +472,17 @@ class SvnRemote(RemoteBase):
         return False
 
     @reraise_safe_exceptions
+    def is_binary(self, wire, rev, path):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _is_binary(_repo_id, _rev, _path):
+            raw_bytes = self.get_file_content(wire, path, rev)
+            return raw_bytes and '\0' in raw_bytes
+
+        return _is_binary(repo_id, rev, path)
+
+    @reraise_safe_exceptions
     def run_svn_command(self, wire, cmd, **opts):
         path = wire.get('path', None)
 

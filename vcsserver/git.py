@@ -245,8 +245,8 @@ class GitRemote(RemoteBase):
 
     @reraise_safe_exceptions
     def is_large_file(self, wire, commit_id):
-
         cache_on, context_uid, repo_id = self._cache_on(wire)
+
         @self.region.conditional_cache_on_arguments(condition=cache_on)
         def _is_large_file(_repo_id, _sha):
             repo_init = self._factory.repo_libgit2(wire)
@@ -258,6 +258,19 @@ class GitRemote(RemoteBase):
                 return self._parse_lfs_pointer(blob.data)
 
         return _is_large_file(repo_id, commit_id)
+
+    @reraise_safe_exceptions
+    def is_binary(self, wire, tree_id):
+        cache_on, context_uid, repo_id = self._cache_on(wire)
+
+        @self.region.conditional_cache_on_arguments(condition=cache_on)
+        def _is_binary(_repo_id, _tree_id):
+            repo_init = self._factory.repo_libgit2(wire)
+            with repo_init as repo:
+                blob_obj = repo[tree_id]
+                return blob_obj.is_binary
+
+        return _is_binary(repo_id, tree_id)
 
     @reraise_safe_exceptions
     def in_largefiles_store(self, wire, oid):
