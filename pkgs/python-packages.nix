@@ -801,11 +801,11 @@ self: super: {
     };
   };
   "setuptools" = super.buildPythonPackage {
-    name = "setuptools-41.1.0";
+    name = "setuptools-41.2.0";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/68/0c/e470db6866aedbff3c4c88faf7f81b90343d8ff32cd68b62db1b65037fb4/setuptools-41.1.0.zip";
-      sha256 = "1a246z6cikg42adqmpswzjp59hkqwr7xxqs7xyags4cr556bh6f5";
+      url = "https://files.pythonhosted.org/packages/d9/ca/7279974e489e8b65003fe618a1a741d6350227fa2bf48d16be76c7422423/setuptools-41.2.0.zip";
+      sha256 = "04k0dp9msmlv3g3zx7f5p8wdjr6hdf5c0bgmczlc4yncwyx6pf36";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
