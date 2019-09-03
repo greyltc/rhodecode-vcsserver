@@ -1,7 +1,7 @@
 # contains not directly required libraries we want to pin the version.
 
 atomicwrites==1.2.1
-attrs==18.2.0
+attrs==19.1.0
 hupper==1.6.1
 pathlib2==2.3.4
 pygments==2.4.2
