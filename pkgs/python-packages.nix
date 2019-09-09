@@ -330,11 +330,11 @@ self: super: {
     };
   };
   "mercurial" = super.buildPythonPackage {
-    name = "mercurial-5.1";
+    name = "mercurial-5.1.1";
     doCheck = false;
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/41/69/5f5802b0fb4818b5fe3704a4b9a862df13acd101ee092966d2e9f6ffd8fe/mercurial-5.1.tar.gz";
-      sha256 = "0af8wx5sn35l8c8sfj7cabx15i9b2di81ibx5d11wh8fhqnxj8k2";
+      url = "https://files.pythonhosted.org/packages/22/39/e1a95f6048aa0785b82f5faad8281ae7320894a635cb4a57e19479639c92/mercurial-5.1.1.tar.gz";
+      sha256 = "17z42rfjdkrks4grzgac66nfh285zf1pwxd2zwx1p71pw2jqpz1m";
     };
     meta = {
       license = [ pkgs.lib.licenses.gpl1 pkgs.lib.licenses.gpl2Plus ];
