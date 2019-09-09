@@ -11,7 +11,7 @@ hgsubversion==1.9.3
 hg-evolve==9.1.0
 mako==1.0.7
 markupsafe==1.1.0
-mercurial==5.1.0
+mercurial==5.1.1
 msgpack-python==0.5.6
 
 pastedeploy==2.0.1
