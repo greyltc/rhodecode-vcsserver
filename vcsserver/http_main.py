@@ -293,15 +293,15 @@ class HTTPApplication(object):
         _string_setting(
             settings,
             'rc_cache.repo_object.backend',
-            'dogpile.cache.rc.memory_lru')
+            'dogpile.cache.rc.file_namespace', lower=False)
         _int_setting(
             settings,
             'rc_cache.repo_object.expiration_time',
-            300)
-        _int_setting(
+            30 * 24 * 60 * 60)
+        _string_setting(
             settings,
-            'rc_cache.repo_object.max_size',
-            1024)
+            'rc_cache.repo_object.arguments.filename',
+            os.path.join(default_cache_dir, 'vcsserver_cache_1'), lower=False)
 
     def _configure(self):
         self.config.add_renderer(name='msgpack', factory=self._msgpack_renderer_factory)
