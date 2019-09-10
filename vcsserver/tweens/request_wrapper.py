@@ -15,11 +15,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-import gc
 import time
 import logging
 
-
+import vcsserver
 from vcsserver.utils import safe_str
 
 
@@ -50,10 +49,11 @@ class RequestWrapperTween(object):
             end = time.time()
             total = end - start
             count = request.request_count()
+            _ver_ = vcsserver.__version__
             log.info(
-                'Req[%4s] IP: %s %s Request to %s time: %.4fs [%s]',
+                'Req[%4s] IP: %s %s Request to %s time: %.4fs [%s], VCSServer %s',
                 count, '127.0.0.1', request.environ.get('REQUEST_METHOD'),
-                safe_str(get_access_path(request)), total, get_user_agent(request.environ))
+                safe_str(get_access_path(request)), total, get_user_agent(request.environ), _ver_)
 
         return response
 
