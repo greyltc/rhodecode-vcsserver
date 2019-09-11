@@ -718,6 +718,23 @@ class HgRemote(RemoteBase):
         return output.getvalue()
 
     @reraise_safe_exceptions
+    def hg_update_cache(self, wire,):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        baseui.setconfig('ui', 'quiet', 'false')
+        output = io.BytesIO()
+
+        def write(data, **unused_kwargs):
+            output.write(data)
+        baseui.write = write
+
+        repo.ui = baseui
+        with repo.wlock(), repo.lock():
+            repo.updatecaches(full=True)
+
+        return output.getvalue()
+
+    @reraise_safe_exceptions
     def tags(self, wire):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
