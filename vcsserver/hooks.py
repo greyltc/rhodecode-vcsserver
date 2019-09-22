@@ -81,6 +81,12 @@ class HooksDummyClient(object):
             return getattr(hooks, hook_name)(extras)
 
 
+class HooksShadowRepoClient(object):
+
+    def __call__(self, hook_name, extras):
+        return {'output': '', 'status': 0}
+
+
 class RemoteMessageWriter(object):
     """Writer base class."""
     def write(self, message):
@@ -141,9 +147,12 @@ def _handle_exception(result):
 
 
 def _get_hooks_client(extras):
-    if 'hooks_uri' in extras:
-        protocol = extras.get('hooks_protocol')
+    hooks_uri = extras.get('hooks_uri')
+    is_shadow_repo = extras.get('is_shadow_repo')
+    if hooks_uri:
         return HooksHttpClient(extras['hooks_uri'])
+    elif is_shadow_repo:
+        return HooksShadowRepoClient()
     else:
         return HooksDummyClient(extras['hooks_module'])
 
