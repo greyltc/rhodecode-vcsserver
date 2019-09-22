@@ -299,7 +299,7 @@ class HgRemote(RemoteBase):
         def _ctx_parents(_repo_id, _commit_id):
             repo = self._factory.repo(wire)
             ctx = self._get_ctx(repo, commit_id)
-            return [parent.rev() for parent in ctx.parents()
+            return [parent.hex() for parent in ctx.parents()
                     if not (parent.hidden() or parent.obsolete())]
 
         return _ctx_parents(repo_id, commit_id)
@@ -311,7 +311,7 @@ class HgRemote(RemoteBase):
         def _ctx_children(_repo_id, _commit_id):
             repo = self._factory.repo(wire)
             ctx = self._get_ctx(repo, commit_id)
-            return [child.rev() for child in ctx.children()
+            return [child.hex() for child in ctx.children()
                     if not (child.hidden() or child.obsolete())]
 
         return _ctx_children(repo_id, commit_id)
