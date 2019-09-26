@@ -468,23 +468,31 @@ class HTTPApplication(object):
         import vcsserver
 
         payload = msgpack.unpackb(request.body, use_list=True)
+        server_config, app_config = {}, {}
 
         try:
             path = self.global_config['__file__']
-            config = configparser.ConfigParser()
+            config = configparser.RawConfigParser()
+
             config.read(path)
-            parsed_ini = config
-            if parsed_ini.has_section('server:main'):
-                parsed_ini = dict(parsed_ini.items('server:main'))
+
+            if config.has_section('server:main'):
+                server_config = dict(config.items('server:main'))
+            if config.has_section('app:main'):
+                app_config = dict(config.items('app:main'))
+
         except Exception:
             log.exception('Failed to read .ini file for display')
-            parsed_ini = {}
+
+        environ = os.environ.items()
 
         resp = {
             'id': payload.get('id'),
             'result': dict(
                 version=vcsserver.__version__,
-                config=parsed_ini,
+                config=server_config,
+                app_config=app_config,
+                environ=environ,
                 payload=payload,
             )
         }
