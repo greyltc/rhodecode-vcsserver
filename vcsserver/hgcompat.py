@@ -36,6 +36,7 @@ from mercurial import unionrepo
 from mercurial import localrepo
 from mercurial import merge as hg_merge
 from mercurial import subrepo
+from mercurial import subrepoutil
 from mercurial import tags as hg_tag
 
 from mercurial.commands import clone, nullid, pull

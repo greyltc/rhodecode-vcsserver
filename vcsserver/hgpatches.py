@@ -62,7 +62,7 @@ def _dynamic_capabilities_wrapper(lfproto, extensions):
 
 def patch_subrepo_type_mapping():
     from collections import defaultdict
-    from hgcompat import subrepo
+    from hgcompat import subrepo, subrepoutil
     from vcsserver.exceptions import SubrepoMergeException
 
     class NoOpSubrepo(subrepo.abstractsubrepo):
@@ -97,7 +97,7 @@ def patch_subrepo_type_mapping():
         def basestate(self):
             """current working directory base state, disregarding .hgsubstate
             state and working directory modifications"""
-            substate = subrepo.state(self._ctx, self.ui)
+            substate = subrepoutil.state(self._ctx, self.ui)
             file_system_path, rev, repotype = substate.get(self._path)
             return rev
 
