@@ -15,6 +15,12 @@ in
 
 self: super: {
 
+  "cffi" = super."cffi".override (attrs: {
+    buildInputs = [
+      pkgs.libffi
+    ];
+  });
+
   "gevent" = super."gevent".override (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
       # NOTE: (marcink) odd requirements from gevent aren't set properly,
@@ -52,6 +58,12 @@ self: super: {
     ];
   });
 
+  "pygit2" = super."pygit2".override (attrs: {
+    propagatedBuildInputs = attrs.propagatedBuildInputs ++ [
+      pkgs.libffi
+      pkgs.libgit2rc
+    ];
+  });
 
   # Avoid that base packages screw up the build process
   inherit (basePythonPackages)

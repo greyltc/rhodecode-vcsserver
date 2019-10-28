@@ -1,10 +1,11 @@
 self: super: {
+
   # bump GIT version
   git = super.lib.overrideDerivation super.git (oldAttrs: {
-    name = "git-2.19.2";
+    name = "git-2.23.0";
     src = self.fetchurl {
-      url = "https://www.kernel.org/pub/software/scm/git/git-2.19.2.tar.xz";
-      sha256 = "1scbggzghkzzfqg4ky3qh7h9w87c3zya4ls5disz7dbx56is7sgw";
+      url = "https://www.kernel.org/pub/software/scm/git/git-2.23.0.tar.xz";
+      sha256 = "0rv0y45gcd3h191isppn77acih695v4pipdj031jvs9rd1ds0kr3";
     };
 
     # patches come from: https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/version-management/git-and-tools/git
@@ -15,6 +16,29 @@ self: super: {
       ./patches/git/git-send-email-honor-PATH.patch
       ./patches/git/installCheck-path.patch
     ];
+
+  });
+
+  libgit2rc = super.lib.overrideDerivation super.libgit2 (oldAttrs: {
+    name = "libgit2-0.28.2";
+    version = "0.28.2";
+
+    src = self.fetchFromGitHub {
+        owner = "libgit2";
+        repo = "libgit2";
+        rev = "v0.28.2";
+        sha256 = "0cm8fvs05rj0baigs2133q5a0sm3pa234y8h6hmwhl2bz9xq3k4b";
+    };
+
+    cmakeFlags = [ "-DTHREADSAFE=ON" "-DUSE_HTTPS=no"];
+
+    buildInputs = [
+        super.zlib
+        super.libssh2
+        super.openssl
+        super.curl
+    ];
+
 
   });
 
@@ -29,10 +53,10 @@ self: super: {
     };
   in
     super.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      name = "subversion-1.10.2";
+      name = "subversion-1.12.2";
       src = self.fetchurl {
-        url = "https://archive.apache.org/dist/subversion/subversion-1.10.2.tar.gz";
-        sha256 = "0xv5z2bg0lw7057g913yc13f60nfj257wvmsq22pr33m4syf26sg";
+        url = "https://archive.apache.org/dist/subversion/subversion-1.12.2.tar.gz";
+        sha256 = "1wr1pklnq67xdzmf237zj6l1hg43yshfkbxvpvd5sv6r0dk7v4pl";
       };
 
       ## use internal lz4/utf8proc because it is stable and shipped with SVN
@@ -41,7 +65,7 @@ self: super: {
         " --with-utf8proc=internal"
       ];
 
-
   });
+
 
 }
