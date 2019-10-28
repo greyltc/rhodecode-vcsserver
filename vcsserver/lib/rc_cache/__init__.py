@@ -22,10 +22,23 @@ register_backend(
     "dogpile.cache.rc.memory_lru", "vcsserver.lib.rc_cache.backends",
     "LRUMemoryBackend")
 
+register_backend(
+    "dogpile.cache.rc.file_namespace", "vcsserver.lib.rc_cache.backends",
+    "FileNamespaceBackend")
+
+register_backend(
+    "dogpile.cache.rc.redis", "vcsserver.lib.rc_cache.backends",
+    "RedisPickleBackend")
+
+register_backend(
+    "dogpile.cache.rc.redis_msgpack", "vcsserver.lib.rc_cache.backends",
+    "RedisMsgPackBackend")
+
+
 log = logging.getLogger(__name__)
 
 from . import region_meta
-from .util import key_generator, get_default_cache_settings, make_region
+from .utils import (get_default_cache_settings, backend_key_generator, make_region)
 
 
 def configure_dogpile_cache(settings):
@@ -46,13 +59,12 @@ def configure_dogpile_cache(settings):
     for region_name in avail_regions:
         new_region = make_region(
             name=region_name,
-            function_key_generator=key_generator
+            function_key_generator=None
         )
 
         new_region.configure_from_config(settings, 'rc_cache.{}.'.format(region_name))
-
-        log.debug('dogpile: registering a new region %s[%s]',
-                  region_name, new_region.__dict__)
+        new_region.function_key_generator = backend_key_generator(new_region.actual_backend)
+        log.debug('dogpile: registering a new region %s[%s]', region_name, new_region.__dict__)
         region_meta.dogpile_cache_regions[region_name] = new_region
 
 
