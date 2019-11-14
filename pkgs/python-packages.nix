@@ -49,14 +49,14 @@ self: super: {
     };
   };
   "cffi" = super.buildPythonPackage {
-    name = "cffi-1.13.1";
+    name = "cffi-1.13.2";
     doCheck = false;
     propagatedBuildInputs = [
       self."pycparser"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/0d/aa/c5ac2f337d9a10ee95d160d47beb8d9400e1b2a46bb94990a0409fe6d133/cffi-1.13.1.tar.gz";
-      sha256 = "16sran9hz2k2bg869mbmh6r15vk4vyzffjfqmcblpkw7z7z3m2sm";
+      url = "https://files.pythonhosted.org/packages/2d/bf/960e5a422db3ac1a5e612cb35ca436c3fc985ed4b7ed13a1b4879006f450/cffi-1.13.2.tar.gz";
+      sha256 = "0iikq5rn9a405n94c7s2j6kq3jv5qs9q4xyik8657b2py27ix6jr";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
