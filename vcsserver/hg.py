@@ -22,7 +22,7 @@ import urllib
 import urllib2
 import traceback
 
-from hgext import largefiles, rebase
+from hgext import largefiles, rebase, purge
 from hgext.strip import strip as hgext_strip
 from mercurial import commands
 from mercurial import unionrepo
@@ -896,6 +896,23 @@ class HgRemote(RemoteBase):
             repo.baseui, repo, ctx.node(), update=update, backup=backup)
 
     @reraise_safe_exceptions
+    def get_unresolved_files(self, wire):
+        repo = self._factory.repo(wire)
+
+        log.debug('Calculating unresolved files for repo: %s', repo)
+        output = io.BytesIO()
+
+        def write(data, **unused_kwargs):
+            output.write(data)
+
+        baseui = self._factory._create_config(wire['config'])
+        baseui.write = write
+
+        commands.resolve(baseui, repo, list=True)
+        unresolved = output.getvalue().splitlines(0)
+        return unresolved
+
+    @reraise_safe_exceptions
     def merge(self, wire, revision):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
@@ -933,8 +950,12 @@ class HgRemote(RemoteBase):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
         repo.ui.setconfig('ui', 'merge', 'internal:dump')
-        rebase.rebase(
-            baseui, repo, base=source, dest=dest, abort=abort, keep=not abort)
+        # In case of sub repositories are used mercurial prompts the user in
+        # case of merge conflicts or different sub repository sources. By
+        # setting the interactive flag to `False` mercurial doesn't prompt the
+        # used but instead uses a default value.
+        repo.ui.setconfig('ui', 'interactive', False)
+        rebase.rebase(baseui, repo, base=source, dest=dest, abort=abort, keep=not abort)
 
     @reraise_safe_exceptions
     def tag(self, wire, name, revision, message, local, user, tag_time, tag_timezone):
