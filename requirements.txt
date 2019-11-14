@@ -20,7 +20,7 @@ pyramid-mako==1.1.0
 pygit2==0.28.2
 
 repoze.lru==0.7
-redis==3.3.8
+redis==3.3.11
 simplejson==3.16.0
 subprocess32==3.5.4
 subvertpy==0.10.1
