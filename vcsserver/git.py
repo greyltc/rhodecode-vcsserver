@@ -1137,11 +1137,12 @@ class GitRemote(RemoteBase):
         cmd = [settings.GIT_EXECUTABLE] + _copts + cmd
         _opts = {'env': gitenv, 'shell': False}
 
+        proc = None
         try:
             _opts.update(opts)
-            p = subprocessio.SubprocessIOChunker(cmd, **_opts)
+            proc = subprocessio.SubprocessIOChunker(cmd, **_opts)
 
-            return ''.join(p), ''.join(p.error)
+            return ''.join(proc), ''.join(proc.error)
         except (EnvironmentError, OSError) as err:
             cmd = ' '.join(cmd)  # human friendly CMD
             tb_err = ("Couldn't run git command (%s).\n"
@@ -1153,6 +1154,9 @@ class GitRemote(RemoteBase):
                 return '', err
             else:
                 raise exceptions.VcsException()(tb_err)
+        finally:
+            if proc:
+                proc.close()
 
     @reraise_safe_exceptions
     def install_hooks(self, wire, force=False):

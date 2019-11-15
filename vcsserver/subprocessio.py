@@ -216,9 +216,6 @@ class BufferedGenerator(object):
         except (GeneratorExit, StopIteration):
             pass
 
-    def __del__(self):
-        self.close()
-
     ####################
     # Threaded reader's infrastructure.
     ####################
@@ -475,25 +472,22 @@ class SubprocessIOChunker(object):
         self._closed = True
         try:
             self.process.terminate()
-        except:
+        except Exception:
             pass
         if self._close_input_fd:
             os.close(self._close_input_fd)
         try:
             self.output.close()
-        except:
+        except Exception:
             pass
         try:
             self.error.close()
-        except:
+        except Exception:
             pass
         try:
             os.close(self.inputstream)
-        except:
+        except Exception:
             pass
-
-    def __del__(self):
-        self.close()
 
 
 def run_command(arguments, env=None):
@@ -506,18 +500,20 @@ def run_command(arguments, env=None):
 
     cmd = arguments
     log.debug('Running subprocessio command %s', cmd)
+    proc = None
     try:
         _opts = {'shell': False, 'fail_on_stderr': False}
         if env:
             _opts.update({'env': env})
-        p = SubprocessIOChunker(cmd, **_opts)
-        stdout = ''.join(p)
-        stderr = ''.join(''.join(p.error))
+        proc = SubprocessIOChunker(cmd, **_opts)
+        return ''.join(proc), ''.join(proc.error)
     except (EnvironmentError, OSError) as err:
         cmd = ' '.join(cmd)  # human friendly CMD
         tb_err = ("Couldn't run subprocessio command (%s).\n"
                   "Original error was:%s\n" % (cmd, err))
         log.exception(tb_err)
         raise Exception(tb_err)
+    finally:
+        if proc:
+            proc.close()
 
-    return stdout, stderr
