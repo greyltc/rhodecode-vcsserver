@@ -25,6 +25,7 @@ import wsgiref.util
 import traceback
 import tempfile
 from itertools import chain
+from cStringIO import StringIO
 
 import simplejson as json
 import msgpack
@@ -32,7 +33,9 @@ from pyramid.config import Configurator
 from pyramid.settings import asbool, aslist
 from pyramid.wsgi import wsgiapp
 from pyramid.compat import configparser
+from pyramid.response import Response
 
+from vcsserver.utils import safe_int
 
 log = logging.getLogger(__name__)
 
@@ -114,8 +117,8 @@ def _string_setting(settings, name, default, lower=True, default_when_empty=Fals
 
 
 class VCS(object):
-    def __init__(self, locale=None, cache_config=None):
-        self.locale = locale
+    def __init__(self, locale_conf=None, cache_config=None):
+        self.locale = locale_conf
         self.cache_config = cache_config
         self._configure_locale()
 
@@ -232,8 +235,8 @@ class HTTPApplication(object):
         self.global_config = global_config
         self.config.include('vcsserver.lib.rc_cache')
 
-        locale = settings.get('locale', '') or 'en_US.UTF-8'
-        vcs = VCS(locale=locale, cache_config=settings)
+        settings_locale = settings.get('locale', '') or 'en_US.UTF-8'
+        vcs = VCS(locale_conf=settings_locale, cache_config=settings)
         self._remotes = {
             'hg': vcs._hg_remote,
             'git': vcs._git_remote,
@@ -290,15 +293,15 @@ class HTTPApplication(object):
         _string_setting(
             settings,
             'rc_cache.repo_object.backend',
-            'dogpile.cache.rc.memory_lru')
+            'dogpile.cache.rc.file_namespace', lower=False)
         _int_setting(
             settings,
             'rc_cache.repo_object.expiration_time',
-            300)
-        _int_setting(
+            30 * 24 * 60 * 60)
+        _string_setting(
             settings,
-            'rc_cache.repo_object.max_size',
-            1024)
+            'rc_cache.repo_object.arguments.filename',
+            os.path.join(default_cache_dir, 'vcsserver_cache_1'), lower=False)
 
     def _configure(self):
         self.config.add_renderer(name='msgpack', factory=self._msgpack_renderer_factory)
@@ -307,7 +310,14 @@ class HTTPApplication(object):
         self.config.add_route('status', '/status')
         self.config.add_route('hg_proxy', '/proxy/hg')
         self.config.add_route('git_proxy', '/proxy/git')
+
+        # rpc methods
         self.config.add_route('vcs', '/{backend}')
+
+        # streaming rpc remote methods
+        self.config.add_route('vcs_stream', '/{backend}/stream')
+
+        # vcs operations clone/push as streaming
         self.config.add_route('stream_git', '/stream/git/*repo_name')
         self.config.add_route('stream_hg', '/stream/hg/*repo_name')
 
@@ -317,6 +327,8 @@ class HTTPApplication(object):
         self.config.add_view(self.hg_proxy(), route_name='hg_proxy')
         self.config.add_view(self.git_proxy(), route_name='git_proxy')
         self.config.add_view(self.vcs_view, route_name='vcs', renderer='msgpack',
+                             vcs_view=self._remotes)
+        self.config.add_view(self.vcs_stream_view, route_name='vcs_stream',
                              vcs_view=self._remotes)
 
         self.config.add_view(self.hg_stream(), route_name='stream_hg')
@@ -329,17 +341,20 @@ class HTTPApplication(object):
         self.config.add_view(self.handle_vcs_exception, context=Exception)
 
         self.config.add_tween(
-            'vcsserver.tweens.RequestWrapperTween',
+            'vcsserver.tweens.request_wrapper.RequestWrapperTween',
         )
+        self.config.add_request_method(
+            'vcsserver.lib.request_counter.get_request_counter',
+            'request_count')
 
     def wsgi_app(self):
         return self.config.make_wsgi_app()
 
-    def vcs_view(self, request):
+    def _vcs_view_params(self, request):
         remote = self._remotes[request.matchdict['backend']]
         payload = msgpack.unpackb(request.body, use_list=True)
         method = payload.get('method')
-        params = payload.get('params')
+        params = payload['params']
         wire = params.get('wire')
         args = params.get('args')
         kwargs = params.get('kwargs')
@@ -351,9 +366,28 @@ class HTTPApplication(object):
             except KeyError:
                 pass
             args.insert(0, wire)
+        repo_state_uid = wire.get('repo_state_uid') if wire else None
 
-        log.debug('method called:%s with kwargs:%s context_uid: %s',
-                  method, kwargs, context_uid)
+        # NOTE(marcink): trading complexity for slight performance
+        if log.isEnabledFor(logging.DEBUG):
+            no_args_methods = [
+                'archive_repo'
+            ]
+            if method in no_args_methods:
+                call_args = ''
+            else:
+                call_args = args[1:]
+
+            log.debug('method requested:%s with args:%s kwargs:%s context_uid: %s, repo_state_uid:%s',
+                      method, call_args, kwargs, context_uid, repo_state_uid)
+
+        return payload, remote, method, args, kwargs
+
+    def vcs_view(self, request):
+
+        payload, remote, method, args, kwargs = self._vcs_view_params(request)
+        payload_id = payload.get('id')
+
         try:
             resp = getattr(remote, method)(*args, **kwargs)
         except Exception as e:
@@ -380,7 +414,7 @@ class HTTPApplication(object):
                 type_ = None
 
             resp = {
-                'id': payload.get('id'),
+                'id': payload_id,
                 'error': {
                     'message': e.message,
                     'traceback': tb_info,
@@ -395,11 +429,35 @@ class HTTPApplication(object):
                 pass
         else:
             resp = {
-                'id': payload.get('id'),
+                'id': payload_id,
                 'result': resp
             }
 
         return resp
+
+    def vcs_stream_view(self, request):
+        payload, remote, method, args, kwargs = self._vcs_view_params(request)
+        # this method has a stream: marker we remove it here
+        method = method.split('stream:')[-1]
+        chunk_size = safe_int(payload.get('chunk_size')) or 4096
+
+        try:
+            resp = getattr(remote, method)(*args, **kwargs)
+        except Exception as e:
+            raise
+
+        def get_chunked_data(method_resp):
+            stream = StringIO(method_resp)
+            while 1:
+                chunk = stream.read(chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+
+        response = Response(app_iter=get_chunked_data(resp))
+        response.content_type = 'application/octet-stream'
+
+        return response
 
     def status_view(self, request):
         import vcsserver
@@ -410,23 +468,31 @@ class HTTPApplication(object):
         import vcsserver
 
         payload = msgpack.unpackb(request.body, use_list=True)
+        server_config, app_config = {}, {}
 
         try:
             path = self.global_config['__file__']
-            config = configparser.ConfigParser()
+            config = configparser.RawConfigParser()
+
             config.read(path)
-            parsed_ini = config
-            if parsed_ini.has_section('server:main'):
-                parsed_ini = dict(parsed_ini.items('server:main'))
+
+            if config.has_section('server:main'):
+                server_config = dict(config.items('server:main'))
+            if config.has_section('app:main'):
+                app_config = dict(config.items('app:main'))
+
         except Exception:
             log.exception('Failed to read .ini file for display')
-            parsed_ini = {}
+
+        environ = os.environ.items()
 
         resp = {
             'id': payload.get('id'),
             'result': dict(
                 version=vcsserver.__version__,
-                config=parsed_ini,
+                config=server_config,
+                app_config=app_config,
+                environ=environ,
                 payload=payload,
             )
         }
@@ -434,14 +500,13 @@ class HTTPApplication(object):
 
     def _msgpack_renderer_factory(self, info):
         def _render(value, system):
-            value = msgpack.packb(value)
             request = system.get('request')
             if request is not None:
                 response = request.response
                 ct = response.content_type
                 if ct == response.default_content_type:
                     response.content_type = 'application/x-msgpack'
-            return value
+            return msgpack.packb(value)
         return _render
 
     def set_env_from_config(self, environ, config):

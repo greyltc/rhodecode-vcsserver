@@ -15,12 +15,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-
-
 import time
 import logging
 
-
+import vcsserver
 from vcsserver.utils import safe_str
 
 
@@ -30,6 +28,10 @@ log = logging.getLogger(__name__)
 def get_access_path(request):
     environ = request.environ
     return environ.get('PATH_INFO')
+
+
+def get_user_agent(environ):
+    return environ.get('HTTP_USER_AGENT')
 
 
 class RequestWrapperTween(object):
@@ -45,14 +47,18 @@ class RequestWrapperTween(object):
             response = self.handler(request)
         finally:
             end = time.time()
-
-            log.info('IP: %s Request to path: `%s` time: %.3fs',
-                     '127.0.0.1', safe_str(get_access_path(request)), end - start)
+            total = end - start
+            count = request.request_count()
+            _ver_ = vcsserver.__version__
+            log.info(
+                'Req[%4s] IP: %s %s Request to %s time: %.4fs [%s], VCSServer %s',
+                count, '127.0.0.1', request.environ.get('REQUEST_METHOD'),
+                safe_str(get_access_path(request)), total, get_user_agent(request.environ), _ver_)
 
         return response
 
 
 def includeme(config):
     config.add_tween(
-        'vcsserver.tweens.RequestWrapperTween',
+        'vcsserver.tweens.request_wrapper.RequestWrapperTween',
     )

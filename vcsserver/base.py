@@ -44,25 +44,7 @@ class RepoFactory(object):
         raise NotImplementedError()
 
     def repo(self, wire, create=False):
-        """
-        Get a repository instance for the given path.
-
-        Uses internally the low level beaker API since the decorators introduce
-        significant overhead.
-        """
-        region = self._cache_region
-        context = wire.get('context', None)
-        repo_path = wire.get('path', '')
-        context_uid = '{}'.format(context)
-        cache = wire.get('cache', True)
-        cache_on = context and cache
-
-        @region.conditional_cache_on_arguments(condition=cache_on)
-        def create_new_repo(_repo_type, _repo_path, _context_uid):
-            return self._create_repo(wire, create)
-
-        repo = create_new_repo(self.repo_type, repo_path, context_uid)
-        return repo
+        raise NotImplementedError()
 
 
 def obfuscate_qs(query_string):

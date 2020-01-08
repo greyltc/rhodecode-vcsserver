@@ -45,8 +45,10 @@ INVALID_CERTIFICATE_STDERR = '\n'.join([
                    reason="SVN not packaged for Cygwin")
 def test_import_remote_repository_certificate_error(stderr, expected_reason):
     from vcsserver import svn
+    factory = mock.Mock()
+    factory.repo = mock.Mock(return_value=mock.Mock())
 
-    remote = svn.SvnRemote(None)
+    remote = svn.SvnRemote(factory)
     remote.is_path_valid_repository = lambda wire, path: True
 
     with mock.patch('subprocess.Popen',
@@ -76,7 +78,10 @@ def test_svn_libraries_can_be_imported():
 def test_username_password_extraction_from_url(example_url, parts):
     from vcsserver import svn
 
-    remote = svn.SvnRemote(None)
+    factory = mock.Mock()
+    factory.repo = mock.Mock(return_value=mock.Mock())
+
+    remote = svn.SvnRemote(factory)
     remote.is_path_valid_repository = lambda wire, path: True
 
     assert remote.get_url_and_credentials(example_url) == parts

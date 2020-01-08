@@ -33,7 +33,6 @@ import mercurial.node
 import simplejson as json
 
 from vcsserver import exceptions, subprocessio, settings
-from vcsserver.hgcompat import get_ctx
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +78,12 @@ class HooksDummyClient(object):
     def __call__(self, hook_name, extras):
         with self._hooks_module.Hooks() as hooks:
             return getattr(hooks, hook_name)(extras)
+
+
+class HooksShadowRepoClient(object):
+
+    def __call__(self, hook_name, extras):
+        return {'output': '', 'status': 0}
 
 
 class RemoteMessageWriter(object):
@@ -141,9 +146,12 @@ def _handle_exception(result):
 
 
 def _get_hooks_client(extras):
-    if 'hooks_uri' in extras:
-        protocol = extras.get('hooks_protocol')
+    hooks_uri = extras.get('hooks_uri')
+    is_shadow_repo = extras.get('is_shadow_repo')
+    if hooks_uri:
         return HooksHttpClient(extras['hooks_uri'])
+    elif is_shadow_repo:
+        return HooksShadowRepoClient()
     else:
         return HooksDummyClient(extras['hooks_module'])
 
@@ -175,6 +183,7 @@ def _extras_from_ui(ui):
 
 
 def _rev_range_hash(repo, node, check_heads=False):
+    from vcsserver.hgcompat import get_ctx
 
     commits = []
     revs = []
@@ -194,6 +203,7 @@ def _rev_range_hash(repo, node, check_heads=False):
 
 
 def _check_heads(repo, start, end, commits):
+    from vcsserver.hgcompat import get_ctx
     changelog = repo.changelog
     parents = set()
 
@@ -384,6 +394,7 @@ def post_push_ssh(ui, repo, node, **kwargs):
 
 
 def key_push(ui, repo, **kwargs):
+    from vcsserver.hgcompat import get_ctx
     if kwargs['new'] != '0' and kwargs['namespace'] == 'bookmarks':
         # store new bookmarks in our UI object propagated later to post_push
         ui._rc_pushkey_branches = get_ctx(repo, kwargs['key']).bookmarks()
