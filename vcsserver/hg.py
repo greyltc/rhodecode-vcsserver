@@ -27,6 +27,7 @@ from hgext.strip import strip as hgext_strip
 from mercurial import commands
 from mercurial import unionrepo
 from mercurial import verify
+from mercurial import repair
 
 import vcsserver
 from vcsserver import exceptions
@@ -149,6 +150,21 @@ class MercurialFactory(RepoFactory):
         Get a repository instance for the given path.
         """
         return self._create_repo(wire, create)
+
+
+def patch_ui_message_output(baseui):
+    baseui.setconfig('ui', 'quiet', 'false')
+    output = io.BytesIO()
+
+    def write(data, **unused_kwargs):
+        output.write(data)
+
+    baseui.status = write
+    baseui.write = write
+    baseui.warn = write
+    baseui.debug = write
+
+    return baseui, output
 
 
 class HgRemote(RemoteBase):
@@ -706,12 +722,8 @@ class HgRemote(RemoteBase):
     def verify(self, wire,):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
-        baseui.setconfig('ui', 'quiet', 'false')
-        output = io.BytesIO()
 
-        def write(data, **unused_kwargs):
-            output.write(data)
-        baseui.write = write
+        baseui, output = patch_ui_message_output(baseui)
 
         repo.ui = baseui
         verify.verify(repo)
@@ -721,16 +733,23 @@ class HgRemote(RemoteBase):
     def hg_update_cache(self, wire,):
         repo = self._factory.repo(wire)
         baseui = self._factory._create_config(wire['config'])
-        baseui.setconfig('ui', 'quiet', 'false')
-        output = io.BytesIO()
-
-        def write(data, **unused_kwargs):
-            output.write(data)
-        baseui.write = write
+        baseui, output = patch_ui_message_output(baseui)
 
         repo.ui = baseui
         with repo.wlock(), repo.lock():
             repo.updatecaches(full=True)
+
+        return output.getvalue()
+
+    @reraise_safe_exceptions
+    def hg_rebuild_fn_cache(self, wire,):
+        repo = self._factory.repo(wire)
+        baseui = self._factory._create_config(wire['config'])
+        baseui, output = patch_ui_message_output(baseui)
+
+        repo.ui = baseui
+
+        repair.rebuildfncache(baseui, repo)
 
         return output.getvalue()
 
