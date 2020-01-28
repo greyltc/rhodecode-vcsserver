@@ -784,7 +784,7 @@ self: super: {
     };
   };
   "rhodecode-vcsserver" = super.buildPythonPackage {
-    name = "rhodecode-vcsserver-4.18.1";
+    name = "rhodecode-vcsserver-4.18.2";
     buildInputs = [
       self."pytest"
       self."py"
