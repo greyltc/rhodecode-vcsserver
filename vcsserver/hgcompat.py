@@ -67,9 +67,13 @@ from mercurial.url import httpbasicauthhandler, httpdigestauthhandler
 def get_ctx(repo, ref):
     try:
         ctx = repo[ref]
-    except (ProgrammingError, LookupError, RepoLookupError):
+    except ProgrammingError:
         # we're unable to find the rev using a regular lookup, we fallback
         # to slower, but backward compat revsymbol usage
         ctx = revsymbol(repo, ref)
-
+    except (LookupError, RepoLookupError):
+        # Similar case as above but only for refs that are not numeric
+        if isinstance(ref, (int, long)):
+            raise
+        ctx = revsymbol(repo, ref)
     return ctx
