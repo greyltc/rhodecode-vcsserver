@@ -691,7 +691,14 @@ def svn_post_commit(repo_path, commit_data, env):
     """
     commit_data is path, rev, txn_id
     """
-    path, commit_id, txn_id = commit_data
+    if len(commit_data) == 3:
+        path, commit_id, txn_id = commit_data
+    elif len(commit_data) == 2:
+        log.error('Failed to extract txn_id from commit_data using legacy method. '
+                  'Some functionality might be limited')
+        path, commit_id = commit_data
+        txn_id = None
+
     branches = []
     tags = []
 
