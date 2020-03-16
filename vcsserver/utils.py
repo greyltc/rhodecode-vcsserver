@@ -37,18 +37,16 @@ def safe_int(val, default=None):
     return val
 
 
-def safe_str(unicode_, to_encoding=['utf8']):
+def safe_str(unicode_, to_encoding=None):
     """
     safe str function. Does few trick to turn unicode_ into string
 
-    In case of UnicodeEncodeError, we try to return it with encoding detected
-    by chardet library if it fails fallback to string with errors replaced
-
     :param unicode_: unicode to encode
+    :param to_encoding: encode to this type UTF8 default
     :rtype: str
     :returns: str object
     """
-
+    to_encoding = to_encoding or ['utf8']
     # if it's not basestr cast to str
     if not isinstance(unicode_, basestring):
         return str(unicode_)
@@ -65,15 +63,38 @@ def safe_str(unicode_, to_encoding=['utf8']):
         except UnicodeEncodeError:
             pass
 
-    try:
-        import chardet
-        encoding = chardet.detect(unicode_)['encoding']
-        if encoding is None:
-            raise UnicodeEncodeError()
+    return unicode_.encode(to_encoding[0], 'replace')
 
-        return unicode_.encode(encoding)
-    except (ImportError, UnicodeEncodeError):
-        return unicode_.encode(to_encoding[0], 'replace')
+
+def safe_unicode(str_, from_encoding=None):
+    """
+    safe unicode function. Does few trick to turn str_ into unicode
+
+    :param str_: string to decode
+    :param from_encoding: encode from this type UTF8 default
+    :rtype: unicode
+    :returns: unicode object
+    """
+    from_encoding = from_encoding or ['utf8']
+
+    if isinstance(str_, unicode):
+        return str_
+
+    if not isinstance(from_encoding, (list, tuple)):
+        from_encoding = [from_encoding]
+
+    try:
+        return unicode(str_)
+    except UnicodeDecodeError:
+        pass
+
+    for enc in from_encoding:
+        try:
+            return unicode(str_, enc)
+        except UnicodeDecodeError:
+            pass
+
+    return unicode(str_, from_encoding[0], 'replace')
 
 
 class AttributeDict(dict):
