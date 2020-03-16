@@ -39,7 +39,7 @@ from dulwich.repo import Repo as DulwichRepo
 from dulwich.server import update_server_info
 
 from vcsserver import exceptions, settings, subprocessio
-from vcsserver.utils import safe_str, safe_int
+from vcsserver.utils import safe_str, safe_int, safe_unicode
 from vcsserver.base import RepoFactory, obfuscate_qs
 from vcsserver.hgcompat import (
     hg_url as url_parser, httpbasicauthhandler, httpdigestauthhandler)
@@ -840,7 +840,11 @@ class GitRemote(RemoteBase):
                 if author.email:
                     return u"{} <{}>".format(author.name, author.email)
 
-                return u"{}".format(author.raw_name)
+                try:
+                    return u"{}".format(author.name)
+                except Exception:
+                    return u"{}".format(safe_unicode(author.raw_name))
+
         return _author(repo_id, commit_id)
 
     @reraise_safe_exceptions
