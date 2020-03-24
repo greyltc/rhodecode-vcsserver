@@ -277,17 +277,17 @@ self: super: {
     };
   };
   "importlib-metadata" = super.buildPythonPackage {
-    name = "importlib-metadata-0.23";
+    name = "importlib-metadata-1.5.0";
     doCheck = false;
     propagatedBuildInputs = [
       self."zipp"
+      self."pathlib2"
       self."contextlib2"
       self."configparser"
-      self."pathlib2"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/5d/44/636bcd15697791943e2dedda0dbe098d8530a38d113b202817133e0b06c0/importlib_metadata-0.23.tar.gz";
-      sha256 = "09mdqdfv5rdrwz80jh9m379gxmvk2vhjfz0fg53hid00icvxf65a";
+      url = "https://files.pythonhosted.org/packages/0d/e4/638f3bde506b86f62235c595073066e7b8472fc9ee2b8c6491347f31d726/importlib_metadata-1.5.0.tar.gz";
+      sha256 = "00ikdj4gjhankdljnz7g5ggak4k9lql2926x0x117ir9j2lv7x86";
     };
     meta = {
       license = [ pkgs.lib.licenses.asl20 ];
@@ -1042,14 +1042,14 @@ self: super: {
     };
   };
   "zipp" = super.buildPythonPackage {
-    name = "zipp-0.6.0";
+    name = "zipp-1.2.0";
     doCheck = false;
     propagatedBuildInputs = [
-      self."more-itertools"
+      self."contextlib2"
     ];
     src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/57/dd/585d728479d97d25aeeb9aa470d36a4ad8d0ba5610f84e14770128ce6ff7/zipp-0.6.0.tar.gz";
-      sha256 = "13ndkf7vklw978a4gdl1yfvn8hch28429a0iam67sg4nrp5v261p";
+      url = "https://files.pythonhosted.org/packages/78/08/d52f0ea643bc1068d6dc98b412f4966a9b63255d20911a23ac3220c033c4/zipp-1.2.0.tar.gz";
+      sha256 = "1c91lnv1bxjimh8as27hz7bghsjkkbxn1d37xq7in9c82iai0167";
     };
     meta = {
       license = [ pkgs.lib.licenses.mit ];
