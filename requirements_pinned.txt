@@ -4,7 +4,7 @@ atomicwrites==1.3.0
 attrs==19.3.0
 contextlib2==0.6.0.post1
 cffi==1.12.3
-hupper==1.9.1
+hupper==1.10.2
 importlib-metadata==0.23
 packaging==19.2.0
 pathlib2==2.3.5
