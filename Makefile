@@ -1,6 +1,8 @@
 
-.PHONY: clean test test-clean test-only generate-pkgs
+.PHONY: clean test test-clean test-only generate-pkgs pip-packages
 
+# set by: PATH_TO_OUTDATED_PACKAGES=/some/path/outdated_packages.py
+OUTDATED_PACKAGES = ${PATH_TO_OUTDATED_PACKAGES}
 
 clean:
 	make test-clean
@@ -21,3 +23,6 @@ test-only:
 
 generate-pkgs:
 	nix-shell pkgs/shell-generate.nix --command "pip2nix generate --licenses"
+
+pip-packages:
+	python ${OUTDATED_PACKAGES}
