@@ -404,7 +404,20 @@ class HTTPApplication(object):
                 exc_info[0] = org_exc.__class__
                 exc_info[1] = org_exc
 
-            store_exception(id(exc_info), exc_info)
+            should_store_exc = True
+            if org_exc:
+                def get_exc_fqn(_exc_obj):
+                    module_name = getattr(org_exc.__class__, '__module__', 'UNKNOWN')
+                    return module_name + '.' + org_exc_name
+
+                exc_fqn = get_exc_fqn(org_exc)
+
+                if exc_fqn in ['mercurial.error.RepoLookupError',
+                               'vcsserver.exceptions.RefNotFoundException']:
+                    should_store_exc = False
+
+            if should_store_exc:
+                store_exception(id(exc_info), exc_info)
 
             tb_info = ''.join(
                 traceback.format_exception(exc_type, exc_value, exc_traceback))
