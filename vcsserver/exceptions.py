@@ -115,3 +115,7 @@ class HTTPRepoLocked(HTTPLocked):
 class HTTPRepoBranchProtected(HTTPForbidden):
     def __init__(self, *args, **kwargs):
         super(HTTPForbidden, self).__init__(*args, **kwargs)
+
+
+class RefNotFoundException(KeyError):
+    pass

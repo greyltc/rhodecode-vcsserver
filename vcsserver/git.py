@@ -697,7 +697,12 @@ class GitRemote(RemoteBase):
                 missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
                 try:
                     commit = repo.revparse_single(sha)
-                except (KeyError, ValueError) as e:
+                except KeyError:
+                    # NOTE(marcink): KeyError doesn't give us any meaningful information
+                    # here, we instead give something more explicit
+                    e = exceptions.RefNotFoundException('SHA: %s not found', sha)
+                    raise exceptions.LookupException(e)(missing_commit_err)
+                except ValueError as e:
                     raise exceptions.LookupException(e)(missing_commit_err)
 
                 is_tag = False
@@ -719,7 +724,10 @@ class GitRemote(RemoteBase):
                         if branch:
                             break
                     else:
-                        raise exceptions.LookupException(None)(missing_commit_err)
+                        # NOTE(marcink): Empty error doesn't give us any meaningful information
+                        # here, we instead give something more explicit
+                        e = exceptions.RefNotFoundException('SHA: %s not found in branches', sha)
+                        raise exceptions.LookupException(e)(missing_commit_err)
 
                 commit_id = commit.hex
                 type_id = commit.type
