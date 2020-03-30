@@ -41,16 +41,6 @@ from vcsserver.vcs_base import RemoteBase
 log = logging.getLogger(__name__)
 
 
-# Set of svn compatible version flags.
-# Compare with subversion/svnadmin/svnadmin.c
-svn_compatible_versions = {
-    'pre-1.4-compatible',
-    'pre-1.5-compatible',
-    'pre-1.6-compatible',
-    'pre-1.8-compatible',
-    'pre-1.9-compatible'
-}
-
 svn_compatible_versions_map = {
     'pre-1.4-compatible': '1.3',
     'pre-1.5-compatible': '1.4',
@@ -58,6 +48,8 @@ svn_compatible_versions_map = {
     'pre-1.8-compatible': '1.7',
     'pre-1.9-compatible': '1.8',
 }
+
+current_compatible_version = '1.12'
 
 
 def reraise_safe_exceptions(func):
@@ -79,13 +71,13 @@ class SubversionFactory(RepoFactory):
     def _create_repo(self, wire, create, compatible_version):
         path = svn.core.svn_path_canonicalize(wire['path'])
         if create:
-            fs_config = {'compatible-version': '1.9'}
+            fs_config = {'compatible-version': current_compatible_version}
             if compatible_version:
-                if compatible_version not in svn_compatible_versions:
-                    raise Exception('Unknown SVN compatible version "{}"'
-                                    .format(compatible_version))
-                fs_config['compatible-version'] = \
-                    svn_compatible_versions_map[compatible_version]
+
+                compatible_version_string = \
+                    svn_compatible_versions_map.get(compatible_version) \
+                    or compatible_version
+                fs_config['compatible-version'] = compatible_version_string
 
             log.debug('Create SVN repo with config "%s"', fs_config)
             repo = svn.repos.create(path, "", "", None, fs_config)
