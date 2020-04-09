@@ -687,7 +687,7 @@ class GitRemote(RemoteBase):
         return revs
 
     @reraise_safe_exceptions
-    def get_object(self, wire, sha):
+    def get_object(self, wire, sha, maybe_unreachable=False):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
         def _get_object(_context_uid, _repo_id, _sha):
@@ -712,6 +712,9 @@ class GitRemote(RemoteBase):
 
                 check_dangling = True
                 if is_tag:
+                    check_dangling = False
+
+                if check_dangling and maybe_unreachable:
                     check_dangling = False
 
                 # we used a reference and it parsed means we're not having a dangling commit
