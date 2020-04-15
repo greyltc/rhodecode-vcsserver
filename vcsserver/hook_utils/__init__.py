@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2019 RhodeCode GmbH
+# Copyright (C) 2014-2020 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
