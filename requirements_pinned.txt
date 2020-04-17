@@ -9,7 +9,7 @@ importlib-metadata==1.6.0
 packaging==20.3
 pathlib2==2.3.5
 pygments==2.4.2
-pyparsing==2.4.6
+pyparsing==2.4.7
 psutil==5.7.0
 pluggy==0.13.1
 scandir==1.10.0
