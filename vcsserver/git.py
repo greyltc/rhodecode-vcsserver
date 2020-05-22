@@ -1,5 +1,5 @@
 # RhodeCode VCSServer provides access to different vcs backends via network.
-# Copyright (C) 2014-2019 RhodeCode GmbH
+# Copyright (C) 2014-2020 RhodeCode GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -687,7 +687,7 @@ class GitRemote(RemoteBase):
         return revs
 
     @reraise_safe_exceptions
-    def get_object(self, wire, sha):
+    def get_object(self, wire, sha, maybe_unreachable=False):
         cache_on, context_uid, repo_id = self._cache_on(wire)
         @self.region.conditional_cache_on_arguments(condition=cache_on)
         def _get_object(_context_uid, _repo_id, _sha):
@@ -697,7 +697,12 @@ class GitRemote(RemoteBase):
                 missing_commit_err = 'Commit {} does not exist for `{}`'.format(sha, wire['path'])
                 try:
                     commit = repo.revparse_single(sha)
-                except (KeyError, ValueError) as e:
+                except KeyError:
+                    # NOTE(marcink): KeyError doesn't give us any meaningful information
+                    # here, we instead give something more explicit
+                    e = exceptions.RefNotFoundException('SHA: %s not found', sha)
+                    raise exceptions.LookupException(e)(missing_commit_err)
+                except ValueError as e:
                     raise exceptions.LookupException(e)(missing_commit_err)
 
                 is_tag = False
@@ -707,6 +712,9 @@ class GitRemote(RemoteBase):
 
                 check_dangling = True
                 if is_tag:
+                    check_dangling = False
+
+                if check_dangling and maybe_unreachable:
                     check_dangling = False
 
                 # we used a reference and it parsed means we're not having a dangling commit
@@ -719,7 +727,10 @@ class GitRemote(RemoteBase):
                         if branch:
                             break
                     else:
-                        raise exceptions.LookupException(None)(missing_commit_err)
+                        # NOTE(marcink): Empty error doesn't give us any meaningful information
+                        # here, we instead give something more explicit
+                        e = exceptions.RefNotFoundException('SHA: %s not found in branches', sha)
+                        raise exceptions.LookupException(e)(missing_commit_err)
 
                 commit_id = commit.hex
                 type_id = commit.type
