@@ -53,10 +53,10 @@ self: super: {
     };
   in
     super.lib.overrideDerivation subversionWithPython (oldAttrs: {
-      name = "subversion-1.12.2";
+      name = "subversion-1.13.0";
       src = self.fetchurl {
-        url = "https://archive.apache.org/dist/subversion/subversion-1.12.2.tar.gz";
-        sha256 = "1wr1pklnq67xdzmf237zj6l1hg43yshfkbxvpvd5sv6r0dk7v4pl";
+        url = "https://archive.apache.org/dist/subversion/subversion-1.13.0.tar.gz";
+        sha256 = "0cb9p7f5hg0l4k32hz8vmvy2r45igchq5sh4m366za5q0c649bfs";
       };
 
       ## use internal lz4/utf8proc because it is stable and shipped with SVN
