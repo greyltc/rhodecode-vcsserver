@@ -9,7 +9,7 @@ decorator==4.1.2
 dulwich==0.13.0
 hgsubversion==1.9.3
 hg-evolve==9.1.0
-mako==1.1.0
+mako==1.2.2
 markupsafe==1.1.1
 mercurial==5.1.1
 msgpack-python==0.5.6
